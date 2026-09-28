@@ -57,14 +57,11 @@ export default function AdminPanel({ results, locked, lockAt }: Props) {
       bonus,
       mode,
     };
-    if (await call("/api/results", payload)) {
-      setMsg(COPY.admin.saved);
+    const d = await call("/api/results", payload);
+    if (d) {
+      setMsg(COPY.admin.saved(d.count));
       router.refresh();
     }
-  };
-  const compute = async () => {
-    const d = await call("/api/score");
-    if (d) setMsg(COPY.admin.computed(d.count));
   };
   const lock = async (action: "lock" | "open" | "auto") => {
     if (await call("/api/lock", { action })) router.refresh();
@@ -199,12 +196,9 @@ export default function AdminPanel({ results, locked, lockAt }: Props) {
 
       <section className="sticky bottom-0 -mx-4 space-y-2 border-t-[3px] border-black px-4 py-3" style={{ background: "var(--color-cream)" }}>
         {msg && <p className="font-semibold" role="status">{msg}</p>}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button className="btn btn-primary text-base" disabled={busy} onClick={save}>
             {COPY.admin.save}
-          </button>
-          <button className="btn btn-ink text-base" disabled={busy} onClick={compute}>
-            {COPY.admin.compute}
           </button>
           <a className="btn text-base" href="/api/export">
             {COPY.admin.exportCsv}

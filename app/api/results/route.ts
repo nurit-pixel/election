@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { PARTY_KEYS } from "@/lib/parties";
 import { BONUS_KEYS } from "@/lib/copy";
 import { validPm } from "@/lib/validate";
+import { recomputeScores } from "@/lib/compute";
 
 export async function POST(req: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -27,5 +28,11 @@ export async function POST(req: Request) {
     .from("results")
     .upsert({ id: 1, seats, pm, bloc, bonus, mode: b.mode, updated_at: new Date().toISOString() });
   if (error) return NextResponse.json({ error: "db" }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  // חישוב ניקוד אוטומטי בכל שמירה
+  try {
+    return NextResponse.json({ ok: true, count: await recomputeScores() });
+  } catch {
+    return NextResponse.json({ error: "score" }, { status: 500 });
+  }
 }
