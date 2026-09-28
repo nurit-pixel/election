@@ -7,6 +7,7 @@ import { COPY } from "@/lib/copy";
 import PlayerCard from "@/components/PlayerCard";
 import ShareActions from "@/components/ShareActions";
 import TopBar from "@/components/TopBar";
+import SwitchUser from "@/components/SwitchUser";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,10 @@ export default async function DonePage() {
   return (
     <>
       <TopBar links={[{ href: "/board", label: COPY.toBoard }]} />
-      <h1 className="mb-6 text-5xl">{locked ? COPY.locked : COPY.submitted}</h1>
+      <h1 className="mb-2 text-5xl">{locked ? COPY.locked : COPY.submitted}</h1>
+      <div className="mb-6">
+        <SwitchUser name={player.name} />
+      </div>
       <PlayerCard
         name={player.name}
         tier={mine ? mine.tier : null}

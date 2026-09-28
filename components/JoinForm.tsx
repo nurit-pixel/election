@@ -22,9 +22,8 @@ export default function JoinForm() {
         body: JSON.stringify({ name }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.status === 409) return setError(COPY.joinNameTaken(data.name ?? name.trim()));
       if (!res.ok) return setError(COPY.genericError);
-      router.push(data.hasBet ? "/done" : "/bet");
+      router.push("/bet");
       router.refresh();
     } catch {
       setError(COPY.genericError);
@@ -55,6 +54,7 @@ export default function JoinForm() {
       <button type="submit" className="btn btn-primary w-full text-2xl" disabled={busy}>
         {busy ? COPY.saving : COPY.joinButton}
       </button>
+      <p className="text-center text-sm text-muted">{COPY.joinHint}</p>
     </form>
   );
 }

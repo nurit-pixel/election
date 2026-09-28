@@ -5,6 +5,7 @@ import { COPY } from "@/lib/copy";
 import BetForm from "@/components/BetForm";
 import Countdown from "@/components/Countdown";
 import TopBar from "@/components/TopBar";
+import SwitchUser from "@/components/SwitchUser";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function BetPage() {
     <>
       <TopBar links={[{ href: "/board", label: COPY.toBoard }]} />
       <h1 className="text-5xl">היי {player.name}</h1>
+      <SwitchUser name={player.name} />
       <Countdown lockAt={lockAt(results)} className="mb-6 mt-2 text-xl" />
       <BetForm
         playerId={player.id}

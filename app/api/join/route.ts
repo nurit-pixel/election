@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getPlayerId, setPlayerCookie } from "@/lib/auth";
+import { setPlayerCookie } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizeName } from "@/lib/validate";
 
+// כניסה לפי שם: שם חדש יוצר שחקן, שם קיים מחזיר אותו — כך אפשר לחזור ולעדכן את ההימור מכל מכשיר
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const name = normalizeName(body.name);
@@ -10,24 +11,23 @@ export async function POST(req: Request) {
 
   const db = supabaseServer();
   let { data: player } = await db.from("players").select("id,name").eq("name", name).maybeSingle();
+  let isNew = false;
 
-  if (player) {
-    const current = await getPlayerId();
-    if (current !== player.id) {
-      const { count } = await db.from("bets").select("player_id", { count: "exact", head: true }).eq("player_id", player.id);
-      if (count) return NextResponse.json({ error: "name_taken", name }, { status: 409 });
-    }
-  } else {
+  if (!player) {
     const ins = await db.from("players").insert({ name }).select("id,name").single();
-    if (ins.error) {
-      // מרוץ על אותו שם — מישהו אחר נרשם באותו רגע
-      if (ins.error.code === "23505") return NextResponse.json({ error: "name_taken", name }, { status: 409 });
+    if (ins.error?.code === "23505") {
+      // מרוץ: מישהו נרשם באותו שם באותו רגע — פשוט נכנסים אליו
+      ({ data: player } = await db.from("players").select("id,name").eq("name", name).maybeSingle());
+    } else if (ins.error) {
       return NextResponse.json({ error: "db" }, { status: 500 });
+    } else {
+      player = ins.data;
+      isNew = true;
     }
-    player = ins.data;
   }
+  if (!player) return NextResponse.json({ error: "db" }, { status: 500 });
 
-  await setPlayerCookie(player!.id);
-  const { count } = await db.from("bets").select("player_id", { count: "exact", head: true }).eq("player_id", player!.id);
-  return NextResponse.json({ player, hasBet: !!count });
+  await setPlayerCookie(player.id);
+  const { count } = await db.from("bets").select("player_id", { count: "exact", head: true }).eq("player_id", player.id);
+  return NextResponse.json({ player, hasBet: !!count, isNew });
 }
