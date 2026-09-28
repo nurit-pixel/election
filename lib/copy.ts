@@ -15,6 +15,7 @@ const fill = (s: string, vars: Record<string, string | number>) =>
 
 export const COPY = {
   title: "מטה המאבק כוח 43",
+  footer: "נבנה ע״י נורית",
   subtitle: "משחק הניחושים של המשרד לבחירות לכנסת ה-26",
   joinButton: "מתגייסים למטה",
   joinNameLabel: "שם פרטי או כינוי",

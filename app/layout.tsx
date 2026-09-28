@@ -20,8 +20,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="he" dir="rtl" className={`${secular.variable} ${assistant.variable}`}>
-      <body className="min-h-dvh">
-        <main className="mx-auto w-full max-w-[720px] px-4 pb-16 pt-6">{children}</main>
+      <body className="flex min-h-dvh flex-col">
+        <main className="mx-auto w-full max-w-[720px] flex-1 px-4 pb-16 pt-6">{children}</main>
+        <footer className="mx-auto w-full max-w-[720px] px-4 pb-6 text-center text-sm opacity-60">{COPY.footer}</footer>
       </body>
     </html>
   );
