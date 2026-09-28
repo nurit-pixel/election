@@ -20,5 +20,7 @@ export async function GET() {
     }
   }
   // Railway healthcheck צריך 200 גם כשה-DB לא מוגדר, כדי שהאבחון יהיה נגיש
-  return Response.json({ ok: db === "ok", env, db });
+  // Railway מספק את מזהה ה-commit שנפרס — כך אפשר לוודא איזו גרסה רצה
+  const version = (process.env.RAILWAY_GIT_COMMIT_SHA ?? "").slice(0, 7) || "local";
+  return Response.json({ ok: db === "ok", version, env, db });
 }
