@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #F5EFE0;
+  --color-ink: #1B2A49;
+  --color-accent: #D62828;
+  --color-ok: #2B7A3D;
+  --font-display: var(--font-secular), "Secular One", sans-serif;
+  --font-body: var(--font-assistant), "Assistant", sans-serif;
+  --radius-card: 6px;
+}
+
+html {
+  background: var(--color-cream);
+}
+
+body {
+  background-color: var(--color-cream);
+  /* טקסטורת נייר עדינה */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+@layer components {
+/* מסגרת בסגנון פתק */
+.box {
+  border: 3px solid #000;
+  border-radius: 6px;
+  background: #fffdf7;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 52px;
+  padding: 0 1.25rem;
+  border: 3px solid #000;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  background: #fffdf7;
+  color: var(--color-ink);
+  box-shadow: 3px 3px 0 #000;
+  transition: transform 0.05s, box-shadow 0.05s;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-ink {
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 0.9rem;
+  border: 3px solid #000;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 1.125rem;
+  color: var(--color-ink);
+}
+.input:focus, .btn:focus-visible, input[type="range"]:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* סליידר: RTL — מתמלא מימין לשמאל. גרדיאנט המילוי מחושב ב-JS לפי --fill */
+input[type="range"].seat {
+  direction: rtl;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  border: 2px solid #000;
+  border-radius: 999px;
+  background: linear-gradient(to left, var(--party) 0 var(--fill), #fff var(--fill) 100%);
+}
+input[type="range"].seat::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #000;
+  cursor: pointer;
+}
+input[type="range"].seat::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #000;
+  cursor: pointer;
+}
+input[type="range"].seat:disabled {
+  opacity: 0.6;
+}
+}

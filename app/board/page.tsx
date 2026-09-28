@@ -1,0 +1,83 @@
+import { redirect } from "next/navigation";
+import { getPlayerId, isAdmin } from "@/lib/auth";
+import { loadBoard } from "@/lib/board";
+import { COPY } from "@/lib/copy";
+import { PARTIES, PM_PARTIES } from "@/lib/parties";
+import AutoRefresh from "@/components/AutoRefresh";
+import HBarChart from "@/components/BoardCharts";
+import Leaderboard from "@/components/Leaderboard";
+import TopBar from "@/components/TopBar";
+
+export const dynamic = "force-dynamic";
+
+export default async function BoardPage() {
+  if (!(await getPlayerId()) && !(await isAdmin())) redirect("/");
+  const { results, players, bets, ranking } = await loadBoard();
+  const mode = results.mode;
+
+  const n = bets.length;
+  const avg = PARTIES.map((p) => ({
+    label: p.name,
+    value: n ? bets.reduce((s, b) => s + (b.seats[p.key] ?? 0), 0) / n : 0,
+  })).sort((a, b) => b.value - a.value);
+
+  const pmCounts = new Map<string, number>();
+  for (const b of bets) {
+    const key = b.pm.startsWith("other:") ? "other" : b.pm;
+    pmCounts.set(key, (pmCounts.get(key) ?? 0) + 1);
+  }
+  const pmData = [
+    ...PM_PARTIES.map((p) => ({ label: p.leader || p.name, value: pmCounts.get(p.key) ?? 0 })),
+    { label: "מישהו אחר", value: pmCounts.get("other") ?? 0 },
+    { label: "אין ממשלה", value: pmCounts.get("none") ?? 0 },
+  ]
+    .filter((r) => r.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const recruits = players.filter((p) => p.hasBet);
+
+  return (
+    <>
+      <AutoRefresh seconds={60} />
+      <TopBar links={[{ href: "/", label: COPY.toBet }]} />
+
+      {mode !== "none" && (
+        <section className="mb-10">
+          {mode === "exit_poll" && (
+            <p className="box mb-3 inline-block -rotate-1 bg-accent px-3 py-1 font-display text-xl text-white">
+              {COPY.exitPollLabel}
+            </p>
+          )}
+          <h1 className="mb-4 text-5xl">{mode === "official" ? "הדירוג הסופי" : "דירוג ביניים"}</h1>
+          {ranking.length ? <Leaderboard rows={ranking} /> : <p className="box p-4">עוד לא חושב ניקוד. רגע.</p>}
+        </section>
+      )}
+
+      <section className="space-y-6">
+        <h1 className={mode === "none" ? "text-5xl" : "text-4xl"}>{COPY.boardBefore}</h1>
+        <p className="font-display text-2xl">{COPY.recruits(recruits.length)}</p>
+        {recruits.length === 0 ? (
+          <p className="box p-4">{COPY.noBetsYet}</p>
+        ) : (
+          <>
+            <ul className="flex flex-wrap gap-2">
+              {recruits.map((p) => (
+                <li key={p.id} className="rounded-[6px] border-2 border-black bg-white px-2 py-0.5">
+                  {p.name}
+                </li>
+              ))}
+            </ul>
+            <div className="box p-3">
+              <h2 className="mb-2 text-2xl">{COPY.avgSeats}</h2>
+              <HBarChart data={avg} unit="מנדטים" decimals={1} />
+            </div>
+            <div className="box p-3">
+              <h2 className="mb-2 text-2xl">{COPY.pmDistribution}</h2>
+              <HBarChart data={pmData} unit="קולות" />
+            </div>
+          </>
+        )}
+      </section>
+    </>
+  );
+}
