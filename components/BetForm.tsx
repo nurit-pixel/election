@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BONUS, COPY } from "@/lib/copy";
-import { PARTIES, PM_PARTIES, TOTAL_SEATS } from "@/lib/parties";
+import { PARTIES, PARTY_BY_KEY, PM_PARTIES, TOTAL_SEATS } from "@/lib/parties";
 import type { Bet } from "@/lib/scoring";
 import { betToDraft, draftToBet, emptyDraft, PM_OTHER_MAX, seatSum, type Draft } from "@/lib/validate";
 import PartyCard from "./PartyCard";
@@ -11,6 +11,7 @@ import SeatSlider from "./SeatSlider";
 import StickyCounter from "./StickyCounter";
 import PmCard from "./PmCard";
 import BonusToggle from "./BonusToggle";
+import BallotDrop from "./BallotDrop";
 
 type Props = { playerId: string; initialBet: Bet | null; locked: boolean };
 
@@ -23,6 +24,7 @@ export default function BetForm({ playerId, initialBet, locked }: Props) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
   const dirty = useRef(false);
 
   // טיוטה מ-localStorage גוברת על ההימור השמור (היא נמחקת אחרי שליחה מוצלחת)
@@ -79,6 +81,12 @@ export default function BetForm({ playerId, initialBet, locked }: Props) {
       try {
         localStorage.removeItem(draftKey(playerId));
       } catch {}
+      // אנימציית הקלפי, ואז לדף האישור (מיד למי שביקש פחות תנועה)
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      if (!reduced) {
+        setCelebrate(true);
+        await new Promise((r) => setTimeout(r, 2100));
+      }
       router.push("/done");
       router.refresh();
     } catch {
@@ -90,13 +98,14 @@ export default function BetForm({ playerId, initialBet, locked }: Props) {
 
   return (
     <div className="space-y-8">
+      {celebrate && <BallotDrop letters={topLetters(draft.seats)} />}
       {locked && <p className="box border-accent/60 p-4 text-center font-display text-2xl glow-red">{COPY.locked}</p>}
 
       <section aria-labelledby="sec-seats">
         <h2 id="sec-seats" className="mb-2 text-4xl">
           {COPY.sectionSeats}
         </h2>
-        <StickyCounter sum={sum} />
+        <StickyCounter sum={sum} seats={draft.seats} />
         <div className="mt-2 space-y-3">
           {PARTIES.map((p) => (
             <PartyCard key={p.key} party={p}>
@@ -221,4 +230,10 @@ export default function BetForm({ playerId, initialBet, locked }: Props) {
       )}
     </div>
   );
+}
+
+// אות הפתק של המפלגה הגדולה בהימור — מופיעה על הפתק באנימציה
+function topLetters(seats: Record<string, number>) {
+  const top = Object.entries(seats).sort((a, b) => b[1] - a[1])[0];
+  return (top && PARTY_BY_KEY[top[0]]?.letters) || "43";
 }

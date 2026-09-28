@@ -3,6 +3,11 @@ import { getPlayerId, isAdmin } from "@/lib/auth";
 import { loadBoard } from "@/lib/board";
 import { COPY } from "@/lib/copy";
 import { PARTIES, PM_PARTIES } from "@/lib/parties";
+import { largestRemainder } from "@/lib/hemicycle";
+import type { BadgeKey } from "@/lib/badges";
+import BadgeCards, { BadgeIcons } from "@/components/BadgeCards";
+import RevealOverlay from "@/components/RevealOverlay";
+import SeatMap from "@/components/SeatMap";
 import AutoRefresh from "@/components/AutoRefresh";
 import HBarChart from "@/components/BoardCharts";
 import Leaderboard from "@/components/Leaderboard";
@@ -12,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function BoardPage() {
   if (!(await getPlayerId()) && !(await isAdmin())) redirect("/");
-  const { results, players, bets, ranking } = await loadBoard();
+  const { results, players, bets, ranking, badges, playerBadges } = await loadBoard();
   const mode = results.mode;
 
   const n = bets.length;
@@ -35,10 +40,20 @@ export default async function BoardPage() {
     .sort((a, b) => b.value - a.value);
 
   const recruits = players.filter((p) => p.hasBet);
+  const nameById = new Map(players.map((p) => [p.id, p.name]));
+  const badgeNames = Object.fromEntries(
+    Object.entries(badges).map(([k, id]) => [k, nameById.get(id) ?? "?"]),
+  ) as Partial<Record<BadgeKey, string>>;
+  // "הכנסת לפי המשרד": ממוצע ההימורים, מעוגל ל-120 מושבים שלמים
+  const officeSeats = largestRemainder(
+    Object.fromEntries(PARTIES.map((p) => [p.key, n ? bets.reduce((s, b) => s + (b.seats[p.key] ?? 0), 0) / n : 0])),
+  );
+  const version = `${mode}:${results.updated_at ?? ""}`;
 
   return (
     <>
       <AutoRefresh seconds={60} />
+      <RevealOverlay mode={mode} />
       <TopBar links={[{ href: "/", label: COPY.toBet }]} />
 
       {mode !== "none" && (
@@ -50,7 +65,16 @@ export default async function BoardPage() {
             </p>
           )}
           <h1 className="mb-4 text-5xl">{mode === "official" ? "הדירוג הסופי" : "דירוג ביניים"}</h1>
-          {ranking.length ? <Leaderboard rows={ranking} /> : <p className="box p-4">עוד לא חושב ניקוד. רגע.</p>}
+          {ranking.length ? (
+            <Leaderboard rows={ranking} version={version} badges={playerBadges} />
+          ) : (
+            <p className="box p-4">עוד לא חושב ניקוד. רגע.</p>
+          )}
+          {results.seats && (
+            <div className="mt-6">
+              <SeatMap seats={results.seats} title={mode === "official" ? "הכנסת ה-26 — תוצאות רשמיות" : "הכנסת לפי המדגמים"} />
+            </div>
+          )}
         </section>
       )}
 
@@ -65,9 +89,12 @@ export default async function BoardPage() {
               {recruits.map((p) => (
                 <li key={p.id} className="chip">
                   {p.name}
+                  <BadgeIcons keys={playerBadges[p.id]} />
                 </li>
               ))}
             </ul>
+            <BadgeCards holders={badgeNames} />
+            <SeatMap seats={officeSeats} title="הכנסת לפי המשרד" center={String(n)} sub="הימורים" />
             <div className="box p-3">
               <h2 className="mb-2 text-2xl">{COPY.avgSeats}</h2>
               <HBarChart data={avg} unit="מנדטים" decimals={1} />

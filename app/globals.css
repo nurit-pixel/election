@@ -213,3 +213,45 @@ h1, h2, h3, .font-display {
     opacity: 0.5;
   }
 }
+
+/* ── רגע השליחה: פתק נופל לקלפי ── */
+@keyframes ballot-drop {
+  0% { transform: translate(-50%, -140px) rotate(-6deg) scaleY(1); opacity: 0; }
+  15% { opacity: 1; }
+  45% { transform: translate(-50%, -60px) rotate(0deg) scaleY(1); }
+  60% { transform: translate(-50%, -40px) scaleY(0.45); }
+  100% { transform: translate(-50%, 40px) scaleY(0.45); opacity: 1; }
+}
+@keyframes stamp-in {
+  0% { transform: translate(-50%, -50%) scale(2.6) rotate(-14deg); opacity: 0; }
+  60% { transform: translate(-50%, -50%) scale(0.92) rotate(-10deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(-10deg); opacity: 1; }
+}
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--dx), 105vh, 0) rotate(var(--rot)); opacity: 0.9; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── חשיפת תוצאות ── */
+@keyframes count-pop {
+  0% { transform: scale(2.2); opacity: 0; }
+  30% { transform: scale(1); opacity: 1; }
+  80% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
+@keyframes slide-in-row {
+  from { transform: translateX(-24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes flash-row {
+  0% { background-color: rgb(34 211 238 / 0.28); }
+  100% { background-color: transparent; }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}

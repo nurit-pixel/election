@@ -2,6 +2,8 @@ import "server-only";
 import { supabaseServer } from "./supabase";
 import { getResults, type BetRow, type ResultsRow } from "./data";
 import { rank, tier, type Score } from "./scoring";
+import { badgesByPlayer, computeBadges, type BadgeKey } from "./badges";
+import { PARTY_KEYS } from "./parties";
 
 export type BoardEntry = Score & {
   player_id: string;
@@ -17,6 +19,10 @@ export type BoardData = {
   players: { id: string; name: string; hasBet: boolean }[];
   bets: BetRow[];
   ranking: BoardEntry[];
+  /** תג → מזהה השחקן שמחזיק בו */
+  badges: Partial<Record<BadgeKey, string>>;
+  /** מזהה שחקן → התגים שלו */
+  playerBadges: Record<string, BadgeKey[]>;
 };
 
 export async function loadBoard(): Promise<BoardData> {
@@ -41,10 +47,14 @@ export async function loadBoard(): Promise<BoardData> {
       return { ...s, name: nameBy.get(s.player_id) ?? "?", submitted_at: bet.submitted_at, tier: tier(s.total), bet };
     });
 
+  const badges = computeBadges(bets.data as BetRow[], PARTY_KEYS);
+
   return {
     results,
     players: players.data.map((p) => ({ id: p.id, name: p.name, hasBet: betBy.has(p.id) })),
     bets: bets.data as BetRow[],
     ranking: rank(rows),
+    badges,
+    playerBadges: badgesByPlayer(badges),
   };
 }

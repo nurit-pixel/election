@@ -16,7 +16,12 @@ export default function HBarChart({ data, unit, decimals = 0 }: { data: Row[]; u
           <span className="h-5">
             <span
               className="block h-full rounded-l-[4px] bg-gradient-to-l from-cyan/60 to-cyan shadow-[0_0_12px_rgb(34_211_238/0.45)]"
-              style={{ width: `${(d.value / max) * 100}%`, minWidth: d.value > 0 ? 2 : 0 }}
+              style={{
+                width: `${(d.value / max) * 100}%`,
+                minWidth: d.value > 0 ? 2 : 0,
+                transformOrigin: "right",
+                animation: "grow-x 0.9s cubic-bezier(.2,.8,.2,1) both",
+              }}
             />
           </span>
           <span className="text-left font-bold tabular-nums">{d.value.toFixed(decimals)}</span>

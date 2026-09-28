@@ -1,7 +1,7 @@
 import { BONUS, COPY } from "@/lib/copy";
 import { PARTIES } from "@/lib/parties";
 import type { Bet } from "@/lib/scoring";
-import { pmLabel } from "./ShareCard";
+import { pmLabel } from "@/lib/betLabels";
 
 // ההימור המלא של שחקן (נפתח בלחיצה על שורה בלוח)
 export default function BetDetails({ bet }: { bet: Bet }) {

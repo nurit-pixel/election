@@ -2,24 +2,13 @@
 
 import { forwardRef } from "react";
 import { COPY } from "@/lib/copy";
-import { PARTY_BY_KEY } from "@/lib/parties";
 import type { Bet } from "@/lib/scoring";
 import PartyImage from "./PartyImage";
+import Hemicycle, { segmentsFrom } from "./Hemicycle";
+import { PARTIES } from "@/lib/parties";
+import { pmLabel, topParties } from "@/lib/betLabels";
 
-export function pmLabel(pm: string): string {
-  if (pm === "none") return COPY.pmNone;
-  if (pm.startsWith("other:")) return pm.slice(6);
-  const p = PARTY_BY_KEY[pm];
-  return p ? p.leader || p.name : pm;
-}
-
-export function topParties(bet: Bet, n = 3) {
-  return Object.entries(bet.seats)
-    .filter(([k, v]) => v > 0 && PARTY_BY_KEY[k])
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, n)
-    .map(([k, v]) => ({ party: PARTY_BY_KEY[k], seats: v }));
-}
+export { pmLabel, topParties } from "@/lib/betLabels";
 
 const DISPLAY = "var(--font-secular), 'Secular One', sans-serif";
 const BODY = "var(--font-assistant), Assistant, sans-serif";
@@ -27,7 +16,6 @@ const BODY = "var(--font-assistant), Assistant, sans-serif";
 // ריבוע 1080×1080 בסגנון מסך שידור של ליל בחירות. מוצג מוקטן; html-to-image מצלם את הצומת בגודל המלא.
 const ShareCard = forwardRef<HTMLDivElement, { name: string; bet: Bet }>(function ShareCard({ name, bet }, ref) {
   const top = topParties(bet);
-  const max = Math.max(1, ...top.map((t) => t.seats));
   return (
     <div
       ref={ref}
@@ -103,26 +91,20 @@ const ShareCard = forwardRef<HTMLDivElement, { name: string; bet: Bet }>(functio
         </div>
       </div>
 
-      <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ fontSize: 30, color: "#93a0c8" }}>{COPY.shareCardTop3}</div>
-        {top.map(({ party, seats }) => (
-          <div key={party.key} style={{ display: "flex", alignItems: "center", gap: 22 }}>
-            <PartyImage partyKey={party.key} size={70} />
-            <div style={{ width: 300, fontFamily: DISPLAY, fontSize: 44, whiteSpace: "nowrap", overflow: "hidden" }}>{party.name}</div>
-            <div style={{ flex: 1, height: 26, borderRadius: 999, background: "rgba(125,160,255,0.15)", overflow: "hidden" }}>
-              <div
-                style={{
-                  width: `${(seats / max) * 100}%`,
-                  height: "100%",
-                  borderRadius: 999,
-                  background: party.color,
-                  boxShadow: `0 0 20px ${party.color}`,
-                }}
-              />
+      <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", alignItems: "center", gap: 36 }}>
+        <div style={{ width: 380, display: "flex", flexDirection: "column", gap: 18 }}>
+          <div style={{ fontSize: 30, color: "#93a0c8" }}>{COPY.shareCardTop3}</div>
+          {top.map(({ party, seats }) => (
+            <div key={party.key} style={{ display: "flex", alignItems: "center", gap: 18 }}>
+              <PartyImage partyKey={party.key} size={62} />
+              <div style={{ flex: 1, fontFamily: DISPLAY, fontSize: 40, whiteSpace: "nowrap", overflow: "hidden" }}>{party.name}</div>
+              <div style={{ fontFamily: DISPLAY, fontSize: 58, lineHeight: 1, color: party.color, textShadow: `0 0 18px ${party.color}` }}>{seats}</div>
             </div>
-            <div style={{ width: 110, textAlign: "center", fontFamily: DISPLAY, fontSize: 64, lineHeight: 1 }}>{seats}</div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div style={{ flex: 1 }}>
+          <Hemicycle segments={segmentsFrom(bet.seats, PARTIES)} center="120" sub="מושבים" className="w-full" title="הכנסת שלי" />
+        </div>
       </div>
 
       <div

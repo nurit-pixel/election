@@ -107,7 +107,7 @@ export default function AdminPanel({ results, locked, lockAt }: Props) {
 
       <section>
         <h2 className="mb-2 text-3xl">{COPY.sectionSeats}</h2>
-        <StickyCounter sum={seatSum(seats)} />
+        <StickyCounter sum={seatSum(seats)} seats={seats} />
         <div className="mt-2 space-y-3">
           {PARTIES.map((p) => (
             <PartyCard key={p.key} party={p}>
