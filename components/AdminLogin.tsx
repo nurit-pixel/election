@@ -26,7 +26,7 @@ export default function AdminLogin() {
         <span className="mb-1 block font-semibold">{COPY.admin.codeLabel}</span>
         <input className="input" type="password" dir="ltr" value={code} onChange={(e) => setCode(e.target.value)} />
       </label>
-      {error && <p className="text-accent">{COPY.joinWrongCode}</p>}
+      {error && <p className="text-accent">{COPY.adminWrongCode}</p>}
       <button className="btn btn-ink w-full">{COPY.admin.enter}</button>
     </form>
   );

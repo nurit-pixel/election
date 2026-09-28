@@ -2,8 +2,8 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
-// ה-cookie חתום ב-HMAC עם OFFICE_CODE / ADMIN_CODE:
-// לא אפשר לזייף player_id, והחלפת קוד מנתקת את כולם.
+// ה-cookie חתום ב-HMAC: אי אפשר לזייף player_id של שחקן אחר.
+// מפתח החתימה לשחקנים: SESSION_SECRET אם הוגדר, אחרת ה-service role key (קיים תמיד בשרת).
 export const PLAYER_COOKIE = "k43_player";
 export const ADMIN_COOKIE = "k43_admin";
 const NINETY_DAYS = 60 * 60 * 24 * 90;
@@ -18,9 +18,8 @@ export function safeEqual(a: string, b: string) {
   return ab.length === bb.length && timingSafeEqual(ab, bb);
 }
 
-export function checkOfficeCode(code: unknown) {
-  const expected = process.env.OFFICE_CODE;
-  return !!expected && typeof code === "string" && safeEqual(code.trim(), expected);
+function playerSecret() {
+  return process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
 }
 
 export function checkAdminCode(code: unknown) {
@@ -38,11 +37,11 @@ const cookieOpts = {
 
 export async function setPlayerCookie(playerId: string) {
   const jar = await cookies();
-  jar.set(PLAYER_COOKIE, `${playerId}.${sign(playerId, process.env.OFFICE_CODE!)}`, cookieOpts);
+  jar.set(PLAYER_COOKIE, `${playerId}.${sign(playerId, playerSecret()!)}`, cookieOpts);
 }
 
 export async function getPlayerId(): Promise<string | null> {
-  const secret = process.env.OFFICE_CODE;
+  const secret = playerSecret();
   if (!secret) return null;
   const raw = (await cookies()).get(PLAYER_COOKIE)?.value;
   if (!raw) return null;

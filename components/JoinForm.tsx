@@ -7,7 +7,6 @@ import { COPY } from "@/lib/copy";
 export default function JoinForm() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -20,10 +19,9 @@ export default function JoinForm() {
       const res = await fetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, code }),
+        body: JSON.stringify({ name }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.status === 401) return setError(COPY.joinWrongCode);
       if (res.status === 409) return setError(COPY.joinNameTaken(data.name ?? name.trim()));
       if (!res.ok) return setError(COPY.genericError);
       router.push(data.hasBet ? "/done" : "/bet");
@@ -45,20 +43,8 @@ export default function JoinForm() {
           onChange={(e) => setName(e.target.value)}
           maxLength={30}
           autoComplete="given-name"
-          enterKeyHint="next"
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1 block font-semibold">{COPY.joinCodeLabel}</span>
-        <input
-          className="input"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          dir="ltr"
           enterKeyHint="go"
+          autoFocus
         />
       </label>
       {error && (

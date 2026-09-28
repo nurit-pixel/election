@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { checkOfficeCode, getPlayerId, setPlayerCookie } from "@/lib/auth";
+import { getPlayerId, setPlayerCookie } from "@/lib/auth";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizeName } from "@/lib/validate";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
-  if (!checkOfficeCode(body.code)) return NextResponse.json({ error: "bad_code" }, { status: 401 });
   const name = normalizeName(body.name);
   if (!name) return NextResponse.json({ error: "missing_name" }, { status: 400 });
 

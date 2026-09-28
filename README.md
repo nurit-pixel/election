@@ -19,7 +19,7 @@ npm run lint                 # typecheck
 | `NEXT_PUBLIC_SUPABASE_URL` | כתובת פרויקט ה-Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key (בפועל כל הטבלאות חסומות ל-anon) |
 | `SUPABASE_SERVICE_ROLE_KEY` | service role key — **רק בשרת**, אף פעם לא עם `NEXT_PUBLIC_` |
-| `OFFICE_CODE` | קוד הכניסה שנשלח במייל ההשקה. החלפה שלו מנתקת את כל השחקנים |
+| `SESSION_SECRET` | אופציונלי. מפתח לחתימת ה-cookie של השחקנים (ברירת מחדל: ה-service role key). החלפה שלו מנתקת את כל השחקנים |
 | `ADMIN_CODE` | קוד חדר המצב (`/admin`) |
 | `LOCK_AT` | מועד נעילת הטופס (ISO). ברירת מחדל `2026-10-27T22:00:00+03:00` — ראו הערה ב-`NOTES.md` על שעון החורף |
 
