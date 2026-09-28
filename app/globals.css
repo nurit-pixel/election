@@ -1,28 +1,50 @@
 @import "tailwindcss";
 
+/* עיצוב "אולפן ליל בחירות": רקע כהה, ניאון אדום/ציאן, מספרים זוהרים */
 @theme {
-  --color-cream: #F5EFE0;
-  --color-ink: #1B2A49;
-  --color-accent: #D62828;
-  --color-ok: #2B7A3D;
+  --color-bg: #060a18;
+  --color-surface: #0e1531;
+  --color-surface-2: #17214a;
+  --color-fg: #eef2ff;
+  --color-muted: #93a0c8;
+  --color-line: rgb(125 160 255 / 0.18);
+  --color-accent: #ff2d55;
+  --color-cyan: #22d3ee;
+  --color-ok: #1ee58a;
+  --color-gold: #ffd166;
   --font-display: var(--font-secular), "Secular One", sans-serif;
   --font-body: var(--font-assistant), "Assistant", sans-serif;
-  --radius-card: 6px;
 }
 
 html {
-  background: var(--color-cream);
+  background: var(--color-bg);
+  color-scheme: dark;
 }
 
 body {
-  background-color: var(--color-cream);
-  /* טקסטורת נייר עדינה */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.15 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  color: var(--color-ink);
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(900px 500px at 100% -10%, rgb(34 211 238 / 0.14), transparent 60%),
+    radial-gradient(800px 500px at -10% 0%, rgb(255 45 85 / 0.16), transparent 60%),
+    linear-gradient(rgb(125 160 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(125 160 255 / 0.05) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  background-attachment: fixed;
+  color: var(--color-fg);
   font-family: var(--font-body);
   font-size: 18px;
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* קווי סריקה עדינים של מסך טלוויזיה */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 3px);
 }
 
 h1, h2, h3, .font-display {
@@ -31,93 +53,163 @@ h1, h2, h3, .font-display {
   line-height: 1.1;
 }
 
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgb(255 45 85 / 0.7); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 6px rgb(255 45 85 / 0); }
+}
+
+/* טיקר: בעברית הטקסט נכנס משמאל ונע ימינה */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(50%); }
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @layer components {
-/* מסגרת בסגנון פתק */
-.box {
-  border: 3px solid #000;
-  border-radius: 6px;
-  background: #fffdf7;
-}
+  .box {
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgb(23 33 74 / 0.85), rgb(14 21 49 / 0.9));
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 52px;
-  padding: 0 1.25rem;
-  border: 3px solid #000;
-  border-radius: 6px;
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  background: #fffdf7;
-  color: var(--color-ink);
-  box-shadow: 3px 3px 0 #000;
-  transition: transform 0.05s, box-shadow 0.05s;
-  cursor: pointer;
-  text-decoration: none;
-}
-.btn:active:not(:disabled) {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 #000;
-}
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-.btn-primary {
-  background: var(--color-accent);
-  color: #fff;
-}
-.btn-ink {
-  background: var(--color-ink);
-  color: #fff;
-}
+  .glow-red {
+    color: var(--color-accent);
+    text-shadow: 0 0 18px rgb(255 45 85 / 0.65);
+  }
+  .glow-cyan {
+    color: var(--color-cyan);
+    text-shadow: 0 0 18px rgb(34 211 238 / 0.6);
+  }
+  .glow-ok {
+    color: var(--color-ok);
+    text-shadow: 0 0 18px rgb(30 229 138 / 0.6);
+  }
 
-.input {
-  width: 100%;
-  min-height: 52px;
-  padding: 0 0.9rem;
-  border: 3px solid #000;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 1.125rem;
-  color: var(--color-ink);
-}
-.input:focus, .btn:focus-visible, input[type="range"]:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
-}
+  .live-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    animation: pulse-dot 1.4s ease-in-out infinite;
+  }
 
-/* סליידר: RTL — מתמלא מימין לשמאל. גרדיאנט המילוי מחושב ב-JS לפי --fill */
-input[type="range"].seat {
-  direction: rtl;
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 14px;
-  border: 2px solid #000;
-  border-radius: 999px;
-  background: linear-gradient(to left, var(--party) 0 var(--fill), #fff var(--fill) 100%);
-}
-input[type="range"].seat::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid #000;
-  cursor: pointer;
-}
-input[type="range"].seat::-moz-range-thumb {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid #000;
-  cursor: pointer;
-}
-input[type="range"].seat:disabled {
-  opacity: 0.6;
-}
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    padding: 0.1rem 0.7rem;
+    background: rgb(23 33 74 / 0.7);
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 52px;
+    padding: 0 1.25rem;
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    background: var(--color-surface-2);
+    color: var(--color-fg);
+    transition: transform 0.08s, box-shadow 0.2s, background 0.2s, border-color 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    border-color: transparent;
+    background: linear-gradient(135deg, #ff2d55, #ff5e3a);
+    color: #fff;
+    box-shadow: 0 0 24px rgb(255 45 85 / 0.45);
+  }
+  /* מצב "נבחר" / כפתור משני מודגש */
+  .btn-ink {
+    border-color: var(--color-cyan);
+    background: rgb(34 211 238 / 0.14);
+    color: var(--color-cyan);
+    box-shadow: 0 0 18px rgb(34 211 238 / 0.3), inset 0 0 12px rgb(34 211 238 / 0.12);
+  }
+
+  .input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 0.9rem;
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    background: rgb(6 10 24 / 0.7);
+    font-size: 1.125rem;
+    color: var(--color-fg);
+  }
+  .input::placeholder {
+    color: var(--color-muted);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 0 3px rgb(34 211 238 / 0.25);
+  }
+  .btn:focus-visible, input[type="range"]:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
+
+  /* סליידר: RTL — מתמלא מימין לשמאל. גרדיאנט המילוי מחושב ב-JS לפי --fill */
+  input[type="range"].seat {
+    direction: rtl;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(to left, var(--party) 0 var(--fill), rgb(125 160 255 / 0.16) var(--fill) 100%);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--party) 45%, transparent);
+  }
+  input[type="range"].seat::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--party);
+    box-shadow: 0 0 12px var(--party);
+    cursor: pointer;
+  }
+  input[type="range"].seat::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--party);
+    box-shadow: 0 0 12px var(--party);
+    cursor: pointer;
+  }
+  input[type="range"].seat:disabled {
+    opacity: 0.5;
+  }
 }

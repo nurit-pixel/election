@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Assistant, Secular_One } from "next/font/google";
 import { COPY } from "@/lib/copy";
+import Ticker from "@/components/Ticker";
 import "./globals.css";
 
 const secular = Secular_One({ weight: "400", subsets: ["hebrew", "latin"], variable: "--font-secular", display: "swap" });
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#F5EFE0",
+  themeColor: "#060A18",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="he" dir="rtl" className={`${secular.variable} ${assistant.variable}`}>
       <body className="flex min-h-dvh flex-col">
         <main className="mx-auto w-full max-w-[720px] flex-1 px-4 pb-16 pt-6">{children}</main>
-        <footer className="mx-auto w-full max-w-[720px] px-4 pb-6 text-center text-sm opacity-60">{COPY.footer}</footer>
+        <footer className="mx-auto w-full max-w-[720px] px-4 pb-16 text-center text-sm text-muted">{COPY.footer}</footer>
+        <Ticker />
       </body>
     </html>
   );

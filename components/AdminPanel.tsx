@@ -194,7 +194,7 @@ export default function AdminPanel({ results, locked, lockAt }: Props) {
         </div>
       </section>
 
-      <section className="sticky bottom-0 -mx-4 space-y-2 border-t-[3px] border-black px-4 py-3" style={{ background: "var(--color-cream)" }}>
+      <section className="sticky bottom-10 z-30 -mx-4 space-y-2 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur">
         {msg && <p className="font-semibold" role="status">{msg}</p>}
         <div className="grid grid-cols-2 gap-2">
           <button className="btn btn-primary text-base" disabled={busy} onClick={save}>

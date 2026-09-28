@@ -13,7 +13,7 @@ export default function Leaderboard({ rows }: { rows: LeaderRow[] }) {
     <div className="box overflow-hidden">
       <table className="w-full border-collapse text-right">
         <thead>
-          <tr className="border-b-[3px] border-black bg-ink text-white">
+          <tr className="border-b border-line bg-surface-2 text-muted">
             <th className="px-2 py-2 text-sm font-semibold">{COPY.colPlace}</th>
             <th className="px-2 py-2 text-sm font-semibold">{COPY.colName}</th>
             <th className="px-2 py-2 text-sm font-semibold">{COPY.colPoints}</th>
@@ -26,26 +26,26 @@ export default function Leaderboard({ rows }: { rows: LeaderRow[] }) {
             return (
               <Fragment key={r.player_id}>
                 <tr
-                  className={`cursor-pointer border-b-2 border-black/15 ${top ? "bg-[#fff3c4]" : ""}`}
+                  className={`cursor-pointer border-b border-line transition-colors hover:bg-white/5 ${top ? "bg-gradient-to-l from-gold/15 to-transparent" : ""}`}
                   onClick={() => setOpen(isOpen ? null : r.player_id)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setOpen(isOpen ? null : r.player_id))}
                   tabIndex={0}
                   aria-expanded={isOpen}
                 >
-                  <td className={`w-12 px-2 py-2 text-center font-display tabular-nums ${top ? "text-3xl text-accent" : "text-xl"}`}>
+                  <td className={`w-12 px-2 py-2 text-center font-display tabular-nums ${r.place === 1 ? "text-4xl text-gold [text-shadow:0_0_18px_rgb(255_209_102/0.7)]" : top ? "text-3xl glow-red" : "text-xl text-muted"}`}>
                     {r.place}
                   </td>
                   <td className="px-2 py-2">
                     <div className={top ? "font-display text-xl" : "font-semibold"}>{r.name}</div>
-                    <div className="text-sm opacity-75">{r.tier}</div>
-                    <div className="text-xs opacity-60">{COPY.breakdown(r.seat_pts, r.pm_pts, r.bloc_pts, r.bonus_pts)}</div>
+                    <div className="text-sm text-cyan">{r.tier}</div>
+                    <div className="text-xs text-muted">{COPY.breakdown(r.seat_pts, r.pm_pts, r.bloc_pts, r.bonus_pts)}</div>
                   </td>
-                  <td className={`w-16 px-2 py-2 text-center font-display tabular-nums ${top ? "text-3xl" : "text-2xl"}`}>
+                  <td className={`w-16 px-2 py-2 text-center font-display tabular-nums ${top ? "text-3xl glow-cyan" : "text-2xl"}`}>
                     {r.total}
                   </td>
                 </tr>
                 {isOpen && (
-                  <tr className="border-b-2 border-black/15 bg-white">
+                  <tr className="border-b border-line bg-bg/60">
                     <td colSpan={3} className="px-3 py-3">
                       <BetDetails bet={r.bet} />
                     </td>

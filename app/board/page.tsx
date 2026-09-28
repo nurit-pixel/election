@@ -44,8 +44,9 @@ export default async function BoardPage() {
       {mode !== "none" && (
         <section className="mb-10">
           {mode === "exit_poll" && (
-            <p className="box mb-3 inline-block -rotate-1 bg-accent px-3 py-1 font-display text-xl text-white">
-              {COPY.exitPollLabel}
+            <p className="chip mb-3 border-accent/60 bg-accent/15 px-3 py-1 font-display text-lg">
+              <span className="live-dot" />
+              <span className="glow-red">{COPY.exitPollLabel}</span>
             </p>
           )}
           <h1 className="mb-4 text-5xl">{mode === "official" ? "הדירוג הסופי" : "דירוג ביניים"}</h1>
@@ -62,7 +63,7 @@ export default async function BoardPage() {
           <>
             <ul className="flex flex-wrap gap-2">
               {recruits.map((p) => (
-                <li key={p.id} className="rounded-[6px] border-2 border-black bg-white px-2 py-0.5">
+                <li key={p.id} className="chip">
                   {p.name}
                 </li>
               ))}

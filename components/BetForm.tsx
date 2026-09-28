@@ -90,7 +90,7 @@ export default function BetForm({ playerId, initialBet, locked }: Props) {
 
   return (
     <div className="space-y-8">
-      {locked && <p className="box bg-ink p-4 text-center font-display text-2xl text-white">{COPY.locked}</p>}
+      {locked && <p className="box border-accent/60 p-4 text-center font-display text-2xl glow-red">{COPY.locked}</p>}
 
       <section aria-labelledby="sec-seats">
         <h2 id="sec-seats" className="mb-2 text-4xl">
@@ -160,7 +160,7 @@ export default function BetForm({ playerId, initialBet, locked }: Props) {
         <h2 id="sec-bloc" className="mb-1 text-4xl">
           {COPY.sectionBloc}
         </h2>
-        <p className="mb-3 opacity-80">{COPY.sectionBlocHint}</p>
+        <p className="mb-3 text-muted">{COPY.sectionBlocHint}</p>
         <div className="grid grid-cols-2 gap-3">
           {(["coalition", "opposition"] as const).map((b) => (
             <button
@@ -197,7 +197,7 @@ export default function BetForm({ playerId, initialBet, locked }: Props) {
       {!locked && (
         <div className="space-y-3">
           {tried && problems.length > 0 && (
-            <ul className="box space-y-1 border-accent p-3 text-accent" role="alert">
+            <ul className="box space-y-1 border-accent/60 p-3 text-accent" role="alert">
               {problems.map((p) => (
                 <li key={p}>• {p}</li>
               ))}

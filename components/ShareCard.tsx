@@ -21,9 +21,13 @@ export function topParties(bet: Bet, n = 3) {
     .map(([k, v]) => ({ party: PARTY_BY_KEY[k], seats: v }));
 }
 
-// ריבוע 1080×1080 בעיצוב פתק הצבעה. מוצג מוקטן; html-to-image מצלם את הצומת בגודל המלא.
+const DISPLAY = "var(--font-secular), 'Secular One', sans-serif";
+const BODY = "var(--font-assistant), Assistant, sans-serif";
+
+// ריבוע 1080×1080 בסגנון מסך שידור של ליל בחירות. מוצג מוקטן; html-to-image מצלם את הצומת בגודל המלא.
 const ShareCard = forwardRef<HTMLDivElement, { name: string; bet: Bet }>(function ShareCard({ name, bet }, ref) {
   const top = topParties(bet);
+  const max = Math.max(1, ...top.map((t) => t.seats));
   return (
     <div
       ref={ref}
@@ -31,102 +35,112 @@ const ShareCard = forwardRef<HTMLDivElement, { name: string; bet: Bet }>(functio
       style={{
         width: 1080,
         height: 1080,
-        background: "#F5EFE0",
-        color: "#1B2A49",
-        fontFamily: "var(--font-assistant), Assistant, sans-serif",
-        padding: 56,
+        position: "relative",
+        overflow: "hidden",
+        color: "#eef2ff",
+        fontFamily: BODY,
+        background:
+          "radial-gradient(700px 420px at 100% 0%, rgba(34,211,238,0.22), transparent 60%), radial-gradient(700px 480px at 0% 10%, rgba(255,45,85,0.25), transparent 60%), #060a18",
         boxSizing: "border-box",
+        padding: 64,
+        display: "flex",
+        flexDirection: "column",
+        gap: 34,
       }}
     >
+      {/* רשת רקע */}
       <div
         style={{
-          height: "100%",
-          border: "10px solid #000",
-          borderRadius: 18,
-          background: "#fffdf7",
-          padding: "44px 56px",
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "column",
-          gap: 18,
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "linear-gradient(rgba(125,160,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(125,160,255,0.07) 1px, transparent 1px)",
+          backgroundSize: "54px 54px",
+        }}
+      />
+
+      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontFamily: DISPLAY, fontSize: 58, lineHeight: 1 }}>
+          מטה המאבק{" "}
+          <span style={{ color: "#ff2d55", textShadow: "0 0 30px rgba(255,45,85,0.7)" }}>כוח 43</span>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            border: "2px solid rgba(255,45,85,0.7)",
+            borderRadius: 999,
+            padding: "8px 24px",
+            fontFamily: DISPLAY,
+            fontSize: 32,
+            background: "rgba(255,45,85,0.14)",
+          }}
+        >
+          <span style={{ width: 18, height: 18, borderRadius: 999, background: "#ff2d55", boxShadow: "0 0 18px #ff2d55" }} />
+          <span style={{ color: "#ff2d55" }}>LIVE</span>
+        </div>
+      </div>
+
+      <div style={{ position: "relative" }}>
+        <div style={{ fontSize: 34, color: "#93a0c8" }}>התחזית של</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 110, lineHeight: 1, textShadow: "0 0 40px rgba(34,211,238,0.35)" }}>{name}</div>
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          border: "2px solid rgba(34,211,238,0.5)",
+          borderRadius: 24,
+          padding: "22px 32px",
+          background: "rgba(34,211,238,0.08)",
+          boxShadow: "0 0 40px rgba(34,211,238,0.18)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-secular), 'Secular One', sans-serif", fontSize: 70, lineHeight: 1 }}>
-              מטה המאבק
+        <div style={{ fontSize: 30, color: "#93a0c8" }}>{COPY.shareCardPm}</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 64, lineHeight: 1.1, color: "#22d3ee", textShadow: "0 0 24px rgba(34,211,238,0.6)" }}>
+          {pmLabel(bet.pm)}
+        </div>
+      </div>
+
+      <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ fontSize: 30, color: "#93a0c8" }}>{COPY.shareCardTop3}</div>
+        {top.map(({ party, seats }) => (
+          <div key={party.key} style={{ display: "flex", alignItems: "center", gap: 22 }}>
+            <PartyImage partyKey={party.key} size={70} />
+            <div style={{ width: 300, fontFamily: DISPLAY, fontSize: 44, whiteSpace: "nowrap", overflow: "hidden" }}>{party.name}</div>
+            <div style={{ flex: 1, height: 26, borderRadius: 999, background: "rgba(125,160,255,0.15)", overflow: "hidden" }}>
+              <div
+                style={{
+                  width: `${(seats / max) * 100}%`,
+                  height: "100%",
+                  borderRadius: 999,
+                  background: party.color,
+                  boxShadow: `0 0 20px ${party.color}`,
+                }}
+              />
             </div>
-            <div
-              style={{
-                fontFamily: "var(--font-secular), 'Secular One', sans-serif",
-                fontSize: 70,
-                lineHeight: 1.1,
-                color: "#D62828",
-              }}
-            >
-              כוח 43
-            </div>
+            <div style={{ width: 110, textAlign: "center", fontFamily: DISPLAY, fontSize: 64, lineHeight: 1 }}>{seats}</div>
           </div>
-          <div
-            style={{
-              border: "6px solid #D62828",
-              color: "#D62828",
-              borderRadius: 12,
-              padding: "8px 20px",
-              fontFamily: "var(--font-secular), 'Secular One', sans-serif",
-              fontSize: 40,
-              transform: "rotate(-8deg)",
-              marginTop: 12,
-            }}
-          >
-            הצביע/ה ✓
-          </div>
-        </div>
+        ))}
+      </div>
 
-        <div style={{ fontFamily: "var(--font-secular), 'Secular One', sans-serif", fontSize: 80, lineHeight: 1 }}>
-          {name}
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          alignItems: "stretch",
+          height: 60,
+          borderRadius: 14,
+          overflow: "hidden",
+          border: "1px solid rgba(125,160,255,0.25)",
+          background: "rgba(6,10,24,0.8)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", padding: "0 24px", background: "#ff2d55", fontFamily: DISPLAY, fontSize: 30 }}>
+          {COPY.tickerLabel}
         </div>
-
-        <div style={{ borderTop: "5px dashed #000", paddingTop: 16 }}>
-          <div style={{ fontSize: 36, opacity: 0.75 }}>{COPY.shareCardPm}</div>
-          <div style={{ fontFamily: "var(--font-secular), 'Secular One', sans-serif", fontSize: 60, lineHeight: 1.1 }}>
-            {pmLabel(bet.pm)}
-          </div>
-        </div>
-
-        <div style={{ borderTop: "5px dashed #000", paddingTop: 16, flex: 1, minHeight: 0 }}>
-          <div style={{ fontSize: 36, opacity: 0.75, marginBottom: 10 }}>{COPY.shareCardTop3}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {top.map(({ party, seats }) => (
-              <div key={party.key} style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                <PartyImage partyKey={party.key} size={64} />
-                <div
-                  style={{
-                    flex: 1,
-                    fontFamily: "var(--font-secular), 'Secular One', sans-serif",
-                    fontSize: 52,
-                  }}
-                >
-                  {party.name}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-secular), 'Secular One', sans-serif",
-                    fontSize: 58,
-                    minWidth: 100,
-                    textAlign: "center",
-                    border: "5px solid #000",
-                    borderRadius: 12,
-                  }}
-                >
-                  {seats}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ fontSize: 24, opacity: 0.6, textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "0 24px", fontSize: 28, color: "#eef2ff" }}>
           {COPY.subtitle} · {COPY.shareCardFooter}
         </div>
       </div>
