@@ -35,6 +35,15 @@ npm run lint                 # typecheck
 2. Settings → Environment Variables: להגדיר את כל המשתנים שלמעלה (Production + Preview).
 3. Deploy. אחרי שינוי משתני סביבה צריך Redeploy.
 
+## פריסה ל-Railway
+
+1. railway.com ← New Project ← Deploy from GitHub repo ← `nurit-pixel/election`.
+2. בשירות שנוצר ← Variables: להגדיר את משתני הסביבה שלמעלה (Supabase ×3, `ADMIN_CODE`, ואופציונלית `LOCK_AT`, `SESSION_SECRET`).
+3. Settings ← Networking ← Generate Domain, כדי לקבל כתובת ציבורית.
+4. ההגדרות לבנייה ולהרצה נמצאות ב-`railway.json` (build: `npm run build`, start: `npm start` על `$PORT`, בדיקת חיים ב-`/api/health`).
+
+> משתני `NEXT_PUBLIC_*` נכנסים לקוד בזמן הבנייה. אם משנים אותם, צריך Redeploy.
+
 ## החלפת קריקטורות
 
 כל מפלגה מוצגת מ-`public/caricatures/<key>.png` (ריבוע 400×400, רקע שקוף). כל עוד אין PNG, מוצג ה-placeholder `public/caricatures/<key>.svg` (עיגול בצבע המפלגה עם אות הפתק).
