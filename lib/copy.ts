@@ -17,7 +17,7 @@ export const COPY = {
   title: "ליל המדגמים",
   brandA: "ליל",
   brandB: "המדגמים",
-  footer: "נבנה ע״י נורית",
+  footer: "נבנה ע״י נורית תמם",
   live: "LIVE",
   liveSub: "ליל הבחירות 2026",
   tickerLabel: "מבזק",
