@@ -5,7 +5,7 @@ import { COPY } from "@/lib/copy";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-// שעון ספירה לאחור בסגנון לוח תוצאות
+// שעון ספירה לאחור בסגנון לוח תוצאות. הקוביות משמאל לימין (ימים ← שניות), כמו שעון דיגיטלי
 export default function Countdown({ lockAt, className = "" }: { lockAt: string; className?: string }) {
   const [now, setNow] = useState<number | null>(null);
 
@@ -35,7 +35,7 @@ export default function Countdown({ lockAt, className = "" }: { lockAt: string; 
   return (
     <div className={className} role="timer" aria-label={COPY.countdown(d, h)}>
       <p className="mb-2 text-center text-base text-muted">הפתק נסגר בעוד</p>
-      <div className="flex justify-center gap-2" dir="rtl">
+      <div className="flex justify-center gap-2" dir="ltr">
         {cells.map(([v, label]) => (
           <div key={label} className="box min-w-[70px] px-2 py-1.5 text-center">
             <div className="font-display text-4xl tabular-nums glow-cyan">{v}</div>
