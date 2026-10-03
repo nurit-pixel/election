@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { COPY } from "@/lib/copy";
 import type { AdminPlayer } from "@/lib/players";
+import type { HistoryEntry } from "@/lib/historyDiff";
+import BetHistory from "./BetHistory";
 
 const A = COPY.admin;
 
@@ -18,6 +20,16 @@ export default function AdminPlayers({ initial }: { initial: AdminPlayer[] }) {
   const [draftName, setDraftName] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [historyFor, setHistoryFor] = useState<string | null>(null);
+  const [history, setHistory] = useState<{ available: boolean; entries: HistoryEntry[] } | null>(null);
+
+  async function toggleHistory(p: AdminPlayer) {
+    if (historyFor === p.id) return setHistoryFor(null);
+    setHistoryFor(p.id);
+    setHistory(null);
+    const res = await fetch(`/api/players/history?id=${encodeURIComponent(p.id)}`);
+    setHistory(res.ok ? await res.json() : { available: false, entries: [] });
+  }
 
   const shown = useMemo(() => {
     const t = q.trim();
@@ -104,7 +116,7 @@ export default function AdminPlayers({ initial }: { initial: AdminPlayer[] }) {
                   </span>
                 </div>
                 {p.updated_at && <div className="text-xs text-muted">עודכן {fmt(p.updated_at)}</div>}
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     className="btn min-h-10 flex-1 px-2 text-sm"
@@ -116,6 +128,14 @@ export default function AdminPlayers({ initial }: { initial: AdminPlayer[] }) {
                     }}
                   >
                     ✏️ {A.rename}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn min-h-10 flex-1 px-2 text-sm ${historyFor === p.id ? "btn-ink" : ""}`}
+                    aria-expanded={historyFor === p.id}
+                    onClick={() => toggleHistory(p)}
+                  >
+                    🕘 {A.history}
                   </button>
                   {p.hasBet && (
                     <button type="button" className="btn min-h-10 flex-1 px-2 text-sm" disabled={!!busy} onClick={() => reset(p)}>
@@ -131,6 +151,11 @@ export default function AdminPlayers({ initial }: { initial: AdminPlayer[] }) {
                     🗑 {A.remove}
                   </button>
                 </div>
+                {historyFor === p.id && (
+                  <div className="mt-3 border-t border-line pt-3">
+                    {history ? <BetHistory entries={history.entries} available={history.available} /> : <p className="text-sm text-muted">טוען…</p>}
+                  </div>
+                )}
               </>
             )}
           </li>

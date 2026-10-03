@@ -3,6 +3,7 @@ import { getPlayerId } from "@/lib/auth";
 import { getBet, getResults, isLocked, lockAt } from "@/lib/data";
 import { supabaseServer } from "@/lib/supabase";
 import { parseBet } from "@/lib/validate";
+import { addHistory } from "@/lib/history";
 
 export async function GET() {
   const playerId = await getPlayerId();
@@ -27,5 +28,6 @@ export async function POST(req: Request) {
     if (error.code === "23503") return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     return NextResponse.json({ error: "db" }, { status: 500 });
   }
+  await addHistory(playerId, parsed.bet);
   return NextResponse.json({ ok: true });
 }

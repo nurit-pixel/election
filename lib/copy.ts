@@ -111,6 +111,7 @@ export const COPY = {
     saveName: "שמירה",
     cancel: "ביטול",
     resetBet: "איפוס",
+    history: "היסטוריה",
     remove: "מחיקה",
     confirmReset: (name: string) => `לאפס את ההימור של ${name}? השחקן/ית יוכל/תוכל למלא מחדש (עד הנעילה).`,
     confirmRemove: (name: string) => `למחוק את ${name} לגמרי, כולל ההימור והניקוד? אי אפשר לבטל.`,

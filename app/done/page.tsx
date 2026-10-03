@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getPlayerId } from "@/lib/auth";
 import { getBet, getPlayer, isLocked } from "@/lib/data";
 import { loadBoard } from "@/lib/board";
+import { getHistory } from "@/lib/history";
+import BetHistory from "@/components/BetHistory";
 import { pmLabel, topParties } from "@/lib/betLabels";
 import { COPY } from "@/lib/copy";
 import PlayerCard from "@/components/PlayerCard";
@@ -15,7 +17,7 @@ export default async function DonePage() {
   const playerId = await getPlayerId();
   const player = playerId ? await getPlayer(playerId) : null;
   if (!player) redirect("/");
-  const [bet, board] = await Promise.all([getBet(player.id), loadBoard()]);
+  const [bet, board, history] = await Promise.all([getBet(player.id), loadBoard(), getHistory(player.id)]);
   if (!bet) redirect("/bet");
   const { results, ranking, playerBadges } = board;
   const locked = isLocked(results);
@@ -43,6 +45,10 @@ export default async function DonePage() {
       />
       <h2 className="mb-3 mt-10 text-3xl">תמונה לקבוצה</h2>
       <ShareActions name={player.name} bet={plain} locked={locked} />
+      <section className="box mt-10 p-4">
+        <h2 className="mb-3 text-3xl">היסטוריית ההגשות שלי</h2>
+        <BetHistory entries={history.entries} available={history.available} />
+      </section>
     </>
   );
 }
