@@ -3,14 +3,14 @@
 export type BadgeKey = "consensus" | "original" | "lastMinute";
 
 export const BADGES: Record<BadgeKey, { icon: string; title: string; desc: string }> = {
-  consensus: { icon: "🎯", title: "הכי קונצנזוס", desc: "ההימור הכי קרוב לממוצע של המשרד" },
-  original: { icon: "🦄", title: "הכי מקורי", desc: "ההימור הכי רחוק מהממוצע של המשרד" },
+  consensus: { icon: "🎯", title: "הכי קונצנזוס", desc: "ההימור הכי קרוב לממוצע של הקבוצה" },
+  original: { icon: "🦄", title: "הכי מקורי", desc: "ההימור הכי רחוק מהממוצע של הקבוצה" },
   lastMinute: { icon: "⏰", title: "ברגע האחרון", desc: "העדכון האחרון לפני הנעילה" },
 };
 
 export type BadgeInput = { player_id: string; seats: Record<string, number>; updated_at: string };
 
-/** מרחק מנהטן בין הימור לממוצע המשרד */
+/** מרחק מנהטן בין הימור לממוצע הקבוצה */
 export function distanceFromAverage(seats: Record<string, number>, avg: Record<string, number>): number {
   return Object.keys(avg).reduce((s, k) => s + Math.abs((seats[k] ?? 0) - avg[k]), 0);
 }

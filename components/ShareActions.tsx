@@ -69,7 +69,7 @@ export default function ShareActions({ name, bet, locked }: { name: string; bet:
             {COPY.edit}
           </Link>
         )}
-        <Link href="/board" className={`btn btn-ink ${locked ? "col-span-2" : ""}`}>
+        <Link href="/me" className={`btn btn-ink ${locked ? "col-span-2" : ""}`}>
           {COPY.toBoard}
         </Link>
       </div>

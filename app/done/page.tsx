@@ -28,7 +28,7 @@ export default async function DonePage() {
 
   return (
     <>
-      <TopBar links={[{ href: "/board", label: COPY.toBoard }]} />
+      <TopBar links={[{ href: "/me", label: COPY.toBoard }]} />
       <h1 className="mb-2 text-5xl">{locked ? COPY.locked : COPY.submitted}</h1>
       <div className="mb-6">
         <SwitchUser name={player.name} />

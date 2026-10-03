@@ -18,7 +18,7 @@ export default async function BetPage() {
 
   return (
     <>
-      <TopBar links={[{ href: "/board", label: COPY.toBoard }]} />
+      <TopBar links={[{ href: "/me", label: COPY.toBoard }]} />
       <h1 className="text-5xl">היי {player.name}</h1>
       <SwitchUser name={player.name} />
       <Countdown lockAt={lockAt(results)} className="mb-6 mt-2 text-xl" />

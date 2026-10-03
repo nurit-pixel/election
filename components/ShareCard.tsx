@@ -49,8 +49,8 @@ const ShareCard = forwardRef<HTMLDivElement, { name: string; bet: Bet }>(functio
 
       <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ fontFamily: DISPLAY, fontSize: 58, lineHeight: 1 }}>
-          מטה המאבק{" "}
-          <span style={{ color: "#ff2d55", textShadow: "0 0 30px rgba(255,45,85,0.7)" }}>כוח 43</span>
+          {COPY.brandA}{" "}
+          <span style={{ color: "#ff2d55", textShadow: "0 0 30px rgba(255,45,85,0.7)" }}>{COPY.brandB}</span>
         </div>
         <div
           style={{

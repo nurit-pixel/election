@@ -20,7 +20,16 @@ export async function GET() {
     }
   }
   // Railway healthcheck צריך 200 גם כשה-DB לא מוגדר, כדי שהאבחון יהיה נגיש
+  // האם מיגרציות 002/003 הורצו
+  let migrations: Record<string, boolean> | string = "not checked";
+  if (db === "ok") {
+    const [h, g] = await Promise.all([
+      supabaseServer().from("bet_history").select("id", { head: true, count: "exact" }),
+      supabaseServer().from("groups").select("id", { head: true, count: "exact" }),
+    ]);
+    migrations = { "002_bet_history": !h.error, "003_groups": !g.error };
+  }
   // Railway מספק את מזהה ה-commit שנפרס — כך אפשר לוודא איזו גרסה רצה
   const version = (process.env.RAILWAY_GIT_COMMIT_SHA ?? "").slice(0, 7) || "local";
-  return Response.json({ ok: db === "ok", version, env, db });
+  return Response.json({ ok: db === "ok", version, env, db, migrations });
 }

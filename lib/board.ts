@@ -4,6 +4,8 @@ import { getResults, type BetRow, type ResultsRow } from "./data";
 import { rank, tier, type Score } from "./scoring";
 import { badgesByPlayer, computeBadges, type BadgeKey } from "./badges";
 import { PARTY_KEYS } from "./parties";
+import { groupScore, type GroupQuestion } from "./groupScore";
+import { getAnswers, getQuestions } from "./groups";
 
 export type BoardEntry = Score & {
   player_id: string;
@@ -25,17 +27,34 @@ export type BoardData = {
   playerBadges: Record<string, BadgeKey[]>;
 };
 
-export async function loadBoard(): Promise<BoardData> {
+/**
+ * נתוני לוח. בלי groupId — כל המשתתפים (הניקוד הכללי).
+ * עם groupId — רק חברי הקבוצה, ואם לקבוצה יש שאלות בונוס משלה הן מחליפות את הבונוס הכללי.
+ */
+export async function loadBoard(groupId?: string): Promise<BoardData & { questions: GroupQuestion[] }> {
   const db = supabaseServer();
-  const [results, players, bets, scores] = await Promise.all([
+  let memberIds: string[] | null = null;
+  if (groupId) {
+    const { data, error } = await db.from("group_members").select("player_id").eq("group_id", groupId);
+    if (error) throw error;
+    memberIds = (data ?? []).map((r) => r.player_id);
+  }
+  // כשיש קבוצה מסננים לפי החברים (רשימה ריקה → מזהה שלא קיים, כדי לא להחזיר את כולם)
+  const ids = memberIds && (memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"]);
+  const playersQ = db.from("players").select("id,name,created_at").order("created_at");
+  const betsQ = db.from("bets").select("*");
+  const scoresQ = db.from("scores").select("*");
+  const [results, players, bets, scores, questions] = await Promise.all([
     getResults(),
-    db.from("players").select("id,name,created_at").order("created_at"),
-    db.from("bets").select("*"),
-    db.from("scores").select("*"),
+    ids ? playersQ.in("id", ids) : playersQ,
+    ids ? betsQ.in("player_id", ids) : betsQ,
+    ids ? scoresQ.in("player_id", ids) : scoresQ,
+    groupId ? getQuestions(groupId) : Promise.resolve([] as GroupQuestion[]),
   ]);
   if (players.error) throw players.error;
   if (bets.error) throw bets.error;
   if (scores.error) throw scores.error;
+  const answers = questions.length ? await getAnswers(questions.map((q) => q.id)) : {};
 
   const betBy = new Map((bets.data as BetRow[]).map((b) => [b.player_id, b]));
   const nameBy = new Map(players.data.map((p) => [p.id as string, p.name as string]));
@@ -44,7 +63,8 @@ export async function loadBoard(): Promise<BoardData> {
     .filter((s) => betBy.has(s.player_id))
     .map((s) => {
       const bet = betBy.get(s.player_id)!;
-      return { ...s, name: nameBy.get(s.player_id) ?? "?", submitted_at: bet.submitted_at, tier: tier(s.total), bet };
+      const gs = groupScore(s, questions, answers[s.player_id] ?? {});
+      return { ...s, ...gs, name: nameBy.get(s.player_id) ?? "?", submitted_at: bet.submitted_at, tier: tier(gs.total), bet };
     });
 
   const badges = computeBadges(bets.data as BetRow[], PARTY_KEYS);
@@ -56,5 +76,6 @@ export async function loadBoard(): Promise<BoardData> {
     ranking: rank(rows),
     badges,
     playerBadges: badgesByPlayer(badges),
+    questions,
   };
 }

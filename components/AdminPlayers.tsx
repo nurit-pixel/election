@@ -57,6 +57,14 @@ export default function AdminPlayers({ initial }: { initial: AdminPlayer[] }) {
     router.refresh();
   }
 
+  async function resetPin(p: AdminPlayer) {
+    if (!confirm(`לאפס את הקוד האישי של ${p.name}? בכניסה הבאה הוא/היא יבחר/תבחר קוד חדש.`)) return;
+    setBusy(p.id);
+    const r = await call("PATCH", { id: p.id, resetPin: true });
+    setBusy(null);
+    setMsg(r.ok ? `הקוד של ${p.name} אופס.` : COPY.genericError);
+  }
+
   async function reset(p: AdminPlayer) {
     if (!confirm(A.confirmReset(p.name))) return;
     setBusy(p.id);
@@ -142,6 +150,9 @@ export default function AdminPlayers({ initial }: { initial: AdminPlayer[] }) {
                       ↺ {A.resetBet}
                     </button>
                   )}
+                  <button type="button" className="btn min-h-10 flex-1 px-2 text-sm" disabled={!!busy} onClick={() => resetPin(p)}>
+                    🔑 איפוס קוד
+                  </button>
                   <button
                     type="button"
                     className="btn min-h-10 flex-1 border-accent/50 px-2 text-sm text-accent"

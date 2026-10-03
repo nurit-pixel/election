@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BADGES, type BadgeKey } from "@/lib/badges";
+import { COPY } from "@/lib/copy";
 
 const TIER_ICON: Record<string, string> = {
   "פעיל שטח": "📣",
   "יועץ אסטרטגי": "🧠",
   "מנהל קמפיין": "📋",
   "סוקר-על": "📊",
-  "הנביא מכוח 43": "🔮",
+  "נביא/ת הקלפי": "🔮",
 };
 
 type Props = {
@@ -86,7 +87,7 @@ export default function PlayerCard({ name, tier, total, place, pm, topParty, bon
             style={{ background: `radial-gradient(240px 200px at 50% 0%, ${accent}40, transparent 70%), linear-gradient(180deg, #111a3d, #060a18)` }}
           >
             <div className="flex items-center justify-between text-xs text-muted">
-              <span className="font-display tracking-widest">כוח 43</span>
+              <span className="font-display tracking-widest">{COPY.title}</span>
               <span className="chip border-accent/50 px-2 py-0 text-[11px]">
                 <span className="live-dot h-2 w-2" /> 2026
               </span>

@@ -1,6 +1,6 @@
 import { BADGES, type BadgeKey } from "@/lib/badges";
 
-// שלושת התגים של המשרד — מי מחזיק בכל אחד
+// שלושת התגים של הקבוצה — מי מחזיק בכל אחד
 export default function BadgeCards({ holders }: { holders: Partial<Record<BadgeKey, string>> }) {
   const keys = (Object.keys(BADGES) as BadgeKey[]).filter((k) => holders[k]);
   if (!keys.length) return null;

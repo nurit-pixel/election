@@ -16,10 +16,17 @@ export async function GET() {
   }
 }
 
-// שינוי שם: { id, name }
+// שינוי שם: { id, name } · איפוס קוד אישי: { id, resetPin: true } (הכניסה הבאה קובעת קוד חדש)
 export async function PATCH(req: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const { id, name: raw } = await req.json().catch(() => ({}));
+  const { id, name: raw, resetPin } = await req.json().catch(() => ({}));
+  if (resetPin && typeof id === "string") {
+    const { error } = await supabaseServer()
+      .from("players")
+      .update({ pin_hash: null, failed_attempts: 0, locked_until: null })
+      .eq("id", id);
+    return error ? NextResponse.json({ error: "db" }, { status: 500 }) : NextResponse.json({ ok: true });
+  }
   const name = normalizeName(raw);
   if (typeof id !== "string" || !name) return NextResponse.json({ error: "bad request" }, { status: 400 });
   const { error } = await supabaseServer().from("players").update({ name }).eq("id", id);

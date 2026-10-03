@@ -40,7 +40,7 @@ export default function BallotDrop({ letters }: { letters: string }) {
         {/* הקלפי */}
         <div className="absolute bottom-0 left-1/2 z-20 h-[150px] w-[210px] -translate-x-1/2 rounded-xl border border-cyan/60 bg-gradient-to-b from-[#1b2a5c] to-[#0e1531] shadow-[0_0_40px_rgb(34_211_238/0.35)]">
           <div className="mx-auto mt-4 h-2 w-[120px] rounded-full bg-black shadow-[inset_0_1px_3px_rgb(0_0_0/0.9),0_0_10px_rgb(34_211_238/0.5)]" />
-          <div className="mt-8 text-center font-display text-2xl text-cyan/80">קלפי 43</div>
+          <div className="mt-8 text-center font-display text-2xl text-cyan/80">ליל המדגמים</div>
         </div>
         {/* חותמת */}
         <div
