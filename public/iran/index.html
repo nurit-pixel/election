@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>מד הסלמה ישראל–איראן</title>
+<meta name="description" content="מחשבון סבירות לחזרה לאש ישירה בין ישראל לאיראן: אינדיקטורים, הצהרות מנהיגים, סקרים, בורסה, דלק ושווקי הימורים.">
+<meta name="theme-color" content="#ECEFF2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E141A" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="/iran/manifest.webmanifest">
+<link rel="icon" href="/iran/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/iran/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="מד הסלמה">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an open-source intelligence estimate. Verdict panel on top, then the indicator ledger grouped by domain, then markets, news analysis and the source register. */
+:root{
+  --paper:#ECEFF2; --surface:#F8F9FA; --ink:#14202B; --muted:#56636F; --line:#C7CFD7;
+  --risk:#A3243B; --risk-soft:#F2D9DE; --calm:#2C6B6E; --calm-soft:#D3E6E5;
+  --accent:#2B4C7E; --accent-soft:#DCE4F0; --warn:#9A6A10;
+  --f-display:"Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --f-body:"IBM Plex Sans Hebrew", "Assistant", "Segoe UI", Arial, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E141A; --surface:#151D25; --ink:#E3E8ED; --muted:#93A0AC; --line:#2A3641;
+  --risk:#E46A80; --risk-soft:#3A1C24; --calm:#62B5B4; --calm-soft:#16302F;
+  --accent:#8EAEDF; --accent-soft:#1D2A3D; --warn:#E0B254; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E141A; --surface:#151D25; --ink:#E3E8ED; --muted:#93A0AC; --line:#2A3641;
+  --risk:#E46A80; --risk-soft:#3A1C24; --calm:#62B5B4; --calm-soft:#16302F;
+  --accent:#8EAEDF; --accent-soft:#1D2A3D; --warn:#E0B254; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;direction:rtl}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+
+.banner{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--line);padding-block:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+header.top{padding-block:28px 18px;display:grid;gap:10px}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:68ch;margin:0}
+h2{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;text-wrap:balance}
+h3{font-size:15px;font-weight:600;margin:0}
+.eyebrow{font-size:12px;letter-spacing:.06em;color:var(--muted);font-weight:500}
+section{margin-top:36px;display:grid;gap:14px}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:8px}
+
+/* verdict */
+.verdict{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:20px}
+@media (max-width:820px){.verdict{grid-template-columns:minmax(0,1fr)}}
+.gauge-box{display:grid;justify-items:center;align-content:start;gap:6px;text-align:center}
+.gauge-box svg{width:100%;max-width:320px;height:auto}
+.big{font-family:var(--f-display);font-weight:900;font-size:64px;line-height:1}
+.kent{font-weight:600;font-size:17px}
+.controls{display:grid;gap:12px;align-content:start}
+.controls,.controls>*{min-width:0}
+#defSel{flex:1 1 220px;min-width:0;max-width:100%}
+.seg button{flex:1 0 auto}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;flex-wrap:wrap}
+.seg button{background:transparent;border:0;padding:6px 12px;cursor:pointer;border-inline-start:1px solid var(--line)}
+.seg button:first-child{border-inline-start:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+select,input[type=number],input[type=date],input[type=text],textarea{background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:6px 8px}
+.triple{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.triple{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cell{border:1px solid var(--line);border-radius:4px;padding:8px 10px;background:var(--paper)}
+.newslog{margin:0;padding:0;list-style:none;display:grid;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.newslog li{display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:12px;padding:12px 16px;border-top:1px solid var(--line);align-items:start}
+.newslog li:first-child{border-top:0}
+.newslog .nd{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.newslog .ns{font-size:11.5px;color:var(--accent);display:block}
+.newslog .nt{font-weight:600}
+.newslog .nt a{color:var(--ink);text-decoration:none}
+.newslog .nt a:hover{text-decoration:underline}
+.newslog .nb{font-size:13.5px;color:var(--muted)}
+.newslog button.chip{border:0;cursor:pointer;font:inherit;font-size:11.5px;white-space:nowrap}
+@media (max-width:560px){.newslog li{grid-template-columns:minmax(0,1fr)}.newslog button.chip{white-space:normal;text-align:start}}
+.poll-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px}
+.seats{display:grid;gap:6px}
+.seats .bar{display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px}
+.seats .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px}
+.seats .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-inline-end:5px}
+.plist{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:13.5px}
+.plist li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding-bottom:4px}
+.plist li span:first-child{color:var(--muted)}
+#polls td:nth-child(6),#finBody td:nth-child(6){font-size:12.5px;color:var(--muted);min-width:240px}
+#polls td input{width:100%;min-width:70px}
+#finBody td:nth-child(6){font-size:12.5px;color:var(--muted);min-width:240px}
+#finBody input{width:100%;min-width:80px}
+.cell .v{font-family:var(--f-mono);font-size:20px;font-weight:500}
+.cell .l{font-size:12px;color:var(--muted)}
+.curve svg{width:100%;height:auto;display:block}
+.drivers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.drivers{grid-template-columns:1fr}}
+.drivers ul{margin:4px 0 0;padding:0;list-style:none;display:grid;gap:4px;font-size:13.5px}
+.drivers li{display:flex;justify-content:space-between;gap:8px}
+.up{color:var(--risk)} .down{color:var(--calm)}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+.note{font-size:12.5px;color:var(--muted)}
+
+/* timeline */
+.timeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.tl{border-inline-start:3px solid var(--accent);padding:4px 12px;background:var(--surface)}
+.tl .d{font-family:var(--f-mono);font-size:13px;color:var(--accent)}
+
+/* indicators */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.ind-list{display:grid;gap:10px}
+.ind{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+@media (max-width:760px){.ind{grid-template-columns:minmax(0,1fr)}}
+.ind .status{font-size:13.5px;margin-top:6px}
+.ind .status b{font-weight:600}
+.chip{display:inline-block;font-size:11.5px;border-radius:3px;padding:1px 7px;background:var(--accent-soft);color:var(--accent);margin-inline-start:6px;vertical-align:middle}
+.chip.r{background:var(--risk-soft);color:var(--risk)} .chip.c{background:var(--calm-soft);color:var(--calm)}
+.slider{display:grid;gap:6px;align-content:start}
+.slider input[type=range]{width:100%;accent-color:var(--accent);direction:ltr}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);direction:ltr}
+.slider .meta{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.contrib{font-family:var(--f-mono)}
+.src{font-size:12px;color:var(--muted)}
+.src a{color:var(--muted)}
+
+/* markets */
+.mkt{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:right;padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:500}
+td input{width:100%}
+
+/* analyzer */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:10px}
+textarea{width:100%;min-height:120px;resize:vertical}
+.sugg{display:grid;gap:8px}
+.sg{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid var(--line);border-radius:4px;padding:8px 10px;background:var(--paper);flex-wrap:wrap}
+.sg > div{min-width:0;flex:1 1 260px}
+
+/* sources */
+.srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.srcgrid .panel ul{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px}
+.srcgrid .panel li span{color:var(--muted);font-size:12.5px;display:block}
+details.method{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 16px}
+details.method summary{cursor:pointer;font-weight:600}
+details.method p,details.method li{max-width:72ch}
+@media (prefers-reduced-motion:no-preference){.needle{transition:transform .5s cubic-bezier(.3,.7,.3,1)}}
+
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.live{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:8px}
+.live ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.live li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;font-size:14px}
+.live li a{flex:1 1 240px;min-width:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner"><span>הערכת מצב פתוחה · לא מסווג · מבוסס מקורות גלויים</span><span>עודכן: <span class="num">13.10.2026</span></span></div>
+
+  <header class="top">
+    <div class="eyebrow">מחשבון סבירות</div>
+    <h1>מד הסלמה ישראל–איראן</h1>
+    <p class="lede">מה הסיכוי שישראל ואיראן יחזרו להחליף אש ישירה? כל אינדיקטור כאן מוזן מדיווחים, הצהרות מנהיגים, תנאים פוליטיים ושווקי הימורים. אפשר להזיז כל ערך, להזין מחירי שוק עדכניים ולהדביק ידיעה חדשה כדי ש-Claude יציע איך היא משנה את התמונה.</p>
+  </header>
+
+  <!-- Verdict -->
+  <div class="verdict" id="verdict">
+    <div class="gauge-box">
+      <svg viewBox="0 0 320 190" role="img" aria-label="מד סבירות">
+        <g id="gaugeArcs"></g>
+        <g class="needle" id="needle" style="transform-origin:160px 165px">
+          <line x1="160" y1="165" x2="160" y2="42" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <circle cx="160" cy="165" r="8" fill="var(--ink)"/>
+        <text x="28" y="186" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">0%</text>
+        <text x="270" y="186" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">100%</text>
+      </svg>
+      <div class="big num" id="bigP">–</div>
+      <div class="kent" id="kent">–</div>
+      <div class="note" id="horizonLabel"></div>
+    </div>
+
+    <div class="controls">
+      <div class="row">
+        <span class="eyebrow">אופק זמן</span>
+        <div class="seg" id="horizonSeg"></div>
+      </div>
+      <div class="row">
+        <label class="eyebrow" for="defSel">מה נחשב "חזרה למלחמה"</label>
+        <select id="defSel">
+          <option value="any">כל תקיפה ישירה (ישראל באדמת איראן או טילים/כטב"מים מאיראן לישראל)</option>
+          <option value="wide">מערכה רחבה: 3 ימי לחימה רצופים ומעלה</option>
+          <option value="joint">מבצע משותף ארה"ב–ישראל</option>
+        </select>
+      </div>
+      <div class="triple">
+        <div class="cell"><div class="v num" id="p7">–</div><div class="l">7 ימים</div></div>
+        <div class="cell"><div class="v num" id="p30">–</div><div class="l">30 יום</div></div>
+        <div class="cell"><div class="v num" id="p90">–</div><div class="l">90 יום</div></div>
+        <div class="cell"><div class="v num" id="p180">–</div><div class="l">180 יום</div></div>
+      </div>
+      <div class="curve" aria-label="סבירות מצטברת לאורך זמן">
+        <svg id="curve" viewBox="0 0 640 210"></svg>
+      </div>
+      <div class="drivers">
+        <div><h3 class="up">מה מעלה את הסיכון</h3><ul id="upList"></ul></div>
+        <div><h3 class="down">מה מוריד את הסיכון</h3><ul id="downList"></ul></div>
+      </div>
+      <div class="row">
+        <label class="eyebrow" for="baseIn">שיעור בסיס חודשי</label>
+        <input type="number" id="baseIn" min="1" max="80" step="1" style="width:80px"> <span class="note">% לחודש, לפני אינדיקטורים</span>
+        <button class="btn" id="resetBtn" type="button">חזרה להערכה של 13.10</button>
+      </div>
+      <div class="note" id="modelLine"></div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <section>
+    <div class="sec-head"><h2>תאריכים שמשנים את החישוב</h2><span class="note">אינדיקטורים עם תאריך חלים רק בחלון שלהם, ולכן העקומה נשברת</span></div>
+    <div class="timeline">
+      <div class="tl"><div class="d">28.02.2026</div><div>תחילת מלחמת 2026: תקיפה משותפת ארה"ב–ישראל באיראן</div></div>
+      <div class="tl"><div class="d">08.04 · 17.06</div><div>הפסקת אש בתיווך פקיסטן, ואחריה מזכר איסלמבאד ל-60 יום</div></div>
+      <div class="tl"><div class="d">~17.08.2026</div><div>המזכר פג. הלחימה הרחבה מושהית, אין מסגרת מוסכמת</div></div>
+      <div class="tl"><div class="d">02.10.2026</div><div>ידיעות אחרונות: נושאת המטוסים "תיאודור רוזוולט" ונחתים בדרך לאזור, ותמונות לוויין מראות פעילות מחודשת באתר הגרעין מין-זדאי</div></div>
+      <div class="tl"><div class="d">15–18.10</div><div>לפי N12: חלון ההחלטה האמריקאי על תזמון תקיפה (7–10 ימים מ-8.10)</div></div>
+      <div class="tl"><div class="d">27.10.2026</div><div>בחירות לכנסת. הרמטכ"ל זמיר הזהיר שתקיפה עלולה לדחות אותן</div></div>
+      <div class="tl"><div class="d">03.11.2026</div><div>בחירות האמצע בארה"ב. טראמפ: "לא נתקוף לפני כן"</div></div>
+    </div>
+  </section>
+
+  <!-- News log -->
+  <section id="news">
+    <div class="sec-head"><h2>יומן ידיעות</h2><span class="note">בעיקר מ"ידיעות אחרונות" / ynet. לכל ידיעה מצוין איזה אינדיקטור היא הזיזה</span></div>
+    <ol class="newslog" id="newsLog"></ol>
+  </section>
+
+  <!-- Indicators -->
+  <section>
+    <div class="sec-head"><h2>אינדיקטורים</h2><span class="note">‎−2 מרגיע מאוד · 0 ניטרלי · ‎+2 מסלים מאוד. המשקל קובע כמה האינדיקטור חשוב.</span></div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="ind-list" id="indList"></div>
+  </section>
+
+  <!-- Markets -->
+  <section>
+    <div class="sec-head"><h2>שווקי הימורים ותחזיות</h2><span class="note">הזן מחיר "כן" עדכני ותאריך סגירה. השוק מומר לסיכון חודשי ומשוקלל עם המודל.</span></div>
+    <div class="panel">
+      <div class="mkt"><table>
+        <thead><tr><th>שוק</th><th style="width:110px">מחיר "כן" (%)</th><th style="width:160px">נסגר בתאריך</th><th style="width:120px">סיכון חודשי משתמע</th><th>קישור</th></tr></thead>
+        <tbody id="mktBody"></tbody>
+      </table></div>
+      <div id="liveBox" class="live" hidden>
+        <div class="row"><h3>Polymarket עכשיו</h3><span class="note" id="liveMeta"></span></div>
+        <ul id="liveList"></ul>
+      </div>
+      <div class="row">
+        <label class="eyebrow" for="mktW">משקל השווקים בתוצאה</label>
+        <input type="range" id="mktW" min="0" max="100" step="5" style="width:200px">
+        <span class="num" id="mktWv"></span>
+      </div>
+      <p class="note">שימו לב להגדרת השוק: "ארה"ב תוקפת את איראן" אינו זהה ל"ישראל ואיראן חוזרות למלחמה". שווקים דלי נזילות זזים בקלות, ובמלחמה הזאת כבר נעצרו בישראל משרתי מילואים שהימרו על סמך מידע מסווג.</p>
+    </div>
+  </section>
+
+  <!-- Finance -->
+  <section id="fin">
+    <div class="sec-head"><h2>בורסה ומחירי דלק</h2><span class="note">נקודת הבסיס: 13.10.2026. הזינו מחיר עדכני, והשינוי נכנס למודל דרך האינדיקטור "לחץ בשווקים"</span></div>
+    <div class="panel">
+      <div class="mkt"><table>
+        <thead><tr><th>נתון</th><th style="width:120px">בסיס</th><th style="width:120px">עכשיו</th><th style="width:90px">שינוי</th><th style="width:80px">אות</th><th>מה לדעת</th></tr></thead>
+        <tbody id="finBody"></tbody>
+      </table></div>
+      <div class="row"><span class="eyebrow">ציון לחץ שווקים</span><span class="num" id="finScore" style="font-size:20px">0</span><span class="note" id="finNote"></span></div>
+      <p class="note">הסף: ברנט ‎+10%, ת"א 35 ‎−5%, דולר/שקל ‎+3%, אלביט ‎+8%, זהב ‎+5%, סולר ובנזין בארה"ב ‎+10%, סולר בישראל ‎+10% או בנזין 95 ‎+15% שווים כל אחד ‎+1. הציון הוא ממוצע משוקלל, בין ‎−2 ל-‎+2. השווקים מגיבים גם לגורמים שאינם קשורים לאיראן (אוקראינה, ריבית, דוחות), אז כדאי לבדוק מה הזיז אותם.</p>
+    </div>
+  </section>
+
+  <!-- Polls -->
+  <section id="polls">
+    <div class="sec-head"><h2>סקרים בישראל ובארה"ב</h2><span class="note">נקודת הבסיס: הסקרים האחרונים עד 13.10. הזינו תוצאה של סקר חדש, והשינוי בנקודות נכנס למודל</span></div>
+    <div class="poll-cards">
+      <div class="panel"><h3>ישראל · בחירות 27.10</h3>
+        <div class="seats" aria-label="ממוצע מנדטים לפי גושים">
+          <div class="bar"><span style="flex:54;background:var(--accent)"></span><span style="flex:51;background:var(--calm)"></span><span style="flex:9;background:var(--warn)"></span><span style="flex:6;background:var(--line)"></span></div>
+          <div class="legend"><span><i style="background:var(--accent)"></i>ימין <b class="num">54</b></span><span><i style="background:var(--calm)"></i>מרכז-שמאל <b class="num">51</b></span><span><i style="background:var(--warn)"></i>ערבים <b class="num">9</b></span><span><i style="background:var(--line)"></i>ללא גוש <b class="num">6</b></span></div>
+          <div class="note">ממוצע סרוגים, 11.10 (119 סקרים). רוב: 61. ליכוד 23 · ישר! 19 · ביחד כ-12.</div>
+        </div>
+        <ul class="plist">
+          <li><span>ערוץ 14, ‏1.10</span><span>קואליציה <b class="num">64</b> · ליכוד 32</span></li>
+          <li><span>מעריב, ‏2.10</span><span>קואליציה <b class="num">51</b> · אופוזיציה 53</span></li>
+          <li><span>חדשות 13</span><span>גוש נתניהו <b class="num">54</b> · גוש איזנקוט 52</span></li>
+          <li><span>כאן חדשות</span><span>ליכוד <b class="num">24</b> · ישר! 23 · ביחד 13</span></li>
+        </ul>
+      </div>
+      <div class="panel"><h3>ארה"ב · בחירות אמצע 3.11</h3>
+        <ul class="plist">
+          <li><span>תמיכה במלחמה באיראן (Silver Bulletin)</span><span><b class="num">32%</b></span></li>
+          <li><span>מרוצים מניהול המהלך (Pew)</span><span><b class="num">33%</b></span></li>
+          <li><span>תמיכה בפעולה צבאית (Reuters/Ipsos, אוגוסט)</span><span><b class="num">31%</b></span></li>
+          <li><span>I&amp;I/TIPP (חריג)</span><span><b class="num">44%</b> בעד · 42% נגד</span></li>
+          <li><span>תמיכה בטראמפ (NYT / RCP)</span><span><b class="num">37% / 38.3%</b></span></li>
+          <li><span>Reuters/Ipsos · AP-NORC</span><span><b class="num">32% · 31%</b></span></li>
+          <li><span>הצבעה לקונגרס (Reuters/Ipsos)</span><span>D <b class="num">44</b> · R 37</span></li>
+        </ul>
+        <div class="note">אמריקאים רבים מעריכים שהמלחמה תימשך עוד חודשים (Pew). פחות משליש ממצביעי טראמפ ב-2024 מתלהבים להצביע.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="mkt"><table>
+        <thead><tr><th>ישראל</th><th style="width:110px">בסיס</th><th style="width:110px">סקר חדש</th><th style="width:80px">שינוי</th><th style="width:70px">אות</th><th>מה לדעת</th></tr></thead>
+        <tbody id="pollBody_il"></tbody>
+        <thead><tr><th>ארה"ב</th><th></th><th></th><th></th><th></th><th></th></tr></thead>
+        <tbody id="pollBody_us"></tbody>
+      </table></div>
+      <div class="row"><span class="eyebrow">ציון דעת קהל</span><span class="num" id="pollScore" style="font-size:20px">0</span><span class="note" id="pollNote"></span></div>
+      <p class="note">הסף: עלייה של 10 נקודות בתמיכה הישראלית, 5 נקודות בתמיכה האמריקאית במלחמה או 5 נקודות בתמיכה בטראמפ שווה ‎+1. ניסוח השאלות שונה בין מכוני הסקרים, אז השוו סקר חדש לסקר קודם של אותו מכון.</p>
+    </div>
+  </section>
+
+  <!-- Analyzer -->
+  <section>
+    <div class="sec-head"><h2>ניתוח ידיעה חדשה</h2><span class="note">הדביקו כתבה, ציוץ של מנהיג או נתון שוק</span></div>
+    <div class="panel" id="anPanel">
+      <label for="newsIn" class="eyebrow">טקסט הידיעה (עברית, אנגלית או פרסית)</label>
+      <textarea id="newsIn" placeholder="לדוגמה: &quot;Iran's foreign minister said Tehran is ready to suspend enrichment for three years if the blockade is lifted...&quot;"></textarea>
+      <div class="row">
+        <button class="btn primary" id="anBtn" type="button">נתח והצע עדכונים</button>
+        <button class="btn" id="anStop" type="button" hidden>עצור</button>
+        <span class="note" id="anStatus"></span>
+      </div>
+      <div id="anSummary" class="note"></div>
+      <div class="sugg" id="anOut"></div>
+    </div>
+    <p class="note" id="anUnavailable" hidden>הניתוח האוטומטי עם Claude זמין רק בגרסת claude.ai של המחשבון. כאן אפשר לעדכן את המחוונים ידנית, לפי יומן הידיעות והמקורות.</p>
+  </section>
+
+  <!-- Sources -->
+  <section>
+    <div class="sec-head"><h2>מאיפה אוספים מידע</h2><span class="note">רשימת מעקב לעדכון האינדיקטורים</span></div>
+    <div class="srcgrid" id="srcGrid"></div>
+  </section>
+
+  <section>
+    <details class="method">
+      <summary>איך החישוב עובד</summary>
+      <ol>
+        <li><b>שיעור בסיס.</b> מאז יוני 2025 היו לפחות ארבעה סבבי אש ישירה (מלחמת 12 הימים, 28.2.2026, חילופי האש ביוני וקריסת הפסקת האש ב-8.7). זה כ-15%–20% לחודש בתקופה של עימות לא פתור. ברירת המחדל שמרנית יותר, 12%, כי חלק מהמתיחות כבר מגולם באינדיקטורים.</li>
+        <li><b>אינדיקטורים.</b> הערך נמדד ביחס ל"מצב הבסיס" של עימות לא פתור: 0 אומר שהאינדיקטור לא חורג ממה שכבר מגולם בשיעור הבסיס. כל אינדיקטור מוסיף ליחס הסיכויים הלוגריתמי: ערך × משקל × 0.35. ערך ‎+1 במשקל 1 מגדיל את יחס הסיכויים פי 1.4 בערך.</li>
+        <li><b>חלונות זמן.</b> אינדיקטור עם תאריך ("עד 3.11") משפיע רק על הימים שבחלון. הסיכון מחושב יום-יום ומצטבר: P = 1 − Π(1 − h<sub>יום</sub>).</li>
+        <li><b>שווקים.</b> מחיר p עד תאריך שבעוד D ימים מומר לסיכון חודשי 1 − (1 − p)<sup>30/D</sup>, ומשוקלל עם המודל לפי המשקל שבחרתם.</li>
+        <li><b>הגדרה.</b> "מערכה רחבה" מורידה את הסיכון (לא כל תקרית מתפתחת), ו"מבצע משותף" מורידה יותר.</li>
+      </ol>
+      <p class="note">זה כלי לחשיבה מסודרת, לא תחזית מודיעינית. הערכים ההתחלתיים הם שיפוט שלי על בסיס דיווחים פתוחים עד 13.10.2026, וחלק מהדיווחים (למשל על הנחיית הפנטגון לזמיר) נשענים על מקורות אנונימיים.</p>
+    </details>
+  </section>
+</div>
+
+<script>
+(function(){
+const AS_OF = new Date("2026-10-13T00:00:00");
+const K = 0.35;
+const LS_KEY = "ii-meter-v2";
+
+const CATS = [
+  {id:"mil", name:"צבא ושטח"},
+  {id:"dip", name:"דיפלומטיה וגרעין"},
+  {id:"lead", name:"הצהרות מנהיגים"},
+  {id:"pol", name:"פוליטיקה ופנים"},
+  {id:"econ", name:"אותות כלכליים"}
+];
+
+const IND = [
+  {id:"us_prep", cat:"mil", name:"הכנות אמריקאיות לתקיפה", v:0.5, w:1.2,
+   status:"N12: קצינים אמריקאים אמרו לרמטכ\"ל זמיר שהבית הלבן והפנטגון הורו להיערך ל\"תקיפה מסיבית\" בתוך כ-3 שבועות. ידיעות אחרונות / ynet מציגים גרסה אחרת: האמריקאים בחנו עם זמיר תקיפה ישראלית בחות'ים, לא באיראן. עם מפקד CENTCOM נדונה תקיפה עתידית באיראן, אבל בלי כוונה קונקרטית לטווח הקרוב. בגלל הסתירה הורדתי את הערך מ-‎+1 ל-‎+0.5.",
+   src:[["ynet – השיחה עם זמיר","https://www.ynet.co.il/news/article/sykug00time"],["Times of Israel","https://www.timesofisrael.com/trump-says-us-wont-hit-iran-this-month-as-zamir-said-to-warn-strike-could-delay-israels-election/"],["ynet","https://www.ynetnews.com/article/r1ybtvboml"]]},
+  {id:"buildup", cat:"mil", name:"צבירת כוחות אמריקאית באזור", v:1, w:0.4,
+   status:"ידיעות אחרונות / ynet ‏(2.10): נושאת המטוסים \"תיאודור רוזוולט\" ויחידת נחתים נשלחו לאזור, אולי לקראת חידוש התקיפות. טראמפ ממשיך לאיים ומסמן את החודש הבא כמועד אפשרי. במקביל נערכת ישראל להגנה על שמיה.",
+   src:[["ynet","https://www.ynet.co.il/news/article/hjrehj3lwe"]]},
+  {id:"homefront", cat:"mil", name:"כוננות צה\"ל ופיקוד העורף", v:0.5, w:0.8,
+   status:"המל\"ל הזהיר מניסיון תקיפה איראני סביב יום השנה ל-7 באוקטובר. גורמי ביטחון חוששים מ\"טעות בחישוב\" איראנית בגלל הלחץ הכלכלי. עדכנו כשיש שינוי בהנחיות פיקוד העורף.",
+   src:[["Al Jazeera, 9.10","https://www.aljazeera.com/news/liveblog/2026/10/9/iran-war-live-iranian-media-reports-massive-explosions-in-hormuz-strait"]]},
+  {id:"hormuz", cat:"mil", name:"מצר הורמוז והסגר הימי", v:0.5, w:0.9,
+   status:"הסגר האמריקאי על נמלי איראן נמשך. ב-5.10 משמרות המהפכה איימו על מכלית, וב-9.10 דווחו פיצוצים חזקים במצר. ב-8.10 ארה\"ב הטילה סנקציות על 17 כלי שיט.",
+   src:[["Iran International","https://www.iranintl.com/en/202610054791"],["The Hill","https://thehill.com/homenews/administration/6136781-trump-vows-no-iran-attack/"]]},
+  {id:"proxies", cat:"mil", name:"חזיתות שלוחים: חיזבאללה והחות'ים", v:0.5, w:0.6,
+   status:"קואליציה בהובלת סעודיה תוקפת את החות'ים, ו-12 נהרגו בתקיפה על נמל התעופה בריאד (10.10). ynet: ארה\"ב בחנה אם צה\"ל יתקוף את החות'ים, וזמיר הזהיר שזה עלול להסלים גם מול איראן. בלבנון יש הפסקת אש מאז 16.4, אבל ישראל ממשיכה לתקוף.",
+   src:[["ynet","https://www.ynet.co.il/news/article/sykug00time"],["Al Jazeera, 10.10","https://www.aljazeera.com/news/liveblog/2026/10/10/iran-war-live-kremlin-says-trump-welcomed-russia-effort-in-iran-deal"]]},
+  {id:"direct", cat:"mil", name:"תקריות ישירות מאז יוני", v:-0.5, w:0.8,
+   status:"מאז החלטת הקבינט ב-8.6 (\"האש בהמתנה\") לא דווחו חילופי אש ישירים בין ישראל לאיראן. כל תקרית ישירה חדשה היא סימן חזק להעלאת הערך.",
+   src:[["Washington Times","https://www.washingtontimes.com/news/2026/jun/8/israels-netanyahu-says-strikes-iran-hold-vows-forceful-response/"]]},
+  {id:"missiles", cat:"mil", name:"שיקום מערך הטילים האיראני", v:1, w:0.8,
+   status:"ידיעות אחרונות / ynet ‏(8.10): דיפלומטים מערביים אומרים שאיראן חזרה לייצר טילים בליסטיים \"בשיטות הישנות\", שזו העדיפות העליונה שלה (יותר מהגרעין), ושהחשש הוא מטעות בחישוב. WSJ: פעילות באתר הטילים ח'וג'יר ובאתרים תת-קרקעיים. בלומברג: רוסיה מסייעת. בכיר ישראלי: ייצור מוגבל בלבד. מפקד CENTCOM טוען ש-90% מהתעשייה הביטחונית הושמדו.",
+   src:[["ynet","https://www.ynet.co.il/news/article/rj6pzt2xzl"],["ישראל היום (WSJ)","https://www.israelhayom.co.il/news/world-news/middle-east/article/21402864"],["N12","https://www.mako.co.il/news-world/2026_q4/Article-92cafa0168421a1026.htm"]]},
+
+  {id:"talks", cat:"dip", name:"שיחות ארה\"ב–איראן", v:0, w:1.0,
+   status:"קטאר: השיחות \"נמשכות\" למרות קיפאון. טראמפ מדבר על \"דיונים פרודוקטיביים\", אבל דחה את ההצעה האיראנית האחרונה. הקרמלין: טראמפ בירך על מאמץ תיווך רוסי.",
+   src:[["Axios","https://www.axios.com/2026/10/08/trump-iran-strikes-midterm-elections"]]},
+  {id:"enrich", cat:"dip", name:"פער בסוגיית ההעשרה", v:0.5, w:1.0,
+   status:"ואנס: כל הסכם מחייב צמצום ממשי של יכולת ההעשרה. התקשורת הממלכתית באיראן: טהרן לא תוותר על העשרה ולא תמסור את המלאי.",
+   src:[["Fox News, 7.10","https://www.foxnews.com/live-news/us-iran-war-vance-talks-tehran-nuclear-program-10-07-26"]]},
+  {id:"framework", cat:"dip", name:"מסגרת הפסקת אש בתוקף", v:0.5, w:0.9,
+   status:"מזכר איסלמבאד (17.6) פג באמצע אוגוסט בלי הסכם סופי. נתניהו הודיע שישראל אינה מחויבת לו. הלחימה הרחבה מושהית בפועל, לא בהסכם.",
+   src:[["Al Jazeera","https://www.aljazeera.com/news/2026/8/17/us-iran-memorandum-of-understanding-expires-how-and-why-it-fell-apart"]]},
+  {id:"nuke_activity", cat:"dip", name:"פעילות מחודשת באתרי גרעין", v:1, w:0.9,
+   status:"ידיעות אחרונות / ynet: תמונות לוויין מספטמבר ואוקטובר 2026 מראות פעילות מחודשת משמעותית באתר מין-זדאי, אתר פיתוח נשק גרעיני צפון-מזרחית לטהרן שישראל תקפה. פעילות כזאת היא בדיוק מה שישראל הגדירה כקו אדום.",
+   src:[["ynet","https://www.ynet.co.il/news/article/rjwuf6gjgl"]]},
+  {id:"iaea", cat:"dip", name:"פיקוח סבא\"א", v:0, w:0.6,
+   status:"פקחי סבא\"א לא נכנסו לאתרי ההעשרה מאז 2025 ואינם יכולים לאמת את מלאי האורניום המועשר, שמוערך כמספיק לעד 10 פצצות.",
+   src:[["NPR","https://www.npr.org/2026/06/24/g-s1-129770/iran-nuclear-inspection"]]},
+  {id:"mediation", cat:"dip", name:"תיווך בינלאומי", v:-0.5, w:0.6,
+   status:"קטאר, פקיסטן ועכשיו רוסיה (שיחת פוטין–טראמפ) מעורבות. תיווך פעיל מאט החלטות על תקיפה.",
+   src:[["Al Jazeera, 9.10","https://www.aljazeera.com/news/liveblog/2026/10/9/iran-war-live-iranian-media-reports-massive-explosions-in-hormuz-strait"]]},
+
+  {id:"trump_pre", cat:"lead", name:"טראמפ: \"לא נתקוף לפני בחירות האמצע\"", v:-2, w:1.2, until:"2026-11-03",
+   status:"8.10, Truth Social: ארה\"ב לא תתקוף את איראן \"בשום שלב לפני\" 3 בנובמבר. בכיר בבית הלבן: \"כל האפשרויות על השולחן\". באיראן לא סומכים על ההצהרה אחרי שתי תקיפות פתע.",
+   src:[["Detroit News","https://www.detroitnews.com/story/news/politics/2026/10/08/trump-iran-midterm-elections/92154701007/"],["NSJ","https://nationalsecurityjournal.org/donald-trump-just-declared-we-will-not-be-attacking-iran-at-any-time-before-the-midterm-elections/"]]},
+  {id:"trump_post", cat:"lead", name:"טראמפ אחרי הבחירות: \"בדרך הקלה או הקשה\"", v:0.5, w:1.0, from:"2026-11-03",
+   status:"ההצהרה לא שוללת פעולה אחרי 3.11, והבית הלבן משדר \"easy way or hard way\". לפי N12 טראמפ שקל תקיפה לפני הבחירות או אחריהן.",
+   src:[["Fox News, 7.10","https://www.foxnews.com/live-news/us-iran-war-vance-talks-tehran-nuclear-program-10-07-26"]]},
+  {id:"bibi", cat:"lead", name:"נתניהו", v:0.5, w:0.8,
+   status:"5.10: חזה את נפילת המשטר. בספטמבר: תגובה \"שאיראן לא תוכל לצפות\" אם תתקוף. ביוני: \"האש בהמתנה\", אבל ישראל תגיב בעוצמה אם תותקף. מנהל קמפיין בחירות סביב הביטחון.",
+   src:[["Iran International","https://www.iranintl.com/en/202610054791"],["Yeni Safak","https://en.yenisafak.com/world/netanyahu-threatens-iran-strike-as-israeli-elections-loom-3722828"]]},
+  {id:"iranlead", cat:"lead", name:"הנהגת איראן", v:0, w:0.8,
+   status:"המנהיג העליון מוג'תבא חמינאי לא נראה בציבור מאז מרץ. ב-30.8 קרא למדינות מוסלמיות להתעמת עם ארה\"ב וישראל. ב-5.10 מפקד הכוחות המזוינים הזהיר שעימות חדש \"יבלע את האזור\".",
+   src:[["ABC News","https://abcnews.com/International/wireStory/irans-supreme-leader-calls-muslim-unity-us-israel-136068585"]]},
+  {id:"leash", cat:"lead", name:"חופש פעולה ישראלי מול וושינגטון", v:-1, w:1.0,
+   status:"לפי דיווחים, נתניהו ביטל תקיפה גדולה באיראן אחרי שטראמפ הזהיר שישראל \"תהיה לבד\". ישראל כנראה לא תפעל לבד בלי אור ירוק. ynet (ביוני): לפי מקור ישראלי, ישראל ניסתה ליצור עילה לתקיפה בטהרן (תקיפה בדאחייה, תגובת טילים איראנית ואז תקיפה), וטראמפ \"קיפל\" את נתניהו.",
+   src:[["ynet","https://www.ynetnews.com/article/hkqe5114wge"],["Times of Israel","https://www.timesofisrael.com/pm-called-off-major-iran-strike-after-trump-warned-israel-would-be-on-its-own-reports/"]]},
+
+  {id:"il_elect", cat:"pol", name:"בחירות לכנסת, 27.10", v:-0.5, w:0.7, until:"2026-10-27",
+   status:"זמיר הזהיר שתקיפה עלולה לגרום לדחיית הבחירות. בממוצע הסקרים (11.10) הליכוד מוביל עם 23 מנדטים מול 19 ל\"ישר!\" של איזנקוט, וגוש נתניהו עומד על 54, רחוק מ-61. הארץ (10.10): גורמי ביטחון מעריכים שתקיפה לפני הבחירות תיתפס כצעד פוליטי. אפשר לטעון לשני הכיוונים: זהירות לפני קלפי, או \"אפקט התגייסות\". שנו לפי שיפוטכם.",
+   src:[["הארץ","https://haaretz.co.il/news/politics/2026-10-10/ty-article/000001a1-26e9-d0ca-a7b7-beebf8170000"],["i24","https://www.i24news.tv/en/news/israel/defense/artc-war-with-iran-may-delay-elections-idf-chief-zamir-warns-us-live-blog"]]},
+  {id:"il_post", cat:"pol", name:"הממשלה הבאה בישראל", v:0, w:0.6, from:"2026-10-28",
+   status:"לא ידוע. שינוי שלטון ותקופת הרכבת ממשלה עשויים להאט החלטות, אבל גם האופוזיציה תומכת בלחץ על איראן. עדכנו אחרי תוצאות 27.10.",
+   src:[["OneIndia","https://www.oneindia.com/international/israel-confirms-october-27-election-as-netanyahu-faces-public-anger-and-a-strong-opposition-challeng-8144491.html"]]},
+  {id:"polls", cat:"pol", name:"דעת קהל בישראל ובארה\"ב", v:0, w:0.7, computed:"polls",
+   status:"מחושב אוטומטית מטבלת הסקרים למטה. עלייה בתמיכה הציבורית בפעולה צבאית, בישראל או בארה\"ב, ועלייה בתמיכה בטראמפ מעלות את הערך. נקודת הבסיס: הסקרים האחרונים עד 13.10.",
+   src:[["Pew, 8.10","https://pewresearch.org/short-reads/2026/10/08/iran-conflict-remains-deeply-unpopular-as-many-americans-expect-it-to-go-on-for-months"],["INSS, יוני","https://www.inss.org.il/he/publication/inss-survey-june-2026/"]]},
+  {id:"iran_econ", cat:"pol", name:"לחץ כלכלי על איראן", v:0.5, w:0.7,
+   status:"הסגר הימי ממשיך לחנוק את הכנסות הנפט, והריאל בשפל היסטורי. גורמי ביטחון בישראל חוששים שהלחץ ידחוף את איראן לצעד נואש.",
+   src:[["Spectrum News","https://spectrumlocalnews.com/us/snplus/international/2026/04/29/iran-united-states-israel-war-middle-east-rial-oil-prices-strait-of-hormuz-fuel-costs"]]},
+  {id:"regime", cat:"pol", name:"יציבות המשטר באיראן", v:0, w:0.5,
+   status:"אין סימן ברור. היעדרות המנהיג העליון מהציבור מעוררת שאלות. מחאות רחבות או פיצול בהנהגה עשויים להעלות סיכון לתקיפה יזומה.",
+   src:[]},
+
+  {id:"fin", cat:"econ", name:"לחץ בשווקים: בורסה, נפט ודלק", v:0, w:0.8, computed:"fin",
+   status:"מחושב אוטומטית מטבלת \"בורסה ומחירי דלק\" למטה: עלייה בנפט, בדולר ובמניות ביטחוניות וירידה בת\"א 35 ביחס לנקודת הבסיס מעלות את הערך. עדכנו שם את המחירים העדכניים.",
+   src:[["Trading Economics","https://tradingeconomics.com/commodity/brent-crude-oil"],["בורסת ת\"א","https://market.tase.co.il/he/market_data/index/142/major_data"]]},
+  {id:"flights", cat:"econ", name:"טיסות, ביטוח ונוטאמים", v:0, w:0.5,
+   status:"ביטולי טיסות של חברות זרות, הודעות NOTAM על סגירת מרחב אווירי ועליית פרמיות ביטוח סיכוני מלחמה הקדימו את הסבבים הקודמים.",
+   src:[["Flightradar24","https://www.flightradar24.com/"]]}
+];
+
+const MARKETS = [
+  {id:"pm1", name:"Polymarket: חיפוש \"Iran\"", url:"https://polymarket.com/search?q=iran"},
+  {id:"pm2", name:"Polymarket: Iran strike on Israel by…", url:"https://polymarket.com/event/iran-strike-on-israel-by"},
+  {id:"ka", name:"Kalshi", url:"https://kalshi.com/browse?search=iran"},
+  {id:"mc", name:"Metaculus", url:"https://www.metaculus.com/questions/?search=iran%20israel"},
+  {id:"mf", name:"Manifold", url:"https://manifold.markets/search?q=iran%20israel"}
+];
+
+const SOURCES = [
+  {t:"עיתונות ישראלית", items:[["ynet / ידיעות אחרונות – תגית איראן","https://www.ynet.co.il/topics/%D7%90%D7%99%D7%A8%D7%90%D7%9F","צבירת כוחות, תמונות לוויין"],["ynet – צבא וביטחון","https://www.ynet.co.il/news/category/344",""],["רון בן ישי – במבחן הביטחון","https://www.yediot.co.il/news/category/4502","פרשנות צבאית, ידיעות אחרונות"],["נחום ברנע","https://www.ynet.co.il/news/category/56575","פרשנות מדינית"],["N12 / חדשות 12","https://www.mako.co.il/news","דיווחים מחדרי הקבינט"],["כאן חדשות","https://www.kan.org.il/news/","שידור ציבורי"],["הארץ","https://www.haaretz.co.il","ניתוח ועמדות ביקורתיות"],["Times of Israel – live blog","https://www.timesofisrael.com/liveblog/","עדכונים רציפים באנגלית"],["ישראל היום","https://www.israelhayom.co.il","קרוב ללשכת רה\"מ"]]},
+  {t:"עיתונות בינלאומית", items:[["Reuters","https://www.reuters.com/world/middle-east/","בלעדיות ממקורות אמריקאיים"],["Axios","https://www.axios.com/politics-policy","הדלפות מהבית הלבן"],["Al Jazeera – live","https://www.aljazeera.com/tag/iran/","זווית קטארית, מתווכים"],["AP","https://apnews.com/hub/iran",""],["Iran International","https://www.iranintl.com/en","אופוזיציה איראנית, מקורות מבפנים"],["BBC Persian","https://www.bbc.com/persian",""]]},
+  {t:"קולות רשמיים מאיראן", items:[["Khamenei.ir","https://english.khamenei.ir","הצהרות המנהיג העליון"],["IRNA","https://en.irna.ir","סוכנות הידיעות הרשמית"],["Tasnim","https://www.tasnimnews.com/en","קרובה למשמרות המהפכה"],["Fars","https://www.farsnews.ir/en","קרובה למשמרות המהפכה"],["עראקצ'י ב-X","https://x.com/araghchi","שר החוץ"]]},
+  {t:"מנהיגים ודוברים", items:[["טראמפ – Truth Social","https://truthsocial.com/@realDonaldTrump","ההצהרות שהזיזו את השוק"],["לשכת רה\"מ ב-X","https://x.com/IsraeliPM",""],["דובר צה\"ל","https://x.com/idfonline",""],["הבית הלבן","https://www.whitehouse.gov/news/",""],["פיקוד העורף","https://www.oref.org.il","הנחיות והתרעות"]]},
+  {t:"מכוני מחקר", items:[["INSS","https://www.inss.org.il","המכון למחקרי ביטחון לאומי"],["Critical Threats / ISW – Iran Update","https://www.criticalthreats.org/","עדכון יומי מפורט"],["Crisis Group","https://www.crisisgroup.org/middle-east-north-africa/gulf-and-arabian-peninsula/iran",""],["Washington Institute","https://www.washingtoninstitute.org",""],["מרכז עלמא","https://israel-alma.org","חזית צפון וחיזבאללה"],["IAEA","https://www.iaea.org/newscenter","דוחות מועצת הנגידים"]]},
+  {t:"שווקים ואותות", items:[["Polymarket","https://polymarket.com/search?q=iran","הימורים על תקיפה"],["Kalshi","https://kalshi.com/browse?search=iran","שוק מפוקח בארה\"ב"],["Metaculus","https://www.metaculus.com/questions/?search=iran","תחזיות קהילה"],["Bonbast – שער הריאל","https://www.bonbast.com","שוק חופשי"],["MarineTraffic","https://www.marinetraffic.com","תנועה בהורמוז"],["FAA NOTAM Search","https://notams.aim.faa.gov/notamSearch/","סגירות מרחב אווירי"]]},
+  {t:"סקרים", items:[["סרוגים – סקר הסקרים","https://www.srugim.co.il/elections/elections2026","ממוצע מנדטים וגושים"],["skarim.org","https://www.skarim.org/average-poll","ממוצע סקרים"],["INSS – סקר הביטחון הלאומי","https://www.inss.org.il/he/publication/inss-survey-june-2026/","עמדות על איראן"],["המכון הישראלי לדמוקרטיה","https://www.idi.org.il/tags/8122","מדד הקול הישראלי"],["Silver Bulletin – Iran war polls","https://www.natesilver.net/p/iran-war-polls-popularity-approval","ממוצע אמריקאי"],["Pew Research","https://pewresearch.org/short-reads/2026/10/08/iran-conflict-remains-deeply-unpopular-as-many-americans-expect-it-to-go-on-for-months",""]]},
+  {t:"בורסה ודלק", items:[["בורסת ת\"א – ת\"א 35","https://market.tase.co.il/he/market_data/index/142/major_data","נתונים רשמיים"],["TheMarker – שוק ההון","https://www.themarker.com/markets","עדכון מסחר שוטף"],["ביזפורטל","https://www.bizportal.co.il/capitalmarket/indices/generalview/33343333",""],["Trading Economics – ברנט","https://tradingeconomics.com/commodity/brent-crude-oil",""],["בנק ישראל – שערי חליפין","https://www.boi.org.il/roles/markets/exchangerates/","שער יציג"],["מחירי הדלק – ישראל היום","https://www.israelhayom.co.il/gas-prices","עדכון חודשי של רשות הדלק"],["AAA – מחירי דלק בארה\"ב","https://gasprices.aaa.com/","בנזין וסולר, יומי"],["EIA – Gasoline & Diesel","https://www.eia.gov/petroleum/gasdiesel/","עדכון שבועי רשמי"]]}
+];
+
+const FIN = [
+  {id:"brent", name:"נפט ברנט (חוזה עתידי)", unit:"$ לחבית", base:105.86, per:10, dir:1, w:1,
+   note:"13.10: ‏105.86$ (‎−0.7%). לפני המלחמה כ-73$. מחיר הספוט (Dated Brent) עמד על 125$ ב-6.10, פער שמעיד על מחסור פיזי.",
+   url:"https://tradingeconomics.com/commodity/brent-crude-oil"},
+  {id:"ta35", name:"מדד ת\"א 35", unit:"נק׳", base:4061.71, per:5, dir:-1, w:1,
+   note:"13.10 במהלך המסחר: ‏4,061.71 (‎−0.7%). בשבוע שהסתיים ב-8.10 ירד כ-2.9%. בפרוץ המלחמה במרץ נפל 3.8% ביום אחד.",
+   url:"https://market.tase.co.il/he/market_data/index/142/major_data"},
+  {id:"usdils", name:"דולר/שקל", unit:"₪ לדולר", base:3.07, per:3, dir:1, w:0.8,
+   note:"12–13.10: כ-3.07. היחלשות חדה של השקל ליוותה את פתיחת הסבבים הקודמים.",
+   url:"https://www.boi.org.il/roles/markets/exchangerates/"},
+  {id:"eslt", name:"אלביט מערכות (ESLT)", unit:"$", base:null, per:8, dir:1, w:0.7,
+   note:"לא מצאתי מחיר אמין לאוקטובר. המניה עלתה כ-60% מתחילת 2026 עד אפריל. הזינו מחיר בסיס ומחיר נוכחי.",
+   url:"https://www.nasdaq.com/market-activity/stocks/eslt"},
+  {id:"gold", name:"זהב", unit:"$ לאונקיה", base:null, per:5, dir:1, w:0.4,
+   note:"נכס מקלט. קפיצה יחד עם נפט מעידה על פחד מהסלמה, לא על ביקוש.",
+   url:"https://tradingeconomics.com/commodity/gold"},
+  {id:"diesel_il", name:"סולר בישראל (לא מפוקח, שירות מלא)", unit:"₪ לליטר", base:11.97, per:10, dir:1, w:0.3,
+   note:"מחירון דלק, 2.10: ‏11.97 ₪. המחיר נקבע בידי חברות הדלק ומשתנה בין תחנות (טן כ-10.50 ₪ בשירות עצמי). השוו תמיד לאותה תחנה.",
+   url:"https://delek.co.il/%D7%9E%D7%97%D7%99%D7%A8%D7%95%D7%9F/"},
+  {id:"gas_us", name:"בנזין רגיל בארה\"ב (ממוצע ארצי)", unit:"$ לגלון", base:4.39, per:10, dir:1, w:0.4,
+   note:"8.10: ‏4.39$ (Finder), ‏4.41$ לפי AAA ב-1.10. השיא האחרון היה 4.48$ במאי. טראמפ אמר שמחירים גבוהים עלולים להימשך עד בחירות האמצע, נתון שמשפיע על נכונותו לתקוף.",
+   url:"https://gasprices.aaa.com/"},
+  {id:"diesel_us", name:"סולר בארה\"ב (ממוצע ארצי)", unit:"$ לגלון", base:6.30, per:10, dir:1, w:0.4,
+   note:"7.10: ‏6.30$ לפי AAA, עלייה של כ-72% בשנה (3.68$ לפני שנה) ומעל 5.90$ לפני חודש. הסולר רגיש במיוחד לשיבושים במפרץ.",
+   url:"https://en.macromicro.me/series/23010/aaa-daily-national-average-gasoline-prices-diesel"},
+  {id:"gas95", name:"בנזין 95 בישראל (מפוקח, שירות עצמי)", unit:"₪ לליטר", base:7.77, per:15, dir:1, w:0.3,
+   note:"מ-5.10: ‏7.77 ₪, ירידה של 50 אג׳ אחרי הפחתת הבלו. ב-1.10 נקבע שיא של 8.27 ₪. המחיר מתעדכן פעם בחודש ומפגר אחרי הנפט, ולכן משקלו נמוך.",
+   url:"https://www.israelhayom.co.il/gas-prices"}
+];
+const POLLS = [
+  {id:"il_support", c:"il", name:"ישראלים שתומכים בפעולה באיראן גם במחיר עימות עם טראמפ", unit:"%", base:52, per:10, dir:1, w:0.6,
+   note:"INSS, יוני 2026: ‏52% בעד, 35% נגד. במרץ 80.5% תמכו בתקיפה המשותפת.", url:"https://www.inss.org.il/he/publication/inss-survey-june-2026/"},
+  {id:"il_expect", c:"il", name:"ישראלים שמעריכים חידוש לחימה בשנה הקרובה", unit:"%", base:68, per:10, dir:1, w:0.4,
+   note:"INSS, יוני: ‏68% (73% באפריל). רק 15% חושבים שישראל ניצחה במלחמה, 37% חושבים שאיראן ניצחה.", url:"https://www.inss.org.il/he/publication/inss-survey-june-2026/"},
+  {id:"il_bloc", c:"il", name:"גוש נתניהו, ממוצע סקרים", unit:"מנדטים", base:54, per:4, dir:0, w:0,
+   note:"סרוגים, 11.10: ליכוד 23, ישר! (איזנקוט) 19. ימין 54, מרכז-שמאל 51, ערבים 9. הסקרים חלוקים: ערוץ 14 נותן לקואליציה 64, מעריב 51. לידיעה בלבד: לא ברור לאיזה כיוון זה משפיע.", url:"https://www.srugim.co.il/elections/elections2026"},
+  {id:"us_support", c:"us", name:"אמריקאים שתומכים במלחמה באיראן (ממוצע)", unit:"%", base:32, per:5, dir:1, w:0.8,
+   note:"Silver Bulletin, ‏6.10: ‏32%, שפל כל הזמנים. Pew (28.9–4.10): רק 33% מרוצים מניהול המהלך. I&I/TIPP חריג עם 44% בעד ו-42% נגד.", url:"https://www.natesilver.net/p/iran-war-polls-popularity-approval"},
+  {id:"trump_appr", c:"us", name:"תמיכה בטראמפ (ממוצע)", unit:"%", base:37, per:5, dir:1, w:0.5,
+   note:"8.10: כ-37% (NYT ‏37/60, RCP ‏38.3/59.5). Reuters/Ipsos: ‏32%. נשיא חלש פחות נוטה למלחמה לא פופולרית לפני בחירות.", url:"https://www.natesilver.net/p/trump-approval-ratings-nate-silver-bulletin"},
+  {id:"generic", c:"us", name:"יתרון דמוקרטי בהצבעה לקונגרס", unit:"נק׳", base:7, per:5, dir:0, w:0,
+   note:"Reuters/Ipsos: דמוקרטים 44%, רפובליקנים 37%. טראכרים נעים בין D+6 ל-D+7.4. לידיעה בלבד: הפסד בבית הנבחרים יכול גם לרסן וגם לדחוף לפעולה אחרי 3.11.", url:"https://uspollingdata.com/polls/2026-midterm-tracker/"}
+];
+function pollRow(f){
+  const e = (S.polls||{})[f.id]||{};
+  const base = e.base!=null && e.base!=="" ? Number(e.base) : f.base;
+  const cur = e.cur!=null && e.cur!=="" ? Number(e.cur) : null;
+  if(!isFinite(base) || cur==null || !isFinite(cur)) return {base, cur, chg:null, score:null};
+  const chg = cur - base;
+  return {base, cur, chg, score: f.dir ? f.dir*chg/f.per : null};
+}
+function pollScore(){
+  let sw=0, ss=0;
+  POLLS.forEach(f=>{ const r=pollRow(f); if(r.score!=null && f.w){ ss+=f.w*r.score; sw+=f.w; } });
+  if(!sw) return 0;
+  return Math.round(Math.max(-2, Math.min(2, ss/sw))*10)/10;
+}
+function finRow(f){
+  const e = (S.fin||{})[f.id]||{};
+  const base = e.base!=null && e.base!=="" ? Number(e.base) : f.base;
+  const cur = e.cur!=null && e.cur!=="" ? Number(e.cur) : null;
+  if(!(base>0) || !(cur>0)) return {base, cur, chg:null, score:null};
+  const chg = (cur/base - 1)*100;
+  return {base, cur, chg, score: f.dir*chg/f.per};
+}
+function finScore(){
+  let sw=0, ss=0;
+  FIN.forEach(f=>{ const r=finRow(f); if(r.score!=null){ ss+=f.w*r.score; sw+=f.w; } });
+  if(!sw) return 0;
+  return Math.round(Math.max(-2, Math.min(2, ss/sw))*10)/10;
+}
+function val(i){ return i.computed==="fin" ? finScore() : i.computed==="polls" ? pollScore() : S.values[i.id]; }
+
+const NEWS = [
+  {d:"12.10", s:"ynet", t:"ארה\"ב בחנה עם הרמטכ\"ל תקיפה ישראלית בתימן, לא באיראן", b:"אחרי הפגיעה הקטלנית בנמל התעופה בריאד. זמיר הזהיר מהסלמה מול החות'ים ואולי איראן, ומדחיית הבחירות. עם מפקד CENTCOM נדונה תקיפה עתידית באיראן, בלי כוונה קונקרטית.", e:"mix", ind:"us_prep", u:"https://www.ynet.co.il/news/article/sykug00time"},
+  {d:"10.10", s:"הארץ", t:"גורמי ביטחון: תקיפה באיראן לפני הבחירות תיתפס כצעד פוליטי", b:"ארה\"ב נערכת לתקיפה ממוקדת. הבחירות בעוד כשבועיים וחצי.", e:"down", ind:"il_elect", u:"https://haaretz.co.il/news/politics/2026-10-10/ty-article/000001a1-26e9-d0ca-a7b7-beebf8170000"},
+  {d:"8.10", s:"ynet", t:"במערב מזהירים: איראן חזרה לייצור טילים בשיטות הישנות", b:"דיפלומטים מערביים: שיקום הטילים הוא העדיפות העליונה, לפני הגרעין. החשש הוא מטעות בחישוב.", e:"up", ind:"missiles", u:"https://www.ynet.co.il/news/article/rj6pzt2xzl"},
+  {d:"8.10", s:"Truth Social", t:"טראמפ: לא נתקוף את איראן לפני בחירות האמצע", b:"\"דיונים פרודוקטיביים\" עם טהרן. הסגר הימי נשאר, ו-17 כלי שיט נוספו לסנקציות.", e:"down", ind:"trump_pre", u:"https://www.axios.com/2026/10/08/trump-iran-strikes-midterm-elections"},
+  {d:"2.10", s:"ynet", t:"נושאת המטוסים \"תיאודור רוזוולט\" ויחידת נחתים בדרך לאזור", b:"טראמפ מסמן את החודש הבא כמועד אפשרי לחידוש המלחמה. ישראל נערכת להגנה על שמיה.", e:"up", ind:"buildup", u:"https://www.ynet.co.il/news/article/hjrehj3lwe"},
+  {d:"ספט׳–אוק׳", s:"ynet", t:"תמונות לוויין: פעילות מחודשת באתר הגרעין מין-זדאי", b:"אתר פיתוח נשק צפון-מזרחית לטהרן, שישראל תקפה.", e:"up", ind:"nuke_activity", u:"https://www.ynet.co.il/news/article/rjwuf6gjgl"},
+  {d:"אוקטובר", s:"ynet", t:"\"צבא הבוטים\" של איראן מתערב בבחירות בישראל", b:"לפי אזהרה אמריקאית, כ-1,000 חשבונות אוטומטיים השתתפו בדיונים סביב הבחירות. OpenAI: איראן הכניסה כמעט 100 מאמרים לאתרי חדשות תחת שמות בדויים.", e:"info", ind:null, u:"https://www.ynet.co.il/news/article/r1c0acqfze"},
+  {d:"~אוגוסט", s:"ynet (CNN)", t:"האצה בהכנות להפצצת מתקני גרעין, איראן תקפה בכוויית", b:"כולל הר המכוש. איראן הודיעה שעבדה על פיתוח נשק בזמן מזכר ההבנות. לפי CNN, אין אינדיקציה שישראל תשתתף בגל הבא.", e:"up", ind:null, u:"https://www.ynet.co.il/news/article/hyibnbsbfe"},
+  {d:"יוני", s:"ynetnews", t:"טראמפ \"קיפל\" את נתניהו אחרי שישראל חיפשה עילה לתקוף בטהרן", b:"מקור ישראלי יחיד. ישראל עצרה את התקיפות באיראן לבקשת טראמפ.", e:"down", ind:"leash", u:"https://www.ynetnews.com/article/hkqe5114wge"}
+];
+
+const DEF_OFFSET = {any:0, wide:-0.5, joint:-0.9};
+const HORIZONS = [7,14,30,60,90,180];
+
+function defaults(){
+  const values={}, weights={};
+  IND.forEach(i=>{values[i.id]=i.v; weights[i.id]=i.w;});
+  return {base:12, horizon:30, def:"any", values, weights, mkts:{}, mktW:40, tab:"mil", fin:{}, polls:{}};
+}
+let S = defaults();
+try{ const raw = localStorage.getItem(LS_KEY); if(raw){ const s = JSON.parse(raw); S = Object.assign(defaults(), s); S.values = Object.assign(defaults().values, s.values||{}); S.weights = Object.assign(defaults().weights, s.weights||{}); } }catch(e){}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+
+const logit = p => Math.log(p/(1-p));
+const sig = x => 1/(1+Math.exp(-x));
+const clampP = p => Math.min(0.995, Math.max(0.001, p));
+const fmt = p => (p*100 < 1 ? "<1" : Math.round(p*100)) + "%";
+const dayMs = 86400000;
+const fmtDate = d => d.toLocaleDateString("he-IL",{day:"numeric",month:"numeric"});
+
+function startDate(){ const t = new Date(); t.setHours(0,0,0,0); return t > AS_OF ? t : AS_OF; }
+
+function active(ind, d){
+  if(ind.until && d >= new Date(ind.until+"T00:00:00")) return false;
+  if(ind.from && d < new Date(ind.from+"T00:00:00")) return false;
+  return true;
+}
+function contrib(ind){ return K * val(ind) * S.weights[ind.id]; }
+
+function marketHazard(){
+  const st = startDate(); const hs=[];
+  MARKETS.forEach(m=>{
+    const e = S.mkts[m.id]; if(!e || e.p==null || e.p==="" || !e.date) return;
+    const p = Number(e.p)/100; const days = (new Date(e.date+"T00:00:00") - st)/dayMs;
+    if(!(p>0 && p<1) || days < 1) return;
+    hs.push(1 - Math.pow(1-p, 30/days));
+  });
+  if(!hs.length) return null;
+  return sig(hs.reduce((a,h)=>a+logit(clampP(h)),0)/hs.length);
+}
+
+function monthlyHazard(d, withMarket=true){
+  let x = logit(S.base/100) + DEF_OFFSET[S.def];
+  IND.forEach(i=>{ if(active(i,d)) x += contrib(i); });
+  let p = clampP(sig(x));
+  const mh = withMarket ? marketHazard() : null;
+  if(mh!=null){ const a = S.mktW/100; p = sig((1-a)*logit(p) + a*logit(clampP(mh))); }
+  return p;
+}
+function series(days, withMarket=true){
+  const st = startDate(); let surv=1; const out=[0];
+  for(let i=0;i<days;i++){
+    const d = new Date(st.getTime()+i*dayMs);
+    const h30 = monthlyHazard(d, withMarket);
+    surv *= Math.pow(1-h30, 1/30);
+    out.push(1-surv);
+  }
+  return out;
+}
+
+function kent(p){
+  if(p<0.05) return "כמעט בלתי אפשרי";
+  if(p<0.20) return "לא סביר מאוד";
+  if(p<0.45) return "לא סביר";
+  if(p<=0.55) return "סיכוי שווה";
+  if(p<0.80) return "סביר";
+  if(p<0.95) return "סביר מאוד";
+  return "כמעט ודאי";
+}
+
+/* ---- gauge ---- */
+function buildGauge(){
+  const g = document.getElementById("gaugeArcs");
+  const bands = [[0,.05,"var(--calm)"],[.05,.2,"var(--calm)"],[.2,.45,"var(--accent)"],[.45,.55,"var(--warn)"],[.55,.8,"var(--risk)"],[.8,1,"var(--risk)"]];
+  const cx=160, cy=165, r=125;
+  const pt = (f,rr)=>{ const a = Math.PI*(1-f); return [cx + rr*Math.cos(a), cy - rr*Math.sin(a)]; };
+  let html="";
+  bands.forEach(([a,b,c],i)=>{
+    const [x1,y1]=pt(a,r), [x2,y2]=pt(b,r);
+    const op = [0.35,0.6,0.55,0.7,0.6,0.9][i];
+    html += `<path d="M${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2}" stroke="${c}" stroke-opacity="${op}" stroke-width="18" fill="none"/>`;
+  });
+  for(let t=0;t<=10;t++){ const [x1,y1]=pt(t/10,r-14), [x2,y2]=pt(t/10,r-20); html+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="1"/>`; }
+  g.innerHTML = html;
+}
+
+/* ---- curve ---- */
+function drawCurve(model, full, horizon){
+  const svg = document.getElementById("curve");
+  const W=640,H=210,L=44,R=14,T=12,B=30; const n=full.length-1;
+  const x = i => L + (W-L-R)*(i/n); const y = p => T + (H-T-B)*(1-p);
+  let s="";
+  [0,.25,.5,.75,1].forEach(p=>{ s+=`<line x1="${L}" x2="${W-R}" y1="${y(p)}" y2="${y(p)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(p)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${p*100}%</text>`; });
+  const st = startDate();
+  [0,30,60,90,120,150,180].forEach(dd=>{ s+=`<text x="${x(dd)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">+${dd}</text>`; });
+  [["2026-10-27","בחירות בישראל",0],["2026-11-03","בחירות בארה\"ב",1]].forEach(([ds,lab,k])=>{
+    const dd = Math.round((new Date(ds+"T00:00:00")-st)/dayMs);
+    if(dd>0 && dd<n){ s+=`<line x1="${x(dd)}" x2="${x(dd)}" y1="${T}" y2="${H-B}" stroke="var(--warn)" stroke-dasharray="3 3"/><text x="${x(dd)+4}" y="${T+10+k*14}" text-anchor="start" direction="rtl" font-size="11" fill="var(--warn)">${lab}</text>`; }
+  });
+  const path = arr => arr.map((p,i)=>`${i?"L":"M"}${x(i).toFixed(1)} ${y(p).toFixed(1)}`).join(" ");
+  const area = path(full) + ` L${x(n)} ${y(0)} L${x(0)} ${y(0)} Z`;
+  s += `<path d="${area}" fill="var(--risk)" fill-opacity="0.10"/>`;
+  if(marketHazard()!=null) s += `<path d="${path(model)}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  s += `<path d="${path(full)}" fill="none" stroke="var(--risk)" stroke-width="2.5"/>`;
+  const hx=x(horizon), hy=y(full[horizon]);
+  s += `<line x1="${hx}" x2="${hx}" y1="${hy}" y2="${H-B}" stroke="var(--ink)" stroke-width="1"/><circle cx="${hx}" cy="${hy}" r="5" fill="var(--risk)" stroke="var(--surface)" stroke-width="2"/>`;
+  s += `<text x="${hx}" y="${hy-10}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)" font-family="IBM Plex Mono, monospace">${fmt(full[horizon])}</text>`;
+  svg.innerHTML = s;
+}
+
+/* ---- render ---- */
+function renderVerdict(){
+  const full = series(180, true), model = series(180, false);
+  const h = S.horizon, p = full[h];
+  document.getElementById("bigP").textContent = fmt(p);
+  document.getElementById("kent").textContent = kent(p);
+  document.getElementById("horizonLabel").textContent = `סבירות לחזרה לאש ישירה בתוך ${h} יום (עד ${fmtDate(new Date(startDate().getTime()+h*dayMs))})`;
+  document.getElementById("needle").style.transform = `rotate(${(p*180-90).toFixed(1)}deg)`;
+  [7,30,90,180].forEach(d=>document.getElementById("p"+d).textContent = fmt(full[d]));
+  drawCurve(model, full, h);
+  const st = startDate();
+  const items = IND.filter(i=>active(i,st) || (i.from && new Date(i.from+"T00:00:00") < new Date(st.getTime()+h*dayMs))).map(i=>({i, c:contrib(i)})).filter(o=>Math.abs(o.c)>0.001);
+  const up = items.filter(o=>o.c>0).sort((a,b)=>b.c-a.c).slice(0,4);
+  const dn = items.filter(o=>o.c<0).sort((a,b)=>a.c-b.c).slice(0,4);
+  const li = o => `<li><span>${o.i.name}</span><span class="num ${o.c>0?"up":"down"}">×${Math.exp(o.c).toFixed(2)}</span></li>`;
+  document.getElementById("upList").innerHTML = up.map(li).join("") || "<li class='note'>אין</li>";
+  document.getElementById("downList").innerHTML = dn.map(li).join("") || "<li class='note'>אין</li>";
+  const mh = marketHazard();
+  const mNow = monthlyHazard(st,false);
+  document.getElementById("modelLine").innerHTML = `סיכון חודשי היום לפי המודל: <span class="num">${fmt(mNow)}</span>` + (mh!=null ? ` · לפי השווקים: <span class="num">${fmt(mh)}</span> · משוקלל: <span class="num">${fmt(monthlyHazard(st,true))}</span> (קו מקווקו = מודל בלבד)` : " · לא הוזנו מחירי שוק");
+  document.querySelectorAll("#horizonSeg button").forEach(b=>b.setAttribute("aria-pressed", String(Number(b.dataset.h)===h)));
+}
+
+function renderTabs(){
+  document.getElementById("tabs").innerHTML = CATS.map(c=>`<button role="tab" type="button" aria-selected="${c.id===S.tab}" data-tab="${c.id}">${c.name}</button>`).join("");
+}
+function windowChip(i){
+  if(i.until) return `<span class="chip">חל עד ${fmtDate(new Date(i.until+"T00:00:00"))}</span>`;
+  if(i.from) return `<span class="chip">חל מ-${fmtDate(new Date(i.from+"T00:00:00"))}</span>`;
+  return "";
+}
+function valueChip(v){
+  if(v>0) return `<span class="chip r">מסלים</span>`;
+  if(v<0) return `<span class="chip c">מרגיע</span>`;
+  return "";
+}
+function renderInds(){
+  const list = IND.filter(i=>i.cat===S.tab);
+  document.getElementById("indList").innerHTML = list.map(i=>{
+    const v=val(i), w=S.weights[i.id];
+    const src = i.src.length ? `<div class="src">מקורות: ${i.src.map(([n,u])=>`<a href="${u}" target="_blank" rel="noopener">${n}</a>`).join(" · ")}</div>` : "";
+    return `<div class="ind" data-id="${i.id}">
+      <div style="min-width:0">
+        <h3>${i.name} ${windowChip(i)} <span class="vc">${valueChip(v)}</span></h3>
+        <p class="status"><b>מצב נוכחי:</b> ${i.status}</p>
+        ${src}
+      </div>
+      <div class="slider">
+        <label class="eyebrow" for="v_${i.id}">הערכה: <span class="num" data-vout>${v>0?"+":""}${v}</span>${i.computed?` · מחושב, <a href="#${i.computed}">עדכון בטבלה</a>`:""}</label>
+        <input type="range" id="v_${i.id}" min="-2" max="2" step="0.1" value="${v}" data-kind="v" ${i.computed?"disabled":""}>
+        <div class="scale"><span>−2</span><span>−1</span><span>0</span><span>+1</span><span>+2</span></div>
+        <div class="meta">
+          <label for="w_${i.id}">משקל <select id="w_${i.id}" data-kind="w">${[0,0.4,0.6,0.8,1,1.2,1.5].map(x=>`<option value="${x}" ${Math.abs(x-w)<1e-9?"selected":""}>${x}</option>`).join("")}</select></label>
+          <span>השפעה על יחס הסיכויים: <span class="contrib num" data-cout>×${Math.exp(contrib(i)).toFixed(2)}</span></span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function restoreLiveMarkets(){
+  Object.keys(S.mkts||{}).forEach(id=>{
+    const e=S.mkts[id];
+    if(id.startsWith("live_") && e && e.name && !MARKETS.some(m=>m.id===id)) MARKETS.push({id, name:e.name, url:e.url});
+  });
+}
+async function loadLiveMarkets(){
+  const box=document.getElementById("liveBox"), list=document.getElementById("liveList"), meta=document.getElementById("liveMeta");
+  try{
+    const r = await fetch("/api/iran/markets", {cache:"no-store"});
+    if(!r.ok) return;
+    const data = await r.json();
+    const ms = Array.isArray(data.markets) ? data.markets : [];
+    if(!ms.length) return;
+    box.hidden=false;
+    meta.textContent = "מחירים חיים, מתעדכנים כל 10 דקות · " + new Date(data.fetchedAt).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+    list.innerHTML="";
+    ms.slice(0,12).forEach(m=>{
+      const li=document.createElement("li");
+      const a=document.createElement("a"); a.href=m.url; a.target="_blank"; a.rel="noopener"; a.textContent=m.question;
+      const info=document.createElement("span"); info.className="num"; info.textContent=`${Math.round(m.yes*1000)/10}% · ${m.endDate ? new Date(m.endDate).toLocaleDateString("he-IL") : "–"}`;
+      const b=document.createElement("button"); b.type="button"; b.className="btn"; b.textContent="הוסף לחישוב";
+      const id="live_"+m.slug;
+      if(S.mkts[id]){ b.textContent="מעודכן"; S.mkts[id].p=Math.round(m.yes*1000)/10; }
+      b.addEventListener("click",()=>{
+        S.mkts[id]={name:"Polymarket: "+m.question, url:m.url, p:Math.round(m.yes*1000)/10, date:(m.endDate||"").slice(0,10)};
+        if(!MARKETS.some(x=>x.id===id)) MARKETS.push({id, name:S.mkts[id].name, url:m.url});
+        save(); renderMarkets(); renderVerdict(); b.textContent="נוסף"; b.disabled=true;
+      });
+      li.append(a,info,b); list.append(li);
+    });
+    save(); renderMarkets(); renderVerdict();
+  }catch(e){ /* offline or API unavailable: manual entry still works */ }
+}
+
+function renderMarkets(){
+  document.getElementById("mktBody").innerHTML = MARKETS.map(m=>{
+    const e = S.mkts[m.id]||{};
+    return `<tr data-m="${m.id}"><td>${m.name}</td>
+      <td><input type="number" min="0" max="100" step="0.5" id="mp_${m.id}" value="${e.p??""}" placeholder="–" aria-label="מחיר ${m.name}"></td>
+      <td><input type="date" id="md_${m.id}" value="${e.date||""}" aria-label="תאריך סגירה ${m.name}"></td>
+      <td class="num" data-imp>–</td>
+      <td><a href="${m.url}" target="_blank" rel="noopener">פתח</a></td></tr>`;
+  }).join("");
+  updateImplied();
+  document.getElementById("mktW").value = S.mktW;
+  document.getElementById("mktWv").textContent = S.mktW + "%";
+}
+function updateImplied(){
+  const st = startDate();
+  MARKETS.forEach(m=>{
+    const e=S.mkts[m.id]; const td=document.querySelector(`tr[data-m="${m.id}"] [data-imp]`); if(!td) return;
+    if(!e||e.p==null||e.p===""||!e.date){ td.textContent="–"; return; }
+    const p=Number(e.p)/100, days=(new Date(e.date+"T00:00:00")-st)/dayMs;
+    td.textContent = (p>0&&p<1&&days>=1) ? fmt(1-Math.pow(1-p,30/days)) : "לא תקין";
+  });
+}
+
+function renderFin(){
+  document.getElementById("finBody").innerHTML = FIN.map(f=>{
+    const e=(S.fin||{})[f.id]||{};
+    const bv = e.base!=null && e.base!=="" ? e.base : (f.base ?? "");
+    return `<tr data-f="${f.id}"><td><a href="${f.url}" target="_blank" rel="noopener">${f.name}</a><div class="note">${f.unit}</div></td>
+      <td><input type="number" step="any" min="0" id="fb_${f.id}" value="${bv}" placeholder="–" data-k="base" aria-label="בסיס ${f.name}"></td>
+      <td><input type="number" step="any" min="0" id="fc_${f.id}" value="${e.cur??""}" placeholder="–" data-k="cur" aria-label="עכשיו ${f.name}"></td>
+      <td class="num" data-chg>–</td><td class="num" data-sc>–</td><td>${f.note}</td></tr>`;
+  }).join("");
+  updateFin();
+}
+function updateFin(){
+  FIN.forEach(f=>{
+    const tr=document.querySelector(`tr[data-f="${f.id}"]`); if(!tr) return; const r=finRow(f);
+    const c=tr.querySelector("[data-chg]"), sc=tr.querySelector("[data-sc]");
+    c.textContent = r.chg==null ? "–" : (r.chg>0?"+":"")+r.chg.toFixed(1)+"%";
+    sc.textContent = r.score==null ? "–" : (r.score>0?"+":"")+r.score.toFixed(1);
+    sc.className = "num " + (r.score>0.05?"up":r.score<-0.05?"down":"");
+  });
+  const v=finScore(), n=FIN.filter(f=>finRow(f).score!=null).length;
+  const el=document.getElementById("finScore"); el.textContent=(v>0?"+":"")+v; el.className="num "+(v>0?"up":v<0?"down":"");
+  const fi=IND.find(i=>i.id==="fin");
+  document.getElementById("finNote").textContent = n ? `מבוסס על ${n} נתונים · משנה את יחס הסיכויים פי ${Math.exp(contrib(fi)).toFixed(2)}` : "עוד לא הוזנו מחירים עדכניים, ולכן אין השפעה";
+}
+
+function renderPolls(){
+  ["il","us"].forEach(c=>{
+    document.getElementById("pollBody_"+c).innerHTML = POLLS.filter(f=>f.c===c).map(f=>{
+      const e=(S.polls||{})[f.id]||{};
+      const bv = e.base!=null && e.base!=="" ? e.base : (f.base ?? "");
+      return `<tr data-p="${f.id}"><td><a href="${f.url}" target="_blank" rel="noopener">${f.name}</a><div class="note">${f.unit}${f.dir?"":" · לידיעה בלבד"}</div></td>
+        <td><input type="number" step="any" id="pb_${f.id}" value="${bv}" placeholder="–" data-k="base" aria-label="בסיס ${f.name}"></td>
+        <td><input type="number" step="any" id="pc_${f.id}" value="${e.cur??""}" placeholder="–" data-k="cur" aria-label="עכשיו ${f.name}"></td>
+        <td class="num" data-chg>–</td><td class="num" data-sc>–</td><td>${f.note}</td></tr>`;
+    }).join("");
+  });
+  updatePolls();
+}
+function updatePolls(){
+  POLLS.forEach(f=>{
+    const tr=document.querySelector(`tr[data-p="${f.id}"]`); if(!tr) return; const r=pollRow(f);
+    const c=tr.querySelector("[data-chg]"), sc=tr.querySelector("[data-sc]");
+    c.textContent = r.chg==null ? "–" : (r.chg>0?"+":"")+(Math.round(r.chg*10)/10);
+    sc.textContent = r.score==null ? "–" : (r.score>0?"+":"")+r.score.toFixed(1);
+    sc.className = "num " + (r.score>0.05?"up":r.score<-0.05?"down":"");
+  });
+  const v=pollScore(), n=POLLS.filter(f=>f.dir && pollRow(f).score!=null).length;
+  const el=document.getElementById("pollScore"); el.textContent=(v>0?"+":"")+v; el.className="num "+(v>0?"up":v<0?"down":"");
+  const pi=IND.find(i=>i.id==="polls");
+  document.getElementById("pollNote").textContent = n ? `מבוסס על ${n} סקרים · משנה את יחס הסיכויים פי ${Math.exp(contrib(pi)).toFixed(2)}` : "עוד לא הוזנו סקרים חדשים, ולכן אין השפעה";
+}
+
+function renderNews(){
+  const lab={up:["r","מסלים"],down:["c","מרגיע"],mix:["","מעורב"],info:["","לידיעה"]};
+  document.getElementById("newsLog").innerHTML = NEWS.map(n=>{
+    const ind = n.ind ? IND.find(i=>i.id===n.ind) : null;
+    const [cls,l]=lab[n.e];
+    const chip = ind ? `<button type="button" class="chip ${cls}" data-goto="${ind.id}">${l} · ${ind.name}</button>` : `<span class="chip ${cls}">${l}</span>`;
+    return `<li><div class="nd">${n.d}<span class="ns">${n.s}</span></div><div style="min-width:0"><div class="nt"><a href="${n.u}" target="_blank" rel="noopener">${n.t}</a></div><div class="nb">${n.b}</div></div><div>${chip}</div></li>`;
+  }).join("");
+}
+document.getElementById("newsLog").addEventListener("click", e=>{
+  const b=e.target.closest("[data-goto]"); if(!b) return; const ind=IND.find(i=>i.id===b.dataset.goto);
+  S.tab=ind.cat; save(); renderTabs(); renderInds();
+  const card=document.querySelector(`.ind[data-id="${ind.id}"]`); if(card) card.scrollIntoView({behavior:"smooth",block:"center"});
+});
+
+function renderSources(){
+  document.getElementById("srcGrid").innerHTML = SOURCES.map(g=>`<div class="panel"><h3>${g.t}</h3><ul>${g.items.map(([n,u,d])=>`<li><a href="${u}" target="_blank" rel="noopener">${n}</a>${d?`<span>${d}</span>`:""}</li>`).join("")}</ul></div>`).join("");
+}
+
+function renderAll(){ renderVerdict(); renderTabs(); renderInds(); renderMarkets(); renderFin(); renderPolls(); document.getElementById("baseIn").value=S.base; document.getElementById("defSel").value=S.def; }
+
+/* ---- events ---- */
+document.getElementById("horizonSeg").innerHTML = HORIZONS.map(h=>`<button type="button" data-h="${h}">${h} יום</button>`).join("");
+document.getElementById("horizonSeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; S.horizon=Number(b.dataset.h); save(); renderVerdict(); });
+document.getElementById("defSel").addEventListener("change", e=>{ S.def=e.target.value; save(); renderVerdict(); });
+document.getElementById("baseIn").addEventListener("change", e=>{ const v=Math.min(80,Math.max(1,Number(e.target.value)||12)); S.base=v; e.target.value=v; save(); renderVerdict(); });
+document.getElementById("resetBtn").addEventListener("click", ()=>{ const keep={horizon:S.horizon, tab:S.tab, mkts:S.mkts, mktW:S.mktW}; S=Object.assign(defaults(), keep); save(); renderAll(); });
+document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; S.tab=b.dataset.tab; save(); renderTabs(); renderInds(); });
+document.getElementById("indList").addEventListener("input", e=>{
+  const card=e.target.closest(".ind"); if(!card) return; const id=card.dataset.id; const ind=IND.find(i=>i.id===id);
+  if(e.target.dataset.kind==="v") S.values[id]=Number(e.target.value);
+  else if(e.target.dataset.kind==="w") S.weights[id]=Number(e.target.value); else return;
+  const v=S.values[id];
+  card.querySelector("[data-vout]").textContent=(v>0?"+":"")+v;
+  card.querySelector("[data-cout]").textContent="×"+Math.exp(contrib(ind)).toFixed(2);
+  card.querySelector(".vc").innerHTML=valueChip(v);
+  save(); renderVerdict();
+});
+document.getElementById("mktBody").addEventListener("input", e=>{
+  const tr=e.target.closest("tr"); if(!tr) return; const id=tr.dataset.m; S.mkts[id]=S.mkts[id]||{};
+  if(e.target.type==="number") S.mkts[id].p = e.target.value===""?null:Number(e.target.value);
+  if(e.target.type==="date") S.mkts[id].date = e.target.value;
+  save(); updateImplied(); renderVerdict();
+});
+document.getElementById("mktW").addEventListener("input", e=>{ S.mktW=Number(e.target.value); document.getElementById("mktWv").textContent=S.mktW+"%"; save(); renderVerdict(); });
+
+document.getElementById("finBody").addEventListener("input", e=>{
+  const tr=e.target.closest("tr"); if(!tr||!e.target.dataset.k) return; const id=tr.dataset.f;
+  S.fin=S.fin||{}; S.fin[id]=S.fin[id]||{};
+  S.fin[id][e.target.dataset.k] = e.target.value===""?null:Number(e.target.value);
+  save(); updateFin(); renderVerdict(); if(S.tab==="econ") renderInds();
+});
+
+document.getElementById("polls").addEventListener("input", e=>{
+  const tr=e.target.closest("tr"); if(!tr||!e.target.dataset.k) return; const id=tr.dataset.p;
+  S.polls=S.polls||{}; S.polls[id]=S.polls[id]||{};
+  S.polls[id][e.target.dataset.k] = e.target.value===""?null:Number(e.target.value);
+  save(); updatePolls(); renderVerdict(); if(S.tab==="pol") renderInds();
+});
+
+/* ---- news analyzer (Claude) ---- */
+let sampleFn=null, ctl=null;
+const anBtn=document.getElementById("anBtn"), anStop=document.getElementById("anStop"), anStatus=document.getElementById("anStatus"), anOut=document.getElementById("anOut"), anSummary=document.getElementById("anSummary");
+function hideAnalyzer(){ document.getElementById("anPanel").hidden=true; document.getElementById("anUnavailable").hidden=false; }
+(async()=>{ try{ sampleFn = window.claude ? await window.claude.use("sample") : null; }catch(e){ sampleFn=null; } if(!sampleFn) hideAnalyzer(); })();
+
+const ERR = {rate_limited:"יותר מדי בקשות. נסו שוב בעוד כמה דקות.", session_expired:"צריך להתחבר מחדש ל-Claude.", refused:"Claude לא ניתח את הטקסט הזה. נסו ניסוח אחר.", invalid_json:"התשובה לא הגיעה בפורמט הנכון. נסו שוב.", empty_completion:"לא התקבלה תשובה. קצרו את הטקסט ונסו שוב.", prompt_too_large:"הטקסט ארוך מדי. הדביקו קטע קצר יותר.", upstream_error:"תקלה זמנית. נסו שוב."};
+
+anBtn.addEventListener("click", async ()=>{
+  const text=document.getElementById("newsIn").value.trim();
+  if(!text){ anStatus.textContent="הדביקו קודם טקסט של ידיעה."; return; }
+  if(!sampleFn){ hideAnalyzer(); return; }
+  const finDesc = FIN.map(f=>{const r=finRow(f); return `- ${f.name}: בסיס ${r.base??"לא ידוע"} ${f.unit}, עכשיו ${r.cur??"לא הוזן"}`;}).join("\n");
+  const indDesc = IND.filter(i=>!i.computed).map(i=>`- id=${i.id} | ${i.name} | ערך נוכחי ${S.values[i.id]} (סולם -2 מרגיע מאוד עד +2 מסלים מאוד) | רקע: ${i.status}`).join("\n");
+  const prompt = `אתה אנליסט מודיעין במקורות גלויים. יש מחשבון שמעריך את הסיכוי שישראל ואיראן יחזרו לאש ישירה. האינדיקטורים והערכים הנוכחיים (נכון ל-13.10.2026):\n${indDesc}\n\nנתוני שוק (לידיעה בלבד, מתעדכנים בטבלה נפרדת):\n${finDesc}\n\nידיעה חדשה שהמשתמש הדביק:\n"""\n${text.slice(0,6000)}\n"""\n\nקבע אילו אינדיקטורים הידיעה משנה, ולאיזה ערך חדש (בצעדים של 0.5 בין -2 ל-2). שנה רק מה שהידיעה באמת משפיעה עליו. אם הידיעה לא אמינה, ישנה, או לא רלוונטית, ציין זאת והחזר רשימה ריקה. ענה ב-JSON בלבד בצורה:\n{"summary":"משפט או שניים בעברית","reliability":"גבוהה|בינונית|נמוכה","changes":[{"id":"talks","value":1,"reason":"נימוק קצר בעברית"}]}`;
+  ctl = new AbortController(); anBtn.disabled=true; anStop.hidden=false; anStatus.textContent="Claude חושב..."; anOut.innerHTML=""; anSummary.textContent="";
+  try{
+    const res = await sampleFn.json(prompt, {signal:ctl.signal});
+    const changes = Array.isArray(res?.changes) ? res.changes.filter(c=>IND.some(i=>i.id===c.id && !i.computed) && isFinite(Number(c.value))) : [];
+    anSummary.textContent = (res?.summary ? String(res.summary) : "") + (res?.reliability ? ` · אמינות: ${res.reliability}` : "");
+    anStatus.textContent = changes.length ? `${changes.length} הצעות לעדכון` : "לא הוצעו שינויים";
+    anOut.innerHTML="";
+    changes.forEach(c=>{
+      const ind=IND.find(i=>i.id===c.id); const nv=Math.max(-2,Math.min(2,Math.round(Number(c.value)*2)/2));
+      const row=document.createElement("div"); row.className="sg";
+      const info=document.createElement("div");
+      const h=document.createElement("b"); h.textContent=ind.name;
+      const meta=document.createElement("span"); meta.className="num"; meta.textContent=`  ${S.values[ind.id]} → ${nv}`;
+      const why=document.createElement("div"); why.className="note"; why.textContent=String(c.reason||"");
+      info.append(h,meta,why);
+      const b=document.createElement("button"); b.type="button"; b.className="btn"; b.textContent="החל";
+      b.addEventListener("click",()=>{ S.values[ind.id]=nv; save(); if(S.tab!==ind.cat){S.tab=ind.cat; renderTabs();} renderInds(); renderVerdict(); b.textContent="הוחל"; b.disabled=true; });
+      row.append(info,b); anOut.append(row);
+    });
+  }catch(e){
+    if(e && (e.code==="not_granted"||e.code==="sampling_disabled"||e.code==="not_declared"||e.code==="capability_disabled"||e.code==="capability_removed")){ hideAnalyzer(); }
+    else if(e && e.code==="cancelled"){ anStatus.textContent="נעצר."; }
+    else anStatus.textContent = ERR[e?.code] || ERR.upstream_error;
+  }finally{ anBtn.disabled=false; anStop.hidden=true; }
+});
+anStop.addEventListener("click", ()=>ctl?.abort());
+
+restoreLiveMarkets(); buildGauge(); renderSources(); renderNews(); renderAll();
+loadLiveMarkets();
+if("serviceWorker" in navigator){ window.addEventListener("load", ()=>{ navigator.serviceWorker.register("/iran/sw.js", {scope:"/iran/"}).catch(()=>{}); }); }
+})();
+</script>
+</body>
+</html>
