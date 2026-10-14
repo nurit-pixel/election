@@ -167,7 +167,7 @@ img{max-width:100%}
 </head>
 <body>
 <div class="wrap">
-  <div class="banner"><span>הערכת מצב פתוחה · לא מסווג · מבוסס מקורות גלויים</span><span>עודכן: <span class="num">13.10.2026</span></span></div>
+  <div class="banner"><span>הערכת מצב פתוחה · לא מסווג · מבוסס מקורות גלויים</span><span>עודכן: <span class="num">14.10.2026</span></span></div>
 
   <header class="top">
     <div class="eyebrow">מחשבון סבירות</div>
@@ -221,7 +221,7 @@ img{max-width:100%}
       <div class="row">
         <label class="eyebrow" for="baseIn">שיעור בסיס חודשי</label>
         <input type="number" id="baseIn" min="1" max="80" step="1" style="width:80px"> <span class="note">% לחודש, לפני אינדיקטורים</span>
-        <button class="btn" id="resetBtn" type="button">חזרה להערכה של 13.10</button>
+        <button class="btn" id="resetBtn" type="button">חזרה להערכה של 14.10</button>
       </div>
       <div class="note" id="modelLine"></div>
     </div>
@@ -235,6 +235,7 @@ img{max-width:100%}
       <div class="tl"><div class="d">08.04 · 17.06</div><div>הפסקת אש בתיווך פקיסטן, ואחריה מזכר איסלמבאד ל-60 יום</div></div>
       <div class="tl"><div class="d">~17.08.2026</div><div>המזכר פג. הלחימה הרחבה מושהית, אין מסגרת מוסכמת</div></div>
       <div class="tl"><div class="d">02.10.2026</div><div>ידיעות אחרונות: נושאת המטוסים "תיאודור רוזוולט" ונחתים בדרך לאזור, ותמונות לוויין מראות פעילות מחודשת באתר הגרעין מין-זדאי</div></div>
+      <div class="tl"><div class="d">14.10.2026</div><div>נתניהו: נגד תקיפת מנע לפני הבחירות. החות'ים פוגעים במטה ארמקו, והתקיפות בהורמוז בשיא</div></div>
       <div class="tl"><div class="d">15–18.10</div><div>לפי N12: חלון ההחלטה האמריקאי על תזמון תקיפה (7–10 ימים מ-8.10)</div></div>
       <div class="tl"><div class="d">27.10.2026</div><div>בחירות לכנסת. הרמטכ"ל זמיר הזהיר שתקיפה עלולה לדחות אותן</div></div>
       <div class="tl"><div class="d">03.11.2026</div><div>בחירות האמצע בארה"ב. טראמפ: "לא נתקוף לפני כן"</div></div>
@@ -277,7 +278,7 @@ img{max-width:100%}
 
   <!-- Finance -->
   <section id="fin">
-    <div class="sec-head"><h2>בורסה ומחירי דלק</h2><span class="note">נקודת הבסיס: 13.10.2026. הזינו מחיר עדכני, והשינוי נכנס למודל דרך האינדיקטור "לחץ בשווקים"</span></div>
+    <div class="sec-head"><h2>בורסה ומחירי דלק</h2><span class="note">נקודת הבסיס: 13–14.10.2026. הזינו מחיר עדכני, והשינוי נכנס למודל דרך האינדיקטור "לחץ בשווקים"</span></div>
     <div class="panel">
       <div class="mkt"><table>
         <thead><tr><th>נתון</th><th style="width:120px">בסיס</th><th style="width:120px">עכשיו</th><th style="width:90px">שינוי</th><th style="width:80px">אות</th><th>מה לדעת</th></tr></thead>
@@ -360,19 +361,20 @@ img{max-width:100%}
         <li><b>שיעור בסיס.</b> מאז יוני 2025 היו לפחות ארבעה סבבי אש ישירה (מלחמת 12 הימים, 28.2.2026, חילופי האש ביוני וקריסת הפסקת האש ב-8.7). זה כ-15%–20% לחודש בתקופה של עימות לא פתור. ברירת המחדל שמרנית יותר, 12%, כי חלק מהמתיחות כבר מגולם באינדיקטורים.</li>
         <li><b>אינדיקטורים.</b> הערך נמדד ביחס ל"מצב הבסיס" של עימות לא פתור: 0 אומר שהאינדיקטור לא חורג ממה שכבר מגולם בשיעור הבסיס. כל אינדיקטור מוסיף ליחס הסיכויים הלוגריתמי: ערך × משקל × 0.35. ערך ‎+1 במשקל 1 מגדיל את יחס הסיכויים פי 1.4 בערך.</li>
         <li><b>חלונות זמן.</b> אינדיקטור עם תאריך ("עד 3.11") משפיע רק על הימים שבחלון. הסיכון מחושב יום-יום ומצטבר: P = 1 − Π(1 − h<sub>יום</sub>).</li>
+        <li><b>דעיכה.</b> מה שידוע היום אומר פחות על מה שיקרה בעוד חצי שנה. ההשפעה של כל אינדיקטור נחלשת בחצי כל 60 יום, וחוזרת בהדרגה לשיעור הבסיס.</li>
         <li><b>שווקים.</b> מחיר p עד תאריך שבעוד D ימים מומר לסיכון חודשי 1 − (1 − p)<sup>30/D</sup>, ומשוקלל עם המודל לפי המשקל שבחרתם.</li>
         <li><b>הגדרה.</b> "מערכה רחבה" מורידה את הסיכון (לא כל תקרית מתפתחת), ו"מבצע משותף" מורידה יותר.</li>
       </ol>
-      <p class="note">זה כלי לחשיבה מסודרת, לא תחזית מודיעינית. הערכים ההתחלתיים הם שיפוט שלי על בסיס דיווחים פתוחים עד 13.10.2026, וחלק מהדיווחים (למשל על הנחיית הפנטגון לזמיר) נשענים על מקורות אנונימיים.</p>
+      <p class="note">זה כלי לחשיבה מסודרת, לא תחזית מודיעינית. הערכים ההתחלתיים הם שיפוט שלי על בסיס דיווחים פתוחים עד 14.10.2026, וחלק מהדיווחים (למשל על הנחיית הפנטגון לזמיר) נשענים על מקורות אנונימיים.</p>
     </details>
   </section>
 </div>
 
 <script>
 (function(){
-const AS_OF = new Date("2026-10-13T00:00:00");
+const AS_OF = new Date("2026-10-14T00:00:00");
 const K = 0.35;
-const LS_KEY = "ii-meter-v2";
+const LS_KEY = "ii-meter-v3";
 
 const CATS = [
   {id:"mil", name:"צבא ושטח"},
@@ -392,12 +394,12 @@ const IND = [
   {id:"homefront", cat:"mil", name:"כוננות צה\"ל ופיקוד העורף", v:0.5, w:0.8,
    status:"המל\"ל הזהיר מניסיון תקיפה איראני סביב יום השנה ל-7 באוקטובר. גורמי ביטחון חוששים מ\"טעות בחישוב\" איראנית בגלל הלחץ הכלכלי. עדכנו כשיש שינוי בהנחיות פיקוד העורף.",
    src:[["Al Jazeera, 9.10","https://www.aljazeera.com/news/liveblog/2026/10/9/iran-war-live-iranian-media-reports-massive-explosions-in-hormuz-strait"]]},
-  {id:"hormuz", cat:"mil", name:"מצר הורמוז והסגר הימי", v:0.5, w:0.9,
-   status:"הסגר האמריקאי על נמלי איראן נמשך. ב-5.10 משמרות המהפכה איימו על מכלית, וב-9.10 דווחו פיצוצים חזקים במצר. ב-8.10 ארה\"ב הטילה סנקציות על 17 כלי שיט.",
-   src:[["Iran International","https://www.iranintl.com/en/202610054791"],["The Hill","https://thehill.com/homenews/administration/6136781-trump-vows-no-iran-attack/"]]},
-  {id:"proxies", cat:"mil", name:"חזיתות שלוחים: חיזבאללה והחות'ים", v:0.5, w:0.6,
-   status:"קואליציה בהובלת סעודיה תוקפת את החות'ים, ו-12 נהרגו בתקיפה על נמל התעופה בריאד (10.10). ynet: ארה\"ב בחנה אם צה\"ל יתקוף את החות'ים, וזמיר הזהיר שזה עלול להסלים גם מול איראן. בלבנון יש הפסקת אש מאז 16.4, אבל ישראל ממשיכה לתקוף.",
-   src:[["ynet","https://www.ynet.co.il/news/article/sykug00time"],["Al Jazeera, 10.10","https://www.aljazeera.com/news/liveblog/2026/10/10/iran-war-live-kremlin-says-trump-welcomed-russia-effort-in-iran-deal"]]},
+  {id:"hormuz", cat:"mil", name:"מצר הורמוז והסגר הימי", v:1, w:0.9,
+   status:"CBS ‏(14.10): התקיפות במצר ובסביבתו בשיא מאז תחילת המלחמה. איראן מדברת על \"טקטיקה חדשה\" נגד מכליות, וארה\"ב אכפה את הסגר על ספינה במפרץ עומאן. ב-13.10 ראש מערך הביטחון מוחסן רזאי כינה את התשובה האמריקאית להצעה לפתיחת המצר \"לא מספקת\". ב-9.10 דווחו פיצוצים חזקים במצר.",
+   src:[["CBS","https://cbsnews.com/live-updates/iran-war-us-houthi-saudi-arabia-trump"],["FDD, 13.10","https://www.fdd.org/overnight-brief/october-13-2026/"],["Iran International","https://www.iranintl.com/en/202610054791"],["The Hill","https://thehill.com/homenews/administration/6136781-trump-vows-no-iran-attack/"]]},
+  {id:"proxies", cat:"mil", name:"חזיתות שלוחים: חיזבאללה והחות'ים", v:1, w:0.4,
+   status:"13–14.10: החות'ים פגעו במטה ארמקו בדהראן (שריפה בכמה קומות, בלי פגיעה בהפקה), ושוב תקפו את ריאד. טראמפ שוקל להצטרף לתקיפות נגד החות'ים. קואליציה בהובלת סעודיה תוקפת את החות'ים, ו-12 נהרגו בתקיפה על נמל התעופה בריאד (10.10). ynet: ארה\"ב בחנה אם צה\"ל יתקוף את החות'ים, וזמיר הזהיר שזה עלול להסלים גם מול איראן. בלבנון יש הפסקת אש מאז 16.4, אבל ישראל ממשיכה לתקוף.",
+   src:[["Supply Chain Brain","https://www.supplychainbrain.com/articles/45017-aramco-hq-hit-as-houthis-widen-attacks-on-saudi-arabia"],["ynet","https://www.ynet.co.il/news/article/sykug00time"],["Al Jazeera, 10.10","https://www.aljazeera.com/news/liveblog/2026/10/10/iran-war-live-kremlin-says-trump-welcomed-russia-effort-in-iran-deal"]]},
   {id:"direct", cat:"mil", name:"תקריות ישירות מאז יוני", v:-0.5, w:0.8,
    status:"מאז החלטת הקבינט ב-8.6 (\"האש בהמתנה\") לא דווחו חילופי אש ישירים בין ישראל לאיראן. כל תקרית ישירה חדשה היא סימן חזק להעלאת הערך.",
    src:[["Washington Times","https://www.washingtontimes.com/news/2026/jun/8/israels-netanyahu-says-strikes-iran-hold-vows-forceful-response/"]]},
@@ -406,8 +408,8 @@ const IND = [
    src:[["ynet","https://www.ynet.co.il/news/article/rj6pzt2xzl"],["ישראל היום (WSJ)","https://www.israelhayom.co.il/news/world-news/middle-east/article/21402864"],["N12","https://www.mako.co.il/news-world/2026_q4/Article-92cafa0168421a1026.htm"]]},
 
   {id:"talks", cat:"dip", name:"שיחות ארה\"ב–איראן", v:0, w:1.0,
-   status:"קטאר: השיחות \"נמשכות\" למרות קיפאון. טראמפ מדבר על \"דיונים פרודוקטיביים\", אבל דחה את ההצעה האיראנית האחרונה. הקרמלין: טראמפ בירך על מאמץ תיווך רוסי.",
-   src:[["Axios","https://www.axios.com/2026/10/08/trump-iran-strikes-midterm-elections"]]},
+   status:"הצעת איראן בעצרת האו\"ם: שחרור כספים, הסרת סנקציות וסיום הסגר, ובתמורה פתיחת המצר תוך 4–5 ימים. הערוץ עובר דרך קטאר ופקיסטן, וויטקוף וקושנר נפגשו עם עראקצ'י. ארה\"ב: אין עסקה בלי הגרעין. טראמפ דחה את ההצעה, מדבר על \"דיונים פרודוקטיביים\", ואמר באו\"ם שהוא שוקל עסקה או לשלוח את איראן \"לגיהנום\". הקרמלין: טראמפ בירך על מאמץ תיווך רוסי.",
+   src:[["Al Jazeera, 29.9","https://www.aljazeera.com/news/2026/9/29/irans-araghchi-meets-qatari-mediators-as-us-insists-on-nuclear-talks"],["Axios","https://www.axios.com/2026/10/08/trump-iran-strikes-midterm-elections"]]},
   {id:"enrich", cat:"dip", name:"פער בסוגיית ההעשרה", v:0.5, w:1.0,
    status:"ואנס: כל הסכם מחייב צמצום ממשי של יכולת ההעשרה. התקשורת הממלכתית באיראן: טהרן לא תוותר על העשרה ולא תמסור את המלאי.",
    src:[["Fox News, 7.10","https://www.foxnews.com/live-news/us-iran-war-vance-talks-tehran-nuclear-program-10-07-26"]]},
@@ -427,22 +429,22 @@ const IND = [
   {id:"trump_pre", cat:"lead", name:"טראמפ: \"לא נתקוף לפני בחירות האמצע\"", v:-2, w:1.2, until:"2026-11-03",
    status:"8.10, Truth Social: ארה\"ב לא תתקוף את איראן \"בשום שלב לפני\" 3 בנובמבר. בכיר בבית הלבן: \"כל האפשרויות על השולחן\". באיראן לא סומכים על ההצהרה אחרי שתי תקיפות פתע.",
    src:[["Detroit News","https://www.detroitnews.com/story/news/politics/2026/10/08/trump-iran-midterm-elections/92154701007/"],["NSJ","https://nationalsecurityjournal.org/donald-trump-just-declared-we-will-not-be-attacking-iran-at-any-time-before-the-midterm-elections/"]]},
-  {id:"trump_post", cat:"lead", name:"טראמפ אחרי הבחירות: \"בדרך הקלה או הקשה\"", v:0.5, w:1.0, from:"2026-11-03",
-   status:"ההצהרה לא שוללת פעולה אחרי 3.11, והבית הלבן משדר \"easy way or hard way\". לפי N12 טראמפ שקל תקיפה לפני הבחירות או אחריהן.",
-   src:[["Fox News, 7.10","https://www.foxnews.com/live-news/us-iran-war-vance-talks-tehran-nuclear-program-10-07-26"]]},
+  {id:"trump_post", cat:"lead", name:"טראמפ אחרי הבחירות: \"בדרך הקלה או הקשה\"", v:1, w:1.0, from:"2026-11-03",
+   status:"ניו יורק טיימס, דרך ynet: צבא ארה\"ב נערך למתקפה של כ-3 ימים באיראן. טראמפ דחה חמש תוכניות תקיפה בחודשים האחרונים ואמר \"אחרי הבחירות\". המפקדים ערוכים לפתוח בימים ספורים אם ישנה את דעתו. הבית הלבן משדר \"easy way or hard way\".",
+   src:[["ynet (NYT)","https://www.ynet.co.il/news/article/hjol6ybjzx"],["Fox News, 7.10","https://www.foxnews.com/live-news/us-iran-war-vance-talks-tehran-nuclear-program-10-07-26"]]},
   {id:"bibi", cat:"lead", name:"נתניהו", v:0.5, w:0.8,
-   status:"5.10: חזה את נפילת המשטר. בספטמבר: תגובה \"שאיראן לא תוכל לצפות\" אם תתקוף. ביוני: \"האש בהמתנה\", אבל ישראל תגיב בעוצמה אם תותקף. מנהל קמפיין בחירות סביב הביטחון.",
-   src:[["Iran International","https://www.iranintl.com/en/202610054791"],["Yeni Safak","https://en.yenisafak.com/world/netanyahu-threatens-iran-strike-as-israeli-elections-loom-3722828"]]},
-  {id:"iranlead", cat:"lead", name:"הנהגת איראן", v:0, w:0.8,
-   status:"המנהיג העליון מוג'תבא חמינאי לא נראה בציבור מאז מרץ. ב-30.8 קרא למדינות מוסלמיות להתעמת עם ארה\"ב וישראל. ב-5.10 מפקד הכוחות המזוינים הזהיר שעימות חדש \"יבלע את האזור\".",
-   src:[["ABC News","https://abcnews.com/International/wireStory/irans-supreme-leader-calls-muslim-unity-us-israel-136068585"]]},
+   status:"14.10, גלי צה\"ל: נגד תקיפת מנע לפני הבחירות (\"לא נוח לנו, זה לא טוב\"; \"גם אם איראן תירה עלינו יאשימו אותי\"), אבל ישראל תגיב בעוצמה אם תותקף. סירב להתייחס לתקיפה אחרי הבחירות. לפי חדשות 12, הוא לוחץ על טראמפ להגביר את ההיערכות הצבאית. 5.10: חזה את נפילת המשטר. בספטמבר: תגובה \"שאיראן לא תוכל לצפות\" אם תתקוף. ביוני: \"האש בהמתנה\", אבל ישראל תגיב בעוצמה אם תותקף. מנהל קמפיין בחירות סביב הביטחון.",
+   src:[["Reuters via US News","https://www.usnews.com/news/world/articles/2026-10-14/netanyahu-says-he-is-not-seeking-to-attack-iran-again-before-israel-election"],["Iran International","https://www.iranintl.com/en/202610054791"],["Yeni Safak","https://en.yenisafak.com/world/netanyahu-threatens-iran-strike-as-israeli-elections-loom-3722828"]]},
+  {id:"iranlead", cat:"lead", name:"הנהגת איראן", v:0.5, w:0.8,
+   status:"WSJ ‏(13.10): איראן מאיימת שאם התקיפות יתחדשו היא עלולה לפלוש לשטח של מדינות שכנות ולתקוף מתקני נפט סעודיים וספינות מלחמה אמריקאיות. המנהיג העליון מוג'תבא חמינאי לא נראה בציבור מאז מרץ. ב-30.8 קרא למדינות מוסלמיות להתעמת עם ארה\"ב וישראל. ב-5.10 מפקד הכוחות המזוינים הזהיר שעימות חדש \"יבלע את האזור\".",
+   src:[["Sunday Guardian (WSJ)","https://sundayguardianlive.com/world/us-israel-iran-war-latest-news-iran-reportedly-threatens-possible-ground-invasion-of-neighbouring-countries-if-us-strikes-resume-warns-saudi-oil-facilities-and-us-warships-could-be-targeted-304808/"],["ABC News","https://abcnews.com/International/wireStory/irans-supreme-leader-calls-muslim-unity-us-israel-136068585"]]},
   {id:"leash", cat:"lead", name:"חופש פעולה ישראלי מול וושינגטון", v:-1, w:1.0,
    status:"לפי דיווחים, נתניהו ביטל תקיפה גדולה באיראן אחרי שטראמפ הזהיר שישראל \"תהיה לבד\". ישראל כנראה לא תפעל לבד בלי אור ירוק. ynet (ביוני): לפי מקור ישראלי, ישראל ניסתה ליצור עילה לתקיפה בטהרן (תקיפה בדאחייה, תגובת טילים איראנית ואז תקיפה), וטראמפ \"קיפל\" את נתניהו.",
    src:[["ynet","https://www.ynetnews.com/article/hkqe5114wge"],["Times of Israel","https://www.timesofisrael.com/pm-called-off-major-iran-strike-after-trump-warned-israel-would-be-on-its-own-reports/"]]},
 
-  {id:"il_elect", cat:"pol", name:"בחירות לכנסת, 27.10", v:-0.5, w:0.7, until:"2026-10-27",
-   status:"זמיר הזהיר שתקיפה עלולה לגרום לדחיית הבחירות. בממוצע הסקרים (11.10) הליכוד מוביל עם 23 מנדטים מול 19 ל\"ישר!\" של איזנקוט, וגוש נתניהו עומד על 54, רחוק מ-61. הארץ (10.10): גורמי ביטחון מעריכים שתקיפה לפני הבחירות תיתפס כצעד פוליטי. אפשר לטעון לשני הכיוונים: זהירות לפני קלפי, או \"אפקט התגייסות\". שנו לפי שיפוטכם.",
-   src:[["הארץ","https://haaretz.co.il/news/politics/2026-10-10/ty-article/000001a1-26e9-d0ca-a7b7-beebf8170000"],["i24","https://www.i24news.tv/en/news/israel/defense/artc-war-with-iran-may-delay-elections-idf-chief-zamir-warns-us-live-blog"]]},
+  {id:"il_elect", cat:"pol", name:"בחירות לכנסת, 27.10", v:-1, w:0.7, until:"2026-10-27",
+   status:"14.10: נתניהו אמר במפורש שהוא נגד תקיפת מנע לפני הבחירות. ynet: גם בישראל וגם בארה\"ב מעריכים שלא תהיה תקיפה לפני 27.10. זמיר הזהיר שתקיפה עלולה לגרום לדחיית הבחירות. בממוצע הסקרים (11.10) הליכוד מוביל עם 23 מנדטים מול 19 ל\"ישר!\" של איזנקוט, וגוש נתניהו עומד על 54, רחוק מ-61. הארץ (10.10): גורמי ביטחון מעריכים שתקיפה לפני הבחירות תיתפס כצעד פוליטי. אפשר לטעון לשני הכיוונים: זהירות לפני קלפי, או \"אפקט התגייסות\". שנו לפי שיפוטכם.",
+   src:[["ynet","https://ynet.co.il/news/article/sjj11vc3ofx"],["הארץ","https://haaretz.co.il/news/politics/2026-10-10/ty-article/000001a1-26e9-d0ca-a7b7-beebf8170000"],["i24","https://www.i24news.tv/en/news/israel/defense/artc-war-with-iran-may-delay-elections-idf-chief-zamir-warns-us-live-blog"]]},
   {id:"il_post", cat:"pol", name:"הממשלה הבאה בישראל", v:0, w:0.6, from:"2026-10-28",
    status:"לא ידוע. שינוי שלטון ותקופת הרכבת ממשלה עשויים להאט החלטות, אבל גם האופוזיציה תומכת בלחץ על איראן. עדכנו אחרי תוצאות 27.10.",
    src:[["OneIndia","https://www.oneindia.com/international/israel-confirms-october-27-election-as-netanyahu-faces-public-anger-and-a-strong-opposition-challeng-8144491.html"]]},
@@ -484,11 +486,11 @@ const SOURCES = [
 ];
 
 const FIN = [
-  {id:"brent", name:"נפט ברנט (חוזה עתידי)", unit:"$ לחבית", base:105.86, per:10, dir:1, w:1,
-   note:"13.10: ‏105.86$ (‎−0.7%). לפני המלחמה כ-73$. מחיר הספוט (Dated Brent) עמד על 125$ ב-6.10, פער שמעיד על מחסור פיזי.",
+  {id:"brent", name:"נפט ברנט (חוזה עתידי)", unit:"$ לחבית", base:106.56, per:10, dir:1, w:1,
+   note:"14.10: ‏106.56$ (‎+0.8%) אחרי הפגיעה במטה ארמקו, ו-WTI בשיא של 3 שבועות (כ-95.6$). לפני המלחמה כ-73$. מחיר הספוט (Dated Brent) עמד על 125$ ב-6.10, פער שמעיד על מחסור פיזי.",
    url:"https://tradingeconomics.com/commodity/brent-crude-oil"},
   {id:"ta35", name:"מדד ת\"א 35", unit:"נק׳", base:4061.71, per:5, dir:-1, w:1,
-   note:"13.10 במהלך המסחר: ‏4,061.71 (‎−0.7%). בשבוע שהסתיים ב-8.10 ירד כ-2.9%. בפרוץ המלחמה במרץ נפל 3.8% ביום אחד.",
+   note:"13.10 במהלך המסחר: ‏4,061.71 (‎−0.7%). לפי כלכליסט ירד 3.7% בשבוע שהסתיים ב-9.10, והמניות הביטחוניות הכבידו. בפרוץ המלחמה במרץ נפל 3.8% ביום אחד.",
    url:"https://market.tase.co.il/he/market_data/index/142/major_data"},
   {id:"usdils", name:"דולר/שקל", unit:"₪ לדולר", base:3.07, per:3, dir:1, w:0.8,
    note:"12–13.10: כ-3.07. היחלשות חדה של השקל ליוותה את פתיחת הסבבים הקודמים.",
@@ -557,6 +559,13 @@ function finScore(){
 function val(i){ return i.computed==="fin" ? finScore() : i.computed==="polls" ? pollScore() : S.values[i.id]; }
 
 const NEWS = [
+  {d:"14.10", s:"Reuters", t:"נתניהו: נגד תקיפת מנע באיראן לפני הבחירות", b:"\"לא נוח לנו, זה לא טוב. גם אם איראן תירה עלינו יאשימו אותי.\" ישראל תגיב בעוצמה אם תותקף. לא התייחס לאחרי הבחירות.", e:"down", ind:"il_elect", u:"https://www.usnews.com/news/world/articles/2026-10-14/netanyahu-says-he-is-not-seeking-to-attack-iran-again-before-israel-election"},
+  {d:"14.10", s:"Reuters", t:"החות'ים פגעו במטה ארמקו בדהראן, הנפט עולה", b:"ברנט ב-106.56$, ו-WTI בשיא של 3 שבועות. טראמפ שוקל להצטרף לתקיפות נגד החות'ים.", e:"up", ind:"proxies", u:"https://live.euronext.com/en/financial-news/oil-prices-gain-attacks-saudi-arabia-irans-new-tactics-target-tankers"},
+  {d:"14.10", s:"CBS", t:"התקיפות בהורמוז בשיא מאז תחילת המלחמה", b:"איראן מכריזה על טקטיקה חדשה נגד מכליות. ארה\"ב אכפה את הסגר על ספינה במפרץ עומאן.", e:"up", ind:"hormuz", u:"https://cbsnews.com/live-updates/iran-war-us-houthi-saudi-arabia-trump"},
+  {d:"13.10", s:"WSJ", t:"איראן מאיימת לפלוש לשכנות ולתקוף נפט סעודי אם התקיפות יתחדשו", b:"גם ספינות מלחמה אמריקאיות הוזכרו כמטרות.", e:"up", ind:"iranlead", u:"https://sundayguardianlive.com/world/us-israel-iran-war-latest-news-iran-reportedly-threatens-possible-ground-invasion-of-neighbouring-countries-if-us-strikes-resume-warns-saudi-oil-facilities-and-us-warships-could-be-targeted-304808/"},
+  {d:"13.10", s:"FDD", t:"רזאי: התשובה האמריקאית להצעה לפתיחת הורמוז \"לא מספקת\"", b:"הערוץ הדיפלומטי ממשיך, אבל בלי התקדמות.", e:"up", ind:"hormuz", u:"https://www.fdd.org/overnight-brief/october-13-2026/"},
+  {d:"~9.10", s:"ynet (NYT)", t:"ארה\"ב נערכת למתקפה של 3 ימים באיראן, טראמפ דחה 5 תוכניות: \"אחרי הבחירות\"", b:"המפקדים ערוכים לפתוח במבצע רחב בתוך ימים אם טראמפ ישנה את דעתו.", e:"up", ind:"trump_post", u:"https://www.ynet.co.il/news/article/hjol6ybjzx"},
+  {d:"אוקטובר", s:"ynet", t:"בישראל סבורים: לא תהיה תקיפה באיראן לפני הבחירות", b:"גם גורמים אמריקאים מעריכים שטראמפ ימתין עד אחרי 27.10.", e:"down", ind:"il_elect", u:"https://ynet.co.il/news/article/sjj11vc3ofx"},
   {d:"12.10", s:"ynet", t:"ארה\"ב בחנה עם הרמטכ\"ל תקיפה ישראלית בתימן, לא באיראן", b:"אחרי הפגיעה הקטלנית בנמל התעופה בריאד. זמיר הזהיר מהסלמה מול החות'ים ואולי איראן, ומדחיית הבחירות. עם מפקד CENTCOM נדונה תקיפה עתידית באיראן, בלי כוונה קונקרטית.", e:"mix", ind:"us_prep", u:"https://www.ynet.co.il/news/article/sykug00time"},
   {d:"10.10", s:"הארץ", t:"גורמי ביטחון: תקיפה באיראן לפני הבחירות תיתפס כצעד פוליטי", b:"ארה\"ב נערכת לתקיפה ממוקדת. הבחירות בעוד כשבועיים וחצי.", e:"down", ind:"il_elect", u:"https://haaretz.co.il/news/politics/2026-10-10/ty-article/000001a1-26e9-d0ca-a7b7-beebf8170000"},
   {d:"8.10", s:"ynet", t:"במערב מזהירים: איראן חזרה לייצור טילים בשיטות הישנות", b:"דיפלומטים מערביים: שיקום הטילים הוא העדיפות העליונה, לפני הגרעין. החשש הוא מטעות בחישוב.", e:"up", ind:"missiles", u:"https://www.ynet.co.il/news/article/rj6pzt2xzl"},
@@ -608,9 +617,17 @@ function marketHazard(){
   return sig(hs.reduce((a,h)=>a+logit(clampP(h)),0)/hs.length);
 }
 
+// מידע של היום מאבד ממשקלו ככל שמתרחקים: זמן מחצית של 60 יום מתחילת התוקף של האינדיקטור
+const HALF_LIFE = 60;
+function decay(i, d){
+  const st = startDate();
+  const from = i.from ? new Date(i.from+"T00:00:00") : st;
+  const days = Math.max(0, (d - (from > st ? from : st))/dayMs);
+  return Math.pow(0.5, days/HALF_LIFE);
+}
 function monthlyHazard(d, withMarket=true){
   let x = logit(S.base/100) + DEF_OFFSET[S.def];
-  IND.forEach(i=>{ if(active(i,d)) x += contrib(i); });
+  IND.forEach(i=>{ if(active(i,d)) x += contrib(i) * decay(i,d); });
   let p = clampP(sig(x));
   const mh = withMarket ? marketHazard() : null;
   if(mh!=null){ const a = S.mktW/100; p = sig((1-a)*logit(p) + a*logit(clampP(mh))); }
@@ -921,7 +938,7 @@ anBtn.addEventListener("click", async ()=>{
   if(!sampleFn){ hideAnalyzer(); return; }
   const finDesc = FIN.map(f=>{const r=finRow(f); return `- ${f.name}: בסיס ${r.base??"לא ידוע"} ${f.unit}, עכשיו ${r.cur??"לא הוזן"}`;}).join("\n");
   const indDesc = IND.filter(i=>!i.computed).map(i=>`- id=${i.id} | ${i.name} | ערך נוכחי ${S.values[i.id]} (סולם -2 מרגיע מאוד עד +2 מסלים מאוד) | רקע: ${i.status}`).join("\n");
-  const prompt = `אתה אנליסט מודיעין במקורות גלויים. יש מחשבון שמעריך את הסיכוי שישראל ואיראן יחזרו לאש ישירה. האינדיקטורים והערכים הנוכחיים (נכון ל-13.10.2026):\n${indDesc}\n\nנתוני שוק (לידיעה בלבד, מתעדכנים בטבלה נפרדת):\n${finDesc}\n\nידיעה חדשה שהמשתמש הדביק:\n"""\n${text.slice(0,6000)}\n"""\n\nקבע אילו אינדיקטורים הידיעה משנה, ולאיזה ערך חדש (בצעדים של 0.5 בין -2 ל-2). שנה רק מה שהידיעה באמת משפיעה עליו. אם הידיעה לא אמינה, ישנה, או לא רלוונטית, ציין זאת והחזר רשימה ריקה. ענה ב-JSON בלבד בצורה:\n{"summary":"משפט או שניים בעברית","reliability":"גבוהה|בינונית|נמוכה","changes":[{"id":"talks","value":1,"reason":"נימוק קצר בעברית"}]}`;
+  const prompt = `אתה אנליסט מודיעין במקורות גלויים. יש מחשבון שמעריך את הסיכוי שישראל ואיראן יחזרו לאש ישירה. האינדיקטורים והערכים הנוכחיים (נכון ל-14.10.2026):\n${indDesc}\n\nנתוני שוק (לידיעה בלבד, מתעדכנים בטבלה נפרדת):\n${finDesc}\n\nידיעה חדשה שהמשתמש הדביק:\n"""\n${text.slice(0,6000)}\n"""\n\nקבע אילו אינדיקטורים הידיעה משנה, ולאיזה ערך חדש (בצעדים של 0.5 בין -2 ל-2). שנה רק מה שהידיעה באמת משפיעה עליו. אם הידיעה לא אמינה, ישנה, או לא רלוונטית, ציין זאת והחזר רשימה ריקה. ענה ב-JSON בלבד בצורה:\n{"summary":"משפט או שניים בעברית","reliability":"גבוהה|בינונית|נמוכה","changes":[{"id":"talks","value":1,"reason":"נימוק קצר בעברית"}]}`;
   ctl = new AbortController(); anBtn.disabled=true; anStop.hidden=false; anStatus.textContent="Claude חושב..."; anOut.innerHTML=""; anSummary.textContent="";
   try{
     const res = await sampleFn.json(prompt, {signal:ctl.signal});

@@ -1,5 +1,5 @@
 // Service worker למד ההסלמה: הדף נטען מהרשת כשיש חיבור, ומהמטמון כשאין.
-const CACHE = "iran-meter-v1";
+const CACHE = "iran-meter-v2";
 const SHELL = ["/iran", "/iran/index.html", "/iran/manifest.webmanifest", "/iran/icon.svg", "/iran/icon-192.png"];
 
 self.addEventListener("install", (e) => {
