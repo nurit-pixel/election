@@ -5,18 +5,19 @@ import { fetchHeadlines, fetchPolymarket, fetchQuotes } from "./feeds";
 import { latestSnapshot, saveSnapshot } from "./store";
 import type { NewsItem, Snapshot } from "./types";
 
-export const INTERVAL_MIN = 60;
+// עדכון רק בלחיצה על "רענן". כדי שלחיצות חוזרות לא יעלו כסף, יש המתנה בין סבבים
+export const COOLDOWN_MIN = Number(process.env.IRAN_COOLDOWN_MIN) || 10;
 
 let running: Promise<Snapshot> | null = null;
 
-export function nextUpdateAt(last: Snapshot | null): string {
-  const base = last ? Date.parse(last.createdAt) : Date.now();
-  return new Date(base + INTERVAL_MIN * 60_000).toISOString();
+export function nextAllowedAt(last: Snapshot | null): string | null {
+  if (!last) return null;
+  const t = Date.parse(last.createdAt) + COOLDOWN_MIN * 60_000;
+  return t > Date.now() ? new Date(t).toISOString() : null;
 }
 
-export function isStale(last: Snapshot | null, graceMin = 5): boolean {
-  if (!last) return true;
-  return Date.now() - Date.parse(last.createdAt) > (INTERVAL_MIN + graceMin) * 60_000;
+export function isRunning(): boolean {
+  return running !== null;
 }
 
 function seedValues(): Record<string, number> {
