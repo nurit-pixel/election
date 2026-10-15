@@ -185,7 +185,7 @@ img{max-width:100%}
   <header class="top">
     <div class="eyebrow">מחשבון סבירות</div>
     <h1>מד הסלמה ישראל–איראן</h1>
-    <p class="lede">מה הסיכוי שישראל ואיראן יחזרו להחליף אש ישירה? כל אינדיקטור כאן מוזן מדיווחים, הצהרות מנהיגים, תנאים פוליטיים ושווקי הימורים. אפשר להזיז כל ערך, להזין מחירי שוק עדכניים ולהדביק ידיעה חדשה כדי ש-Claude יציע איך היא משנה את התמונה.</p>
+    <p class="lede">מה הסיכוי שישראל ואיראן יחזרו להחליף אש ישירה? כל אינדיקטור כאן מוזן מדיווחים, הצהרות מנהיגים, תנאים פוליטיים ושווקי הימורים. לחיצה על «רענן עכשיו» מביאה כותרות ומחירים עדכניים. את האינדיקטורים מזיזים בעצמכם, לפי הכותרות והמקורות.</p>
   </header>
 
   <!-- Verdict -->
@@ -249,10 +249,15 @@ img{max-width:100%}
       <div class="note" id="clockMeta">מתחבר לשרת…</div>
     </div>
     <div class="trend">
-      <div class="row" style="justify-content:space-between"><h3>מגמה: סיכוי ל-30 יום, לפי עדכונים</h3><span class="note" id="trendMeta"></span></div>
+      <div class="row" style="justify-content:space-between"><h3>מגמה: סיכוי ל-30 יום, לפי רענונים</h3><span class="note" id="trendMeta"></span></div>
       <svg id="trendSvg" viewBox="0 0 640 170" role="img" aria-label="מגמת הסיכוי לאורך זמן"></svg>
       <p class="note" id="liveSummary"></p>
     </div>
+  </section>
+
+  <section id="heads" hidden>
+    <div class="sec-head"><h2>כותרות אחרונות</h2><span class="note">נאספו ברענון האחרון. התגיות מראות לאיזה אינדיקטור הכותרת נוגעת, ואת הערך מזיזים בעצמכם</span></div>
+    <ol class="newslog" id="headList"></ol>
   </section>
 
   <!-- Timeline -->
@@ -359,8 +364,8 @@ img{max-width:100%}
     </div>
   </section>
 
-  <!-- Analyzer -->
-  <section>
+  <!-- Analyzer (claude.ai only) -->
+  <section hidden>
     <div class="sec-head"><h2>ניתוח ידיעה חדשה</h2><span class="note">הדביקו כתבה, ציוץ של מנהיג או נתון שוק</span></div>
     <div class="panel" id="anPanel">
       <label for="newsIn" class="eyebrow">טקסט הידיעה (עברית, אנגלית או פרסית)</label>
@@ -1058,6 +1063,20 @@ function drawTrend(){
   const first=pts[0].p, diff=Math.round((lp.p-first)*100);
   document.getElementById("trendMeta").textContent=`${pts.length} עדכונים · שינוי ${diff>0?"+":""}${diff} נק׳`;
 }
+function renderHeads(items){
+  const sec=document.getElementById("heads"), list=document.getElementById("headList");
+  sec.hidden = !items.length;
+  list.innerHTML = items.slice(0,40).map(h=>{
+    const when = h.published && !isNaN(Date.parse(h.published)) ? fmtDateTime(new Date(h.published).toISOString()) : "";
+    const chips = (h.tags||[]).map(id=>{ const ind=IND.find(i=>i.id===id); return ind ? `<button type="button" class="chip" data-goto="${ind.id}">${esc(ind.name)}</button>` : ""; }).join(" ");
+    return `<li><div class="nd">${esc(when)}<span class="ns">${esc(h.source)}</span></div><div style="min-width:0"><div class="nt"><a href="${safeUrl(h.link)}" target="_blank" rel="noopener">${esc(h.title)}</a></div></div><div>${chips}</div></li>`;
+  }).join("");
+}
+document.getElementById("headList").addEventListener("click", e=>{
+  const b=e.target.closest("[data-goto]"); if(!b) return; const ind=IND.find(i=>i.id===b.dataset.goto);
+  S.tab=ind.cat; save(); renderTabs(); renderInds();
+  const card=document.querySelector(`.ind[data-id="${ind.id}"]`); if(card) card.scrollIntoView({behavior:"smooth",block:"center"});
+});
 const pad=n=>String(n).padStart(2,"0");
 function tickClock(){
   const el=document.getElementById("clockDigits"), btn=document.getElementById("refreshBtn"), meta=document.getElementById("clockMeta");
@@ -1089,8 +1108,9 @@ async function loadLive(){
     const isNew = snap.createdAt!==LIVE.last; LIVE.last=snap.createdAt;
     if(isNew){ applySnapshot(snap); renderNews(); renderTabs(); renderInds(); renderFin(); renderVerdict(); }
     document.getElementById("liveBanner").innerHTML=`עודכן: <span class="num">${fmtDateTime(snap.createdAt)}</span>`;
-    meta.textContent = `עדכון אחרון ${fmtDateTime(snap.createdAt)} · ${snap.headlines||0} כותרות נבדקו` + (snap.error?` · ${snap.error}`:"");
+    meta.textContent = `עדכון אחרון ${fmtDateTime(snap.createdAt)} · ${snap.headlines||0} כותרות נאספו` + (snap.error?` · ${snap.error}`:"");
     document.getElementById("liveSummary").textContent = snap.summary||"";
+    renderHeads(snap.items||[]);
   } else {
     document.getElementById("clockLabel").textContent="עוד לא היה רענון";
     meta.textContent = "לחצו על «רענן עכשיו» כדי לאסוף ידיעות ומחירים עדכניים.";
@@ -1101,12 +1121,12 @@ async function refreshNow(){
   const btn=document.getElementById("refreshBtn"), meta=document.getElementById("clockMeta"), label=document.getElementById("clockLabel");
   if(LIVE.busy) return;
   LIVE.busy=Date.now(); btn.disabled=true; btn.textContent="מרענן…"; label.textContent="מרענן כבר";
-  meta.textContent="אוסף כותרות ומחירים, ו-Claude מנתח אותם. זה לוקח בדרך כלל דקה או שתיים.";
+  meta.textContent="אוסף כותרות ומחירים. זה לוקח כמה שניות.";
   try{
     const r=await fetch("/api/iran/refresh",{method:"POST",cache:"no-store"});
     const data=await r.json().catch(()=>({}));
     LIVE.busy=null; label.textContent="עבר מאז העדכון האחרון";
-    if(r.status===429 && data.nextAllowedAt){ LIVE.nextAllowed=data.nextAllowedAt; await loadLive(); meta.textContent="המידע עודכן ממש עכשיו. אפשר לרענן שוב בעוד כמה דקות."; return; }
+    if(r.status===429 && data.nextAllowedAt){ LIVE.nextAllowed=data.nextAllowedAt; await loadLive(); meta.textContent="המידע עודכן ממש עכשיו. אפשר לרענן שוב בעוד רגע."; return; }
     await loadLive();
     if(!r.ok) meta.textContent=`הרענון לא הצליח: ${data.error||r.status}. מוצג העדכון הקודם.`;
   }catch(e){

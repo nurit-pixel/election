@@ -25,9 +25,11 @@ export type Snapshot = {
   quotes: Record<string, Quote>;
   markets: LiveMarket[];
   summary: string;
-  headlines: number; // כמה כותרות נבדקו בסבב
-  model: string | null;
+  headlines: number; // כמה כותרות נאספו בסבב
+  items: TaggedHeadline[]; // הכותרות עצמן, עם תיוג לאינדיקטורים
   error?: string;
 };
 
 export type Headline = { title: string; link: string; source: string; published: string | null };
+
+export type TaggedHeadline = Headline & { tags: string[] };
