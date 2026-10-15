@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.134.0",
     "@supabase/supabase-js": "^2.117.2",
     "html-to-image": "^1.11.13",
     "next": "^15.5.26",

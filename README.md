@@ -55,6 +55,26 @@ npm run lint                 # typecheck
 - `public/iran/sw.js`, `manifest.webmanifest`, אייקונים — התקנה למסך הבית ועבודה אופליין.
 - הניתוב `/iran` → `/iran/index.html` מוגדר ב-`next.config.ts`.
 
+### עדכון חי כל שעה
+
+השרת מריץ סבב עדכון פעם בשעה (מתזמן פנימי ב-`instrumentation.ts`, שבודק כל 5 דקות):
+
+1. **איסוף** (`lib/iran/feeds.ts`): כותרות מ-Google News בעברית ובאנגלית, ynet ו-Times of Israel; מחירי ברנט, WTI, דולר/שקל, ת"א 35, אלביט וזהב מ-Yahoo Finance; שווקים פתוחים מ-Polymarket.
+2. **הערכה** (`lib/iran/assess.ts`): Claude קורא את הכותרות ואת ערכי האינדיקטורים, ומחזיר שינויים, תיאור מצב מעודכן וידיעות ליומן. הגנות: לכל היותר צעד אחד לשעה לכל אינדיקטור, רק מזהים מוכרים, וידיעה נכנסת ליומן רק עם קישור מהכותרות שנאספו.
+3. **שמירה** (`lib/iran/store.ts`): תמונת מצב בטבלה `iran_snapshots`. צריך להריץ את `supabase/migrations/004_iran_snapshots.sql`. בלי Supabase הנתונים נשמרים רק בזיכרון ומתאפסים בכל פריסה.
+4. **הדף** טוען את `/api/iran/state` כל 5 דקות, מציג שעון עצר לעדכון הבא, גרף מגמה וסיכום. ערך שהמשתמש הזיז ידנית לא נדרס.
+
+משתני סביבה:
+
+| משתנה | תיאור |
+|---|---|
+| `ANTHROPIC_API_KEY` | נדרש להערכה האוטומטית. בלעדיו מתעדכנים רק מחירים ושווקים |
+| `IRAN_CRON_SECRET` | אופציונלי. מאפשר להפעיל סבב ידנית: `curl -X POST -H "x-cron-secret: ..." https://<domain>/api/iran/refresh` |
+| `IRAN_MODEL` | אופציונלי. ברירת מחדל `claude-opus-5-5` |
+| `IRAN_AUTO_REFRESH` | `off` מכבה את המתזמן הפנימי (למשל אם מפעילים cron חיצוני) |
+
+עלות משוערת: קריאה אחת ל-Claude בשעה, כ-24 ביום.
+
 ## החלפת קריקטורות
 
 כל מפלגה מוצגת מ-`public/caricatures/<key>.png` (ריבוע 400×400, רקע שקוף). כל עוד אין PNG, מוצג ה-placeholder `public/caricatures/<key>.svg` (עיגול בצבע המפלגה עם אות הפתק).

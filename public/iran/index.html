@@ -163,11 +163,23 @@ img{max-width:100%}
 .live ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .live li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between;font-size:14px}
 .live li a{flex:1 1 240px;min-width:0}
+
+.livegrid{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:16px;margin-top:16px}
+@media (max-width:720px){.livegrid{grid-template-columns:minmax(0,1fr)}}
+.clock{background:var(--ink);color:var(--paper);border-radius:6px;padding:18px;display:grid;gap:8px;align-content:start}
+.clock .eyebrow{color:var(--paper);opacity:.75}
+.clock .note{color:var(--paper);opacity:.75}
+.clock-digits{font-size:54px;font-weight:500;line-height:1;letter-spacing:.02em}
+.clock-bar{height:6px;background:color-mix(in srgb,var(--paper) 20%,transparent);border-radius:3px;overflow:hidden}
+.clock-bar span{display:block;height:100%;width:0;background:var(--risk);transition:width 1s linear}
+.trend{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:grid;gap:8px;min-width:0}
+.trend svg{width:100%;height:auto;display:block}
+@media (prefers-reduced-motion:reduce){.clock-bar span{transition:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="banner"><span>הערכת מצב פתוחה · לא מסווג · מבוסס מקורות גלויים</span><span>עודכן: <span class="num">14.10.2026</span></span></div>
+  <div class="banner"><span>הערכת מצב פתוחה · לא מסווג · מבוסס מקורות גלויים</span><span id="liveBanner">עודכן ידנית: <span class="num">14.10.2026</span></span></div>
 
   <header class="top">
     <div class="eyebrow">מחשבון סבירות</div>
@@ -226,6 +238,21 @@ img{max-width:100%}
       <div class="note" id="modelLine"></div>
     </div>
   </div>
+
+  <!-- Live clock + trend -->
+  <section id="live" class="livegrid">
+    <div class="clock" aria-live="polite">
+      <div class="eyebrow">העדכון הבא בעוד</div>
+      <div class="clock-digits num" id="clockDigits">--:--</div>
+      <div class="clock-bar" aria-hidden="true"><span id="clockFill"></span></div>
+      <div class="note" id="clockMeta">מתחבר לשרת…</div>
+    </div>
+    <div class="trend">
+      <div class="row" style="justify-content:space-between"><h3>מגמה: סיכוי ל-30 יום, לפי עדכונים שעתיים</h3><span class="note" id="trendMeta"></span></div>
+      <svg id="trendSvg" viewBox="0 0 640 170" role="img" aria-label="מגמת הסיכוי לאורך זמן"></svg>
+      <p class="note" id="liveSummary"></p>
+    </div>
+  </section>
 
   <!-- Timeline -->
   <section>
@@ -894,7 +921,7 @@ document.getElementById("resetBtn").addEventListener("click", ()=>{ const keep={
 document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; S.tab=b.dataset.tab; save(); renderTabs(); renderInds(); });
 document.getElementById("indList").addEventListener("input", e=>{
   const card=e.target.closest(".ind"); if(!card) return; const id=card.dataset.id; const ind=IND.find(i=>i.id===id);
-  if(e.target.dataset.kind==="v") S.values[id]=Number(e.target.value);
+  if(e.target.dataset.kind==="v"){ S.values[id]=Number(e.target.value); S.touched=S.touched||{}; S.touched[id]=true; }
   else if(e.target.dataset.kind==="w") S.weights[id]=Number(e.target.value); else return;
   const v=S.values[id];
   card.querySelector("[data-vout]").textContent=(v>0?"+":"")+v;
@@ -914,6 +941,7 @@ document.getElementById("finBody").addEventListener("input", e=>{
   const tr=e.target.closest("tr"); if(!tr||!e.target.dataset.k) return; const id=tr.dataset.f;
   S.fin=S.fin||{}; S.fin[id]=S.fin[id]||{};
   S.fin[id][e.target.dataset.k] = e.target.value===""?null:Number(e.target.value);
+  if(e.target.dataset.k==="cur") S.fin[id].manual = e.target.value!=="";
   save(); updateFin(); renderVerdict(); if(S.tab==="econ") renderInds();
 });
 
@@ -968,6 +996,102 @@ anStop.addEventListener("click", ()=>ctl?.abort());
 
 restoreLiveMarkets(); buildGauge(); renderSources(); renderNews(); renderAll();
 loadLiveMarkets();
+// ---- live hourly updates from the server ----
+const LIVE = {next:null, last:null, interval:60, pollTimer:null, history:[]};
+const QUOTE_MAP = {brent:"brent", ta35:"ta35", usdils:"usdils", eslt:"eslt", gold:"gold"};
+function fmtTime(iso){ return new Date(iso).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}); }
+function fmtDateTime(iso){ return new Date(iso).toLocaleString("he-IL",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}); }
+// text from the server comes from external headlines: escape it and accept only https links
+const esc = v => String(v??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https:\/\//i.test(String(u||"")) ? esc(u) : "#";
+function applySnapshot(snap){
+  if(!snap) return;
+  S.touched = S.touched||{};
+  IND.forEach(i=>{
+    if(i.computed) return;
+    const v = snap.values && snap.values[i.id];
+    if(typeof v==="number"){ i.v=v; if(!S.touched[i.id]) S.values[i.id]=v; }
+    const st = snap.status && snap.status[i.id];
+    if(st && st.text){
+      i.status = esc(st.text) + ` <span class="chip">עודכן אוטומטית ${fmtDateTime(st.at)}</span>`;
+      if(Array.isArray(st.src) && st.src.length) i.src = st.src.map(x=>[esc(x[0]), safeUrl(x[1])]).concat(i.src.filter(s=>!st.src.some(x=>x[1]===s[1]))).slice(0,4);
+    }
+  });
+  S.fin = S.fin||{};
+  Object.entries(QUOTE_MAP).forEach(([fid,qk])=>{
+    const q = snap.quotes && snap.quotes[qk];
+    if(!q) return;
+    const e = S.fin[fid] = S.fin[fid]||{};
+    if(!e.manual) e.cur = Math.round(q.price*100)/100;
+    const f = FIN.find(x=>x.id===fid);
+    if(f && f.base==null && (e.base==null || e.base==="")) e.base = q.prevClose ? Math.round(q.prevClose*100)/100 : null;
+  });
+  if(Array.isArray(snap.news)){
+    const known = new Set(NEWS.map(n=>n.u));
+    snap.news.filter(n=>!known.has(n.u)).reverse().forEach(n=>NEWS.unshift({d:esc(n.d), s:esc(n.s), t:esc(n.t), b:esc(n.b), e:["up","down","mix","info"].includes(n.e)?n.e:"info", ind: IND.some(i=>i.id===n.ind)?n.ind:null, u:safeUrl(n.u)}));
+  }
+  save();
+}
+function p30For(values, quotes){
+  const saved = S;
+  const fin = JSON.parse(JSON.stringify(S.fin||{}));
+  Object.entries(QUOTE_MAP).forEach(([fid,qk])=>{ const q=quotes&&quotes[qk]; if(q && !(fin[fid]&&fin[fid].manual)){ fin[fid]=fin[fid]||{}; fin[fid].cur=q.price; } });
+  S = Object.assign({}, saved, {values:Object.assign({}, saved.values, values||{}), fin, mkts:{}});
+  let p; try{ p = series(30,false)[30]; } finally { S = saved; }
+  return p;
+}
+function drawTrend(){
+  const svg=document.getElementById("trendSvg"); const pts=LIVE.history.map(h=>({t:Date.parse(h.at), p:p30For(h.values,h.quotes)}));
+  const W=640,H=170,L=40,R=12,T=12,B=26;
+  if(pts.length<2){ svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="13" fill="var(--muted)">המגמה תופיע אחרי שני עדכונים שעתיים</text>`; document.getElementById("trendMeta").textContent=""; return; }
+  const t0=pts[0].t, t1=pts[pts.length-1].t, span=Math.max(1,t1-t0);
+  const max=Math.min(1, Math.max(0.2, Math.ceil(Math.max(...pts.map(p=>p.p))*10)/10+0.1));
+  const x=t=>L+(W-L-R)*((t-t0)/span), y=p=>T+(H-T-B)*(1-p/max);
+  let s="";
+  for(let k=0;k<=4;k++){ const v=max*k/4; s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${Math.round(v*100)}%</text>`; }
+  [[t0,"start"],[(t0+t1)/2,"middle"],[t1,"end"]].forEach(([t,anc])=>{ s+=`<text x="${x(t)}" y="${H-8}" text-anchor="${anc}" direction="ltr" font-size="10" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${fmtDateTime(new Date(t).toISOString())}</text>`; });
+  const d=pts.map((p,i)=>`${i?"L":"M"}${x(p.t).toFixed(1)} ${y(p.p).toFixed(1)}`).join(" ");
+  s+=`<path d="${d} L${x(t1)} ${y(0)} L${x(t0)} ${y(0)} Z" fill="var(--risk)" fill-opacity="0.08"/><path d="${d}" fill="none" stroke="var(--risk)" stroke-width="2"/>`;
+  const lp=pts[pts.length-1]; s+=`<circle cx="${x(lp.t)}" cy="${y(lp.p)}" r="4" fill="var(--risk)"/>`;
+  svg.innerHTML=s;
+  const first=pts[0].p, diff=Math.round((lp.p-first)*100);
+  document.getElementById("trendMeta").textContent=`${pts.length} עדכונים · שינוי ${diff>0?"+":""}${diff} נק׳`;
+}
+function tickClock(){
+  const el=document.getElementById("clockDigits"), fill=document.getElementById("clockFill");
+  if(!LIVE.next){ return; }
+  const ms = Date.parse(LIVE.next) - Date.now();
+  if(ms<=0){
+    el.textContent="00:00"; fill.style.width="100%";
+    document.getElementById("clockMeta").textContent="מתעדכן עכשיו…";
+    if(!LIVE.pollTimer) LIVE.pollTimer=setTimeout(()=>{ LIVE.pollTimer=null; loadLive(); }, 30000);
+    return;
+  }
+  const m=Math.floor(ms/60000), s=Math.floor(ms/1000)%60;
+  el.textContent=`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  fill.style.width = Math.max(0,Math.min(100, 100*(1 - ms/(LIVE.interval*60000)))).toFixed(1)+"%";
+}
+async function loadLive(){
+  let data;
+  try{ const r=await fetch("/api/iran/state",{cache:"no-store"}); if(!r.ok && r.status!==500) throw 0; data=await r.json(); }
+  catch(e){ document.getElementById("clockMeta").textContent="אין חיבור לשרת. מוצגים הנתונים האחרונים שנשמרו."; return; }
+  LIVE.next=data.nextUpdateAt||null; LIVE.interval=data.intervalMin||60; LIVE.history=Array.isArray(data.history)?data.history:[];
+  const snap=data.snapshot;
+  const meta=document.getElementById("clockMeta");
+  if(snap){
+    const isNew = snap.createdAt!==LIVE.last; LIVE.last=snap.createdAt;
+    if(isNew){ applySnapshot(snap); renderNews(); renderTabs(); renderInds(); renderFin(); renderVerdict(); }
+    document.getElementById("liveBanner").innerHTML=`עודכן אוטומטית: <span class="num">${fmtDateTime(snap.createdAt)}</span>`;
+    meta.textContent = `עדכון אחרון ${fmtTime(snap.createdAt)} · ${snap.headlines||0} כותרות נבדקו` + (snap.error?` · ${snap.error}`:"");
+    document.getElementById("liveSummary").textContent = snap.summary||"";
+  } else {
+    meta.textContent = data.refreshing ? "מבצע את העדכון הראשון…" : "עוד אין עדכון אוטומטי";
+  }
+  drawTrend(); tickClock();
+}
+loadLive(); setInterval(tickClock,1000); setInterval(loadLive,5*60000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) loadLive(); });
+
 if("serviceWorker" in navigator){ window.addEventListener("load", ()=>{ navigator.serviceWorker.register("/iran/sw.js", {scope:"/iran/"}).catch(()=>{}); }); }
 })();
 </script>
