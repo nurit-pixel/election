@@ -1,0 +1,17 @@
+{
+  "name": "מד הסלמה ישראל–איראן",
+  "short_name": "מד הסלמה",
+  "description": "מחשבון סבירות לחזרה לאש ישירה בין ישראל לאיראן",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/iran",
+  "scope": "/iran",
+  "display": "standalone",
+  "background_color": "#ECEFF2",
+  "theme_color": "#14202B",
+  "icons": [
+    { "src": "/iran/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/iran/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/iran/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
