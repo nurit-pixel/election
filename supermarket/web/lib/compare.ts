@@ -3,6 +3,8 @@ import { pool } from "./db";
 import { priceBasket, rankStores, type BasketItem, type StoreBasket, type StorePrice } from "./basket";
 import type { Promo } from "./promos";
 import { getList, type ShoppingList } from "./lists";
+import { allSplits, worthwhileSplits, type SplitOffer } from "./split";
+import { splitMinSaving } from "./settings";
 
 const STALE_HOURS = Number(process.env.STALE_PRICE_HOURS ?? 36);
 
@@ -140,16 +142,26 @@ async function memberClubs(): Promise<Map<string, number[]>> {
   return byChain;
 }
 
-/** דירוג כל הסניפים שברדיוס לפי מחיר הסל של הרשימה. */
-export async function compareStores(): Promise<{ list: ShoppingList; ranked: RankedStore[]; storesInRadius: number }> {
+type Loaded = {
+  list: ShoppingList;
+  items: BasketItem[];
+  stores: StoreInfo[];
+  prices: Map<number, Map<number, StorePrice>>;
+  clubs: Map<string, number[]>;
+};
+
+async function load(): Promise<Loaded> {
   const [list, stores, clubs] = await Promise.all([getList(), storesInRadius(), memberClubs()]);
   const items = basketItems(list);
   const prices = await pricesByStore(
     stores.map((s) => s.storePk),
     items.flatMap((i) => i.productIds),
   );
-  const now = new Date();
-  const ranked = rankStores(
+  return { list, items, stores, prices, clubs };
+}
+
+function rank({ items, stores, prices, clubs }: Loaded, now: Date): RankedStore[] {
+  return rankStores(
     stores.map((s) => ({
       ...s,
       basket: priceBasket(items, prices.get(s.storePk) ?? new Map(), now, {
@@ -158,7 +170,73 @@ export async function compareStores(): Promise<{ list: ShoppingList; ranked: Ran
       }),
     })),
   );
-  return { list, ranked, storesInRadius: stores.length };
+}
+
+function splits(loaded: Loaded, ranked: RankedStore[], minSaving: number, now: Date): SplitOffer<StoreInfo>[] {
+  const pairs = allSplits(
+    loaded.items,
+    // רשתות פארם אינן משתתפות בהשוואת סל מזון
+    loaded.stores
+      .filter((s) => !s.isPharm)
+      .map((s) => ({
+        store: s,
+        distanceKm: s.distanceKm,
+        prices: loaded.prices.get(s.storePk) ?? new Map(),
+        memberClubIds: loaded.clubs.get(s.chainKey),
+      })),
+    now,
+    { staleHours: STALE_HOURS },
+  );
+  const best = ranked[0];
+  return worthwhileSplits(
+    pairs,
+    best ? { total: best.basket.total, foundCount: best.basket.foundCount } : null,
+    minSaving,
+  );
+}
+
+export type Comparison = {
+  list: ShoppingList;
+  ranked: RankedStore[];
+  storesInRadius: number;
+  /** הפיצול הכדאי ביותר לשני סניפים, אם יש כזה שעובר את הסף */
+  bestSplit: SplitOffer<StoreInfo> | null;
+};
+
+/** דירוג כל הסניפים שברדיוס לפי מחיר הסל של הרשימה. */
+export async function compareStores(): Promise<Comparison> {
+  const [loaded, minSaving] = await Promise.all([load(), splitMinSaving()]);
+  const now = new Date();
+  const ranked = rank(loaded, now);
+  return {
+    list: loaded.list,
+    ranked,
+    storesInRadius: loaded.stores.length,
+    bestSplit: splits(loaded, ranked, minSaving, now)[0] ?? null,
+  };
+}
+
+export type SplitComparison = {
+  list: ShoppingList;
+  /** הסל הזול ביותר בסניף אחד, להשוואה */
+  bestSingle: RankedStore | null;
+  offers: SplitOffer<StoreInfo>[];
+  minSaving: number;
+  storesChecked: number;
+};
+
+/** פיצולים כדאיים לשני סניפים, מבין עד 20 הסניפים הקרובים. */
+export async function compareSplits(): Promise<SplitComparison> {
+  const [loaded, minSaving] = await Promise.all([load(), splitMinSaving()]);
+  const now = new Date();
+  const ranked = rank(loaded, now);
+  return {
+    list: loaded.list,
+    bestSingle: ranked[0] ?? null,
+    offers: splits(loaded, ranked, minSaving, now),
+    minSaving,
+    storesChecked: Math.min(20, loaded.stores.filter((s) => !s.isPharm).length),
+  };
 }
 
 /** הסל של הרשימה בסניף אחד. */

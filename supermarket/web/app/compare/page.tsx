@@ -5,7 +5,7 @@ import { formatDistance, formatPrice, formatUpdated } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function ComparePage() {
-  const { list, ranked, storesInRadius } = await compareStores();
+  const { list, ranked, storesInRadius, bestSplit } = await compareStores();
   const complete = ranked.filter((s) => s.basket.complete);
   const partial = ranked.filter((s) => !s.basket.complete);
   const cheapest = complete[0]?.basket.total;
@@ -39,6 +39,23 @@ export default async function ComparePage() {
           </Link>
           .
         </p>
+      )}
+
+      {bestSplit && (
+        <Link
+          href="/split"
+          className="block rounded-2xl border border-sky-300 bg-sky-50 p-4 text-sm text-sky-900 shadow-sm"
+        >
+          <div className="font-semibold">
+            {bestSplit.saving != null
+              ? `פיצול לשני סניפים חוסך ${formatPrice(bestSplit.saving)}`
+              : "בפיצול לשני סניפים נמצאים יותר פריטים"}
+          </div>
+          <div className="mt-0.5">
+            {bestSplit.a.chainName} · {bestSplit.a.name} + {bestSplit.b.chainName} · {bestSplit.b.name} –{" "}
+            {formatPrice(bestSplit.total)} ←
+          </div>
+        </Link>
       )}
 
       {complete.length > 0 && (

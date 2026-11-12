@@ -1,6 +1,23 @@
-import { chainStatuses, listAddresses, listClubs, overview, type ChainStatus, type RunInfo } from "@/lib/settings";
+import {
+  chainStatuses,
+  listAddresses,
+  listClubs,
+  overview,
+  splitMinSaving,
+  type ChainStatus,
+  type RunInfo,
+} from "@/lib/settings";
 import { formatUpdated } from "@/lib/format";
-import { addAddress, deleteAddress, requestPrices, requestStores, setClub, updateRadius } from "./actions";
+import {
+  addAddress,
+  deleteAddress,
+  requestPrices,
+  requestStores,
+  setClub,
+  toggleChain,
+  updateRadius,
+  updateSplitThreshold,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +29,12 @@ const REQUEST_LABELS: Record<string, string> = {
 };
 
 export default async function SettingsPage() {
-  const [addresses, chains, info, clubs] = await Promise.all([
+  const [addresses, chains, info, clubs, threshold] = await Promise.all([
     listAddresses(),
     chainStatuses(),
     overview(),
     listClubs(),
+    splitMinSaving(),
   ]);
 
   return (
@@ -148,7 +166,32 @@ export default async function SettingsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-bold">סטטוס טעינה</h2>
+        <h2 className="text-lg font-bold">פיצול לשני סניפים</h2>
+        <form
+          action={updateSplitThreshold}
+          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm"
+        >
+          <label htmlFor="threshold" className="flex-1 text-slate-600">
+            להציע פיצול רק כשהוא חוסך לפחות (₪)
+          </label>
+          <input
+            id="threshold"
+            name="threshold"
+            type="number"
+            inputMode="decimal"
+            min="0"
+            max="1000"
+            step="1"
+            defaultValue={threshold}
+            className="w-20 rounded-lg border border-slate-300 px-2 py-1.5"
+          />
+          <button className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium">עדכון</button>
+        </form>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-bold">רשתות וסטטוס טעינה</h2>
+        <p className="text-sm text-slate-500">רשת מוסתרת לא מופיעה בחיפוש, בהשוואה ובפיצול.</p>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
           <div>
             {info.stores.toLocaleString("he-IL")} סניפים בארץ ·{" "}
@@ -215,10 +258,18 @@ function ChainRow({ chain: c }: { chain: ChainStatus }) {
         <div className="font-semibold">
           {c.name}
           {c.isPharm && <span className="mr-2 text-xs font-normal text-slate-400">פארם</span>}
+          {c.hidden && <span className="mr-2 text-xs font-normal text-rose-500">מוסתרת</span>}
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${b.className}`}>
-          {b.text}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <form action={toggleChain}>
+            <input type="hidden" name="chain" value={c.key} />
+            <input type="hidden" name="hidden" value={c.hidden ? "0" : "1"} />
+            <button className="rounded-full border border-slate-300 px-2.5 py-0.5 text-xs text-slate-600">
+              {c.hidden ? "הצגה" : "הסתרה"}
+            </button>
+          </form>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${b.className}`}>{b.text}</span>
+        </div>
       </div>
       <div className="mt-1 text-xs text-slate-500">
         <div>

@@ -54,6 +54,7 @@ export type ChainStatus = {
   key: string;
   name: string;
   isPharm: boolean;
+  hidden: boolean;
   stores: number;
   geocoded: number;
   storesWithPrices: number;
@@ -68,7 +69,7 @@ export type ChainStatus = {
 
 export async function chainStatuses(): Promise<ChainStatus[]> {
   const { rows } = await pool.query(
-    `SELECT c.key, c.name, c.is_pharm,
+    `SELECT c.key, c.name, c.is_pharm, c.hidden,
             (SELECT count(*) FROM stores s WHERE s.chain_key = c.key) AS stores,
             (SELECT count(*) FROM stores s WHERE s.chain_key = c.key AND s.lat IS NOT NULL) AS geocoded,
             (SELECT count(*) FROM stores s WHERE s.chain_key = c.key
@@ -102,6 +103,7 @@ export async function chainStatuses(): Promise<ChainStatus[]> {
       key: r.key,
       name: r.name,
       isPharm: r.is_pharm,
+      hidden: r.hidden,
       stores: Number(r.stores),
       geocoded: Number(r.geocoded),
       storesWithPrices: Number(r.with_prices),
@@ -169,4 +171,25 @@ export async function listClubs(): Promise<Club[]> {
     name: r.name,
     member: r.member,
   }));
+}
+
+const DEFAULT_SPLIT_MIN_SAVING = Number(process.env.SPLIT_MIN_SAVING ?? 20);
+
+/** סף החיסכון (בש"ח) שמעליו מוצג פיצול לשני סניפים. */
+export async function splitMinSaving(): Promise<number> {
+  const { rows } = await pool.query(`SELECT value FROM app_settings WHERE key = 'split_min_saving'`);
+  const value = rows.length > 0 ? Number(rows[0].value) : NaN;
+  return Number.isFinite(value) && value >= 0 ? value : DEFAULT_SPLIT_MIN_SAVING;
+}
+
+export async function setSplitMinSaving(value: number): Promise<void> {
+  await pool.query(
+    `INSERT INTO app_settings (key, value) VALUES ('split_min_saving', $1)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [String(value)],
+  );
+}
+
+export async function setChainHidden(chainKey: string, hidden: boolean): Promise<void> {
+  await pool.query(`UPDATE chains SET hidden = $2 WHERE key = $1`, [chainKey, hidden]);
 }

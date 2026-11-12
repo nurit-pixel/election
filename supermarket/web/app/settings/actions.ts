@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { pool } from "@/lib/db";
-import { enqueue } from "@/lib/settings";
+import { enqueue, setChainHidden, setSplitMinSaving } from "@/lib/settings";
 
 const DEFAULT_RADIUS = Number(process.env.DEFAULT_RADIUS_KM ?? 5);
 
@@ -49,5 +49,16 @@ export async function setClub(formData: FormData) {
     Number(formData.get("club")),
     formData.get("member") === "1",
   ]);
+  revalidatePath("/settings");
+}
+
+export async function updateSplitThreshold(formData: FormData) {
+  const value = Number(formData.get("threshold"));
+  if (Number.isFinite(value) && value >= 0 && value <= 1000) await setSplitMinSaving(value);
+  revalidatePath("/settings");
+}
+
+export async function toggleChain(formData: FormData) {
+  await setChainHidden(String(formData.get("chain")), formData.get("hidden") === "1");
   revalidatePath("/settings");
 }
