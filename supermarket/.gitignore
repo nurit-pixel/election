@@ -8,3 +8,4 @@ __pycache__
 dumps/
 next-env.d.ts
 *.tsbuildinfo
+*.log
