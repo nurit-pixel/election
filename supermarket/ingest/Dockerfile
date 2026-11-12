@@ -5,5 +5,5 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY ingest ./ingest
 COPY tests ./tests
-# שלב 1: הרצה ידנית. הריצה הלילית תתווסף בשלב 7.
-CMD ["python", "-m", "ingest", "run", "--chain", "SHUFERSAL"]
+# תהליך רקע: בקשות מהאפליקציה ו-geocoding. הריצה הלילית תתווסף בשלב 7.
+CMD ["python", "-m", "ingest", "worker"]

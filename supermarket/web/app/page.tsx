@@ -80,6 +80,7 @@ function ProductCard({ product: p }: { product: ProductResult }) {
               <div className="min-w-0">
                 <div className="truncate">
                   {s.chainName} · {s.storeName}
+                  {s.city && !s.storeName.includes(s.city) && `, ${s.city}`}
                 </div>
                 <div className={`text-xs ${s.stale ? "text-amber-600" : "text-slate-400"}`}>
                   עודכן {formatUpdated(s.fileTime)}

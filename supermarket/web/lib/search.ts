@@ -5,6 +5,7 @@ export type StorePrice = {
   storePk: number;
   chainName: string;
   storeName: string;
+  city: string | null;
   price: number;
   /** מתי הרשת עדכנה את המחיר */
   priceUpdatedAt: string | null;
@@ -52,7 +53,7 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
 
   const { rows } = await pool.query(
     `WITH matched AS (
-       SELECT p.id, p.barcode, p.internal_chain_id, p.name, p.manufacturer, p.is_weighted,
+       SELECT p.id, p.barcode, p.internal_chain, p.name, p.manufacturer, p.is_weighted,
               (SELECT count(*) FROM prices pr WHERE pr.product_id = p.id) AS store_count
        FROM products p
        WHERE ${where}
@@ -64,16 +65,17 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
               'storePk', s.id,
               'chainName', c.name,
               'storeName', COALESCE(s.name, 'סניף ' || s.store_id),
+              'city', s.city,
               'price', pr.price,
               'priceUpdatedAt', pr.price_update_time,
               'fileTime', pr.file_time,
               'stale', pr.file_time < now() - make_interval(hours => $${staleIdx})
-            ) ORDER BY pr.price, s.name) FILTER (WHERE c.chain_id IS NOT NULL), '[]') AS prices
+            ) ORDER BY pr.price, s.name) FILTER (WHERE c.key IS NOT NULL), '[]') AS prices
      FROM matched m
      LEFT JOIN prices pr ON pr.product_id = m.id
      LEFT JOIN stores s ON s.id = pr.store_pk
-     LEFT JOIN chains c ON c.chain_id = s.chain_id AND NOT c.hidden
-     GROUP BY m.id, m.barcode, m.internal_chain_id, m.name, m.manufacturer, m.is_weighted, m.store_count
+     LEFT JOIN chains c ON c.key = s.chain_key AND NOT c.hidden
+     GROUP BY m.id, m.barcode, m.internal_chain, m.name, m.manufacturer, m.is_weighted, m.store_count
      ORDER BY m.store_count DESC, length(m.name), m.name`,
     params,
   );
@@ -81,7 +83,7 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
   return rows.map((r) => ({
     id: r.id,
     barcode: r.barcode,
-    internal: r.internal_chain_id !== "",
+    internal: r.internal_chain !== "",
     name: r.name,
     manufacturer: r.manufacturer,
     isWeighted: r.is_weighted,

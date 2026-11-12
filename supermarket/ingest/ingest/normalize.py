@@ -4,9 +4,31 @@
 """
 from __future__ import annotations
 
+import csv
+import os
+import re
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Optional
+
+
+def _load_cities() -> dict[str, str]:
+    path = os.path.join(os.path.dirname(__file__), "data", "cities.csv")
+    with open(path, encoding="utf-8", newline="") as f:
+        return {row["code"]: row["name"] for row in csv.DictReader(f)}
+
+
+_CITIES = _load_cities()   # סמל יישוב של הלמ"ס -> שם יישוב
+
+
+def city_name(value) -> Optional[str]:
+    """חלק מהרשתות (למשל שופרסל) מפרסמות את העיר כסמל יישוב של הלמ"ס ולא כשם."""
+    text = clean(value)
+    if text is None or text in ("0", "-"):
+        return None
+    if text.isdigit():
+        return _CITIES.get(text.lstrip("0"))
+    return text
 
 
 def clean(value) -> Optional[str]:
@@ -24,6 +46,11 @@ def store_number(value) -> Optional[str]:
     if text is None:
         return None
     return text.lstrip("0") or "0"
+
+
+def chain_id(value) -> Optional[str]:
+    text = clean(value)
+    return re.sub(r"\D", "", text) or None if text else None
 
 
 def decimal(value) -> Optional[Decimal]:
@@ -54,7 +81,7 @@ def timestamp(value) -> Optional[datetime]:
     return None
 
 
-def price_row(row: dict, chain_id: str) -> Optional[dict]:
+def price_row(row: dict, chain_key: str) -> Optional[dict]:
     """שורת Item מקובץ Price/PriceFull. מחזיר None לשורה שאי אפשר לטעון."""
     barcode = clean(row.get("itemcode"))
     price = decimal(row.get("itemprice"))
@@ -67,7 +94,7 @@ def price_row(row: dict, chain_id: str) -> Optional[dict]:
         or clean(row.get("manufactureitemdescription")) or barcode
     return {
         "barcode": barcode,
-        "internal_chain_id": chain_id if is_internal else "",
+        "internal_chain": chain_key if is_internal else "",
         "name": name,
         "manufacturer": clean(row.get("manufacturename")) or clean(row.get("manufacturername")),
         "unit_qty": clean(row.get("unitqty")),
@@ -86,13 +113,17 @@ def store_row(row: dict) -> Optional[dict]:
     number = store_number(row.get("storeid"))
     if number is None:
         return None
+    address = clean(row.get("address"))
+    if address is not None and address in ("0", "-", "."):
+        address = None
     return {
+        "chain_id": chain_id(row.get("chainid")),
         "store_id": number,
         "sub_chain_id": clean(row.get("subchainid")),
         "sub_chain_name": clean(row.get("subchainname")),
         "name": clean(row.get("storename")),
-        "address": clean(row.get("address")),
-        "city": clean(row.get("city")),
+        "address": address,
+        "city": city_name(row.get("city")),
         "zip_code": clean(row.get("zipcode")),
         "store_type": clean(row.get("storetype")),
     }

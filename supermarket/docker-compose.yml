@@ -18,10 +18,10 @@ services:
       timeout: 3s
       retries: 20
 
-  # טעינת נתונים. שלב 1: הרצה ידנית –  docker compose run --rm ingest
+  # תהליך רקע: רשימות סניפים, geocoding, וטעינת מחירים לפי בקשות מהאפליקציה
   ingest:
     build: ./ingest
-    profiles: ["ingest"]
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -30,8 +30,10 @@ services:
       DUMPS_DIR: /data/dumps
       SCHEMA_DIR: /schema
       INGEST_ALL_STORES: ${INGEST_ALL_STORES:-false}
-      SHUFERSAL_STORE_IDS: ${SHUFERSAL_STORE_IDS:-}
       REQUEST_DELAY_SECONDS: ${REQUEST_DELAY_SECONDS:-1}
+      GEOCODER_URL: ${GEOCODER_URL:-https://nominatim.openstreetmap.org/search}
+      GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-supermarket-basket-compare/0.2}
+      GEOCODER_DELAY_SECONDS: ${GEOCODER_DELAY_SECONDS:-1.1}
       TZ: ${TZ:-Asia/Jerusalem}
     volumes:
       - dumps:/data/dumps
@@ -46,6 +48,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       STALE_PRICE_HOURS: ${STALE_PRICE_HOURS:-36}
+      DEFAULT_RADIUS_KM: ${DEFAULT_RADIUS_KM:-5}
       TZ: ${TZ:-Asia/Jerusalem}
     ports:
       - "${WEB_PORT:-3000}:3000"

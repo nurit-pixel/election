@@ -7,19 +7,17 @@ def _bool(name: str, default: bool = False) -> bool:
     return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
-def _int_list(name: str) -> list[int]:
-    raw = os.environ.get(name, "")
-    return [int(x) for x in raw.replace(" ", "").split(",") if x]
-
-
 @dataclass(frozen=True)
 class Config:
     database_url: str
     dumps_dir: str
     schema_dir: str
     ingest_all_stores: bool
-    shufersal_store_ids: list[int]
     request_delay: float
+    geocoder_url: str
+    geocoder_user_agent: str
+    geocoder_delay: float
+    max_file_age_days: int
 
 
 def load() -> Config:
@@ -30,6 +28,9 @@ def load() -> Config:
         dumps_dir=os.environ.get("DUMPS_DIR", "/data/dumps"),
         schema_dir=os.environ.get("SCHEMA_DIR", "/schema"),
         ingest_all_stores=_bool("INGEST_ALL_STORES"),
-        shufersal_store_ids=_int_list("SHUFERSAL_STORE_IDS"),
         request_delay=float(os.environ.get("REQUEST_DELAY_SECONDS", "1")),
+        geocoder_url=os.environ.get("GEOCODER_URL", "https://nominatim.openstreetmap.org/search"),
+        geocoder_user_agent=os.environ.get("GEOCODER_USER_AGENT", "supermarket-basket-compare/0.2"),
+        geocoder_delay=float(os.environ.get("GEOCODER_DELAY_SECONDS", "1.1")),
+        max_file_age_days=int(os.environ.get("MAX_FILE_AGE_DAYS", "7")),
     )
