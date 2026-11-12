@@ -1,0 +1,120 @@
+import Link from "next/link";
+import { searchProducts, type ProductResult } from "@/lib/search";
+import { getItem, type ListItem } from "@/lib/lists";
+import { formatPrice, formatUpdated } from "@/lib/format";
+import { SearchBar } from "@/components/SearchBar";
+import { addProduct } from "../actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; item?: string }> }) {
+  const params = await searchParams;
+  const q = (params.q ?? "").trim();
+  const item = params.item ? await getItem(Number(params.item)) : null;
+  const results = q ? await searchProducts(q) : [];
+
+  return (
+    <div className="space-y-4">
+      {item ? (
+        <div className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">
+          בוחרים חלופה לפריט <b>{item.name}</b>
+          {item.isWeighted ? " (מוצר שקיל)" : ""}.{" "}
+          <Link href="/" className="underline">
+            חזרה לרשימה
+          </Link>
+        </div>
+      ) : (
+        <h1 className="text-lg font-bold">הוספת מוצר</h1>
+      )}
+      <SearchBar query={q} itemId={item?.id} autoFocus={!q} />
+
+      {q && results.length === 0 && (
+        <p className="rounded-xl bg-white p-4 text-slate-600">לא נמצאו מוצרים עבור ״{q}״.</p>
+      )}
+      <ul className="space-y-3">
+        {results.map((p) => (
+          <ProductCard key={p.id} product={p} item={item} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ProductCard({ product: p, item }: { product: ProductResult; item: ListItem | null }) {
+  const unit = p.isWeighted ? " לק״ג" : "";
+  const cheapest = p.prices[0];
+  const priciest = p.prices[p.prices.length - 1];
+  const already = item?.products.some((x) => x.id === p.id);
+  const wrongKind = item != null && item.isWeighted !== p.isWeighted;
+
+  return (
+    <li className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="font-semibold leading-snug">{p.name}</h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {p.manufacturer && <span>{p.manufacturer} · </span>}
+            <span dir="ltr">{p.barcode}</span>
+            {p.chainName && <span> · רק ב{p.chainName}</span>}
+            {p.isWeighted && <span> · מוצר שקיל</span>}
+          </p>
+        </div>
+        {cheapest && (
+          <div className="shrink-0 text-left">
+            <div className="text-lg font-bold text-emerald-700">
+              {formatPrice(cheapest.price)}
+              {priciest.price !== cheapest.price && (
+                <span className="text-sm font-normal text-slate-400"> – {formatPrice(priciest.price)}</span>
+              )}
+            </div>
+            {unit && <div className="text-xs text-slate-500">{unit.trim()}</div>}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        {already ? (
+          <span className="text-sm text-slate-500">כבר בין החלופות</span>
+        ) : wrongKind ? (
+          <span className="text-sm text-slate-500">
+            {item!.isWeighted ? "אפשר להוסיף רק מוצר שקיל" : "אי אפשר לשלב מוצר שקיל עם מוצר ארוז"}
+          </span>
+        ) : (
+          <form action={addProduct}>
+            <input type="hidden" name="product" value={p.id} />
+            {item && <input type="hidden" name="item" value={item.id} />}
+            <button className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+              {item ? "הוספה כחלופה" : "הוספה לרשימה"}
+            </button>
+          </form>
+        )}
+        <span className="text-xs text-slate-500">{p.prices.length} סניפים</span>
+      </div>
+
+      {p.prices.length > 0 && (
+        <details className="mt-2 text-sm">
+          <summary className="cursor-pointer select-none text-emerald-700">מחירים לפי סניף</summary>
+          <ul className="mt-2 divide-y divide-slate-100 border-t border-slate-100">
+            {p.prices.map((s) => (
+              <li key={s.storePk} className="flex items-center justify-between gap-3 py-2">
+                <div className="min-w-0">
+                  <div className="truncate">
+                    {s.chainName} · {s.storeName}
+                  </div>
+                  <div className={`text-xs ${s.stale ? "text-amber-600" : "text-slate-400"}`}>
+                    עודכן {formatUpdated(s.fileTime)}
+                    {s.stale && " · מחיר ישן"}
+                  </div>
+                </div>
+                <div className="shrink-0 font-semibold tabular-nums">
+                  {formatPrice(s.price)}
+                  {unit}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </li>
+  );
+}

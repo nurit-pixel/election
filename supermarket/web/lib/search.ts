@@ -23,12 +23,15 @@ export type ProductResult = {
   name: string;
   manufacturer: string | null;
   isWeighted: boolean;
+  /** קוד פנימי: שם הרשת שהמוצר שייך לה */
+  chainName: string | null;
   prices: StorePrice[];
 };
 
 const STALE_HOURS = Number(process.env.STALE_PRICE_HOURS ?? 36);
 
-/** חיפוש לפי ברקוד (ספרות בלבד) או לפי כל המילים בשם המוצר. */
+/** חיפוש לפי ברקוד (ספרות בלבד) או לפי כל המילים בשם המוצר.
+ * המחירים מוצגים רק מסניפים שברדיוס הכתובות השמורות (אם יש כאלה). */
 export async function searchProducts(query: string, limit = 30): Promise<ProductResult[]> {
   const q = query.trim();
   if (q.length < 2) return [];
@@ -47,9 +50,13 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
       })
       .join(" AND ");
   }
-  params.push(STALE_HOURS, limit);
-  const staleIdx = params.length - 1;
-  const limitIdx = params.length;
+  params.push(STALE_HOURS, limit, q);
+  const staleIdx = params.length - 2;
+  const limitIdx = params.length - 1;
+  const qIdx = params.length;
+  // התאמה מדויקת לשם קודם, אחריה שם שמתחיל במחרוזת החיפוש, ואז לפי מספר הסניפים
+  const rank = (t: string) =>
+    `(CASE WHEN ${t}.name = $${qIdx} THEN 0 WHEN ${t}.name ILIKE $${qIdx} || ' %' THEN 1 ELSE 2 END)`;
 
   const { rows } = await pool.query(
     `WITH matched AS (
@@ -58,10 +65,10 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
        FROM products p
        WHERE ${where}
          AND EXISTS (SELECT 1 FROM prices pr WHERE pr.product_id = p.id)
-       ORDER BY store_count DESC, length(p.name), p.name
+       ORDER BY ${rank("p")}, store_count DESC, length(p.name), p.name
        LIMIT $${limitIdx}
      )
-     SELECT m.*,
+     SELECT m.*, (SELECT name FROM chains WHERE key = m.internal_chain) AS internal_chain_name,
             COALESCE(json_agg(json_build_object(
               'storePk', s.id,
               'chainName', c.name,
@@ -75,9 +82,12 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
      FROM matched m
      LEFT JOIN prices pr ON pr.product_id = m.id
      LEFT JOIN stores s ON s.id = pr.store_pk
+       AND (NOT EXISTS (SELECT 1 FROM addresses WHERE lat IS NOT NULL)
+            OR EXISTS (SELECT 1 FROM addresses a WHERE a.lat IS NOT NULL AND s.lat IS NOT NULL
+                       AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km))
      LEFT JOIN chains c ON c.key = s.chain_key AND NOT c.hidden
      GROUP BY m.id, m.barcode, m.internal_chain, m.name, m.manufacturer, m.is_weighted, m.store_count
-     ORDER BY m.store_count DESC, length(m.name), m.name`,
+     ORDER BY ${rank("m")}, m.store_count DESC, length(m.name), m.name`,
     params,
   );
 
@@ -88,6 +98,7 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
     name: r.name,
     manufacturer: r.manufacturer,
     isWeighted: r.is_weighted,
+    chainName: r.internal_chain_name,
     prices: r.prices,
   }));
 }

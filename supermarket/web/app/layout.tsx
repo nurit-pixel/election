@@ -19,7 +19,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               השוואת סל
             </Link>
             <nav className="flex gap-4 text-sm font-medium text-slate-600">
-              <Link href="/">חיפוש</Link>
+              <Link href="/">הרשימה שלי</Link>
+              <Link href="/compare">השוואה</Link>
               <Link href="/settings">הגדרות</Link>
             </nav>
           </div>

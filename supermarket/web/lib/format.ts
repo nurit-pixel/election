@@ -14,3 +14,13 @@ export function formatUpdated(iso: string, now = new Date()): string {
   const date = d.toLocaleDateString("he-IL", { timeZone: TZ, day: "numeric", month: "numeric" });
   return `${date} ${time}`;
 }
+
+/** כמות לתצוגה: "1.5 ק״ג" למוצר שקיל, "×2" ליחידות */
+export function formatQuantity(quantity: number, isWeighted: boolean): string {
+  return isWeighted ? `${Number(quantity.toFixed(3))} ק״ג` : `×${quantity}`;
+}
+
+export function formatDistance(km: number | null): string {
+  if (km == null) return "";
+  return km < 1 ? `${Math.round(km * 100) * 10} מ׳` : `${km.toFixed(1)} ק״מ`;
+}
