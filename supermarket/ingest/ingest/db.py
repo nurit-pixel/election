@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import glob
 import os
+from collections import Counter
 from datetime import datetime
 from typing import Optional
 
@@ -231,4 +232,95 @@ def load_price_full(conn, chain: Chain, chain_id: str, store_id: str, file_name:
             (file_time, store_pk),
         )
         _record_file(cur, file_name, chain.key, store_id, "PRICE_FULL_FILE", file_time, loaded)
+    return loaded
+
+
+# ---------- מבצעים ----------
+
+def load_promo_full(conn, chain: Chain, chain_id: str, store_id: str, file_name: str,
+                    file_time: datetime, promos: list[dict]) -> int:
+    """טעינת קובץ PromoFull: מחליף את כל מבצעי הסניף. מחזיר את מספר שורות המוצר-במבצע."""
+    if not promos:
+        raise EmptyFile("קובץ מבצעים ריק")
+    # אותו מבצע מופיע לפעמים פעמיים בקובץ; מאחדים לפי מזהה המבצע
+    merged: dict[str, dict] = {}
+    for promo in promos:
+        if promo["promotion_id"] in merged:
+            merged[promo["promotion_id"]]["items"].extend(promo["items"])
+        else:
+            merged[promo["promotion_id"]] = {**promo, "items": list(promo["items"])}
+
+    with conn.transaction(), conn.cursor() as cur:
+        store_pk, _ = _find_or_create_store(cur, chain, chain_id, store_id)
+        cur.execute("SELECT promos_file_time, %s::timestamptz FROM stores WHERE id = %s",
+                    (file_time, store_pk))
+        current_time, file_time_tz = cur.fetchone()
+        if current_time is not None and current_time > file_time_tz:
+            _record_file(cur, file_name, chain.key, store_id, "PROMO_FULL_FILE", file_time, 0)
+            return 0
+
+        cur.execute("DELETE FROM promotions WHERE store_pk = %s", (store_pk,))
+        cur.execute(
+            """CREATE TEMP TABLE tmp_promos (
+                   promotion_id text, description text, start_at timestamptz, end_at timestamptz,
+                   club_ids integer[], club_text text, min_purchase numeric, restricted boolean,
+                   nth_n integer, nth_rate numeric
+               ) ON COMMIT DROP"""
+        )
+        with cur.copy("COPY tmp_promos FROM STDIN") as copy:
+            for p in merged.values():
+                copy.write_row([p["promotion_id"], p["description"], p["start_at"], p["end_at"],
+                                [code for code, _ in p["clubs"]], p["club_text"], p["min_purchase"],
+                                p["restricted"], p["nth_n"], p["nth_rate"]])
+        cur.execute(
+            """CREATE TEMP TABLE tmp_promo_items (
+                   promotion_id text, barcode text, internal_chain text, reward_type text,
+                   min_qty numeric, max_qty numeric, discounted_price numeric, discount_rate numeric
+               ) ON COMMIT DROP"""
+        )
+        with cur.copy("COPY tmp_promo_items FROM STDIN") as copy:
+            for p in merged.values():
+                for item in p["items"]:
+                    copy.write_row([p["promotion_id"], item["barcode"],
+                                    chain.key if item["is_internal"] else "", item["reward_type"],
+                                    item["min_qty"], item["max_qty"], item["discounted_price"],
+                                    item["discount_rate"]])
+        cur.execute(
+            """INSERT INTO promotions (store_pk, promotion_id, description, start_at, end_at, club_ids,
+                                       club_text, min_purchase, restricted, nth_n, nth_rate, file_time)
+               SELECT %s, promotion_id, description, start_at, end_at, club_ids, club_text,
+                      min_purchase, restricted, nth_n, nth_rate, %s
+               FROM tmp_promos""",
+            (store_pk, file_time),
+        )
+        # מוצר שאינו בקובץ המחירים של אף סניף אינו נטען
+        cur.execute(
+            """INSERT INTO promotion_items (promotion_pk, store_pk, product_id, reward_type, min_qty,
+                                            max_qty, discounted_price, discount_rate)
+               SELECT DISTINCT ON (pm.id, p.id)
+                      pm.id, %s, p.id, t.reward_type, t.min_qty, t.max_qty, t.discounted_price,
+                      t.discount_rate
+               FROM tmp_promo_items t
+               JOIN promotions pm ON pm.store_pk = %s AND pm.promotion_id = t.promotion_id
+               JOIN products p ON p.barcode = t.barcode
+                              AND p.internal_chain IN (t.internal_chain, %s)
+               ORDER BY pm.id, p.id, (p.internal_chain = t.internal_chain) DESC""",
+            (store_pk, store_pk, chain.key),
+        )
+        loaded = cur.rowcount
+        cur.execute("DELETE FROM promotions pm WHERE pm.store_pk = %s AND NOT EXISTS "
+                    "(SELECT 1 FROM promotion_items pi WHERE pi.promotion_pk = pm.id)", (store_pk,))
+        # אותו מועדון מופיע בשמות שונים במבצעים שונים; שומרים את השם הנפוץ ביותר בקובץ
+        names: dict[int, Counter] = {}
+        for p in merged.values():
+            for code, name in p["clubs"]:
+                names.setdefault(code, Counter())[name] += 1
+        for code, counter in names.items():
+            cur.execute(
+                """INSERT INTO clubs (chain_key, club_id, name) VALUES (%s, %s, %s)
+                   ON CONFLICT (chain_key, club_id) DO UPDATE SET name = EXCLUDED.name""",
+                (chain.key, code, counter.most_common(1)[0][0]),
+            )
+        cur.execute("UPDATE stores SET promos_file_time = %s WHERE id = %s", (file_time, store_pk))
+        _record_file(cur, file_name, chain.key, store_id, "PROMO_FULL_FILE", file_time, loaded)
     return loaded

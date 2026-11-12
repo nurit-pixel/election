@@ -3,7 +3,7 @@
     python -m ingest worker                        # תהליך הרקע (ברירת המחדל ב-Docker)
     python -m ingest stores [--chain KEY ...]      # רשימות סניפים
     python -m ingest geocode [--limit N]           # geocoding לסניפים שעוד לא נוסו
-    python -m ingest prices [--chain KEY ...]      # מחירים לסניפים ברדיוס הכתובות השמורות
+    python -m ingest prices [--chain KEY ...]      # מחירים ומבצעים לסניפים ברדיוס הכתובות
     python -m ingest prices --chain SHUFERSAL --stores 1,2,3
     python -m ingest prices --all-stores           # כל הארץ (כמו INGEST_ALL_STORES=true)
     python -m ingest address "בית" "הרצל 1, תל אביב" [--radius 5]
@@ -88,6 +88,7 @@ def main() -> int:
             ids = [s.strip().lstrip("0") or "0" for s in args.stores.split(",") if s.strip()]
             statuses = {chains[0].key: pipeline.run_chain(cfg, conn, chains[0], "prices", ids,
                                                           args.force)}
+            pipeline.run_chain(cfg, conn, chains[0], "promos", ids, args.force)
         else:
             geocode.geocode_addresses(cfg, conn)
             statuses = pipeline.refresh_prices(

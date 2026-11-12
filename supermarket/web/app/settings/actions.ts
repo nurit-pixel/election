@@ -42,3 +42,12 @@ export async function requestPrices() {
   await enqueue("prices");
   revalidatePath("/settings");
 }
+
+export async function setClub(formData: FormData) {
+  await pool.query(`UPDATE clubs SET member = $3 WHERE chain_key = $1 AND club_id = $2`, [
+    String(formData.get("chain")),
+    Number(formData.get("club")),
+    formData.get("member") === "1",
+  ]);
+  revalidatePath("/settings");
+}

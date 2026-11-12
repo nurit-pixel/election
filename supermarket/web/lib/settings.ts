@@ -63,6 +63,7 @@ export type ChainStatus = {
   notUpdated: boolean;
   storesRun: RunInfo | null;
   pricesRun: RunInfo | null;
+  promosRun: RunInfo | null;
 };
 
 export async function chainStatuses(): Promise<ChainStatus[]> {
@@ -80,7 +81,10 @@ export async function chainStatuses(): Promise<ChainStatus[]> {
                WHERE chain_key = c.key AND kind = 'stores' ORDER BY id DESC LIMIT 1) r) AS stores_run,
             (SELECT row_to_json(r) FROM (
                SELECT status, started_at, files_loaded, files_failed, error FROM ingest_runs
-               WHERE chain_key = c.key AND kind = 'prices' ORDER BY id DESC LIMIT 1) r) AS prices_run
+               WHERE chain_key = c.key AND kind = 'prices' ORDER BY id DESC LIMIT 1) r) AS prices_run,
+            (SELECT row_to_json(r) FROM (
+               SELECT status, started_at, files_loaded, files_failed, error FROM ingest_runs
+               WHERE chain_key = c.key AND kind = 'promos' ORDER BY id DESC LIMIT 1) r) AS promos_run
      FROM chains c ORDER BY c.sort_order`,
     [STALE_HOURS],
   );
@@ -106,6 +110,7 @@ export async function chainStatuses(): Promise<ChainStatus[]> {
         Number(r.with_prices) > 0 && (r.stale === true || pricesRun?.status === "failed"),
       storesRun: run(r.stores_run),
       pricesRun,
+      promosRun: run(r.promos_run),
     };
   });
 }
@@ -146,4 +151,22 @@ export async function enqueue(kind: "address" | "stores" | "prices", addressId: 
     [kind, addressId],
   );
   await pool.query("NOTIFY ingest");
+}
+
+export type Club = { chainKey: string; chainName: string; clubId: number; name: string; member: boolean };
+
+/** מועדוני הלקוחות שנמצאו בקבצי המבצעים, לפי רשת. */
+export async function listClubs(): Promise<Club[]> {
+  const { rows } = await pool.query(
+    `SELECT cl.chain_key, c.name AS chain_name, cl.club_id, cl.name, cl.member
+     FROM clubs cl JOIN chains c ON c.key = cl.chain_key
+     ORDER BY c.sort_order, cl.club_id`,
+  );
+  return rows.map((r) => ({
+    chainKey: r.chain_key,
+    chainName: r.chain_name,
+    clubId: r.club_id,
+    name: r.name,
+    member: r.member,
+  }));
 }

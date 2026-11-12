@@ -27,7 +27,7 @@ export default async function ComparePage() {
       <div>
         <h1 className="text-lg font-bold">השוואת סניפים</h1>
         <p className="text-sm text-slate-500">
-          {list.items.length} פריטים · {storesInRadius} סניפים ברדיוס · המחירים לפני מבצעים
+          {list.items.length} פריטים · {storesInRadius} סניפים ברדיוס · כולל מבצעים
         </p>
       </div>
 
@@ -97,6 +97,12 @@ function StoreRow({ store: s, rank, diff }: { store: RankedStore; rank: number |
             <div className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
               נמצאו {b.foundCount} מתוך {b.itemCount}
             </div>
+          )}
+          {b.savings > 0 && (
+            <div className="mt-1 text-xs text-emerald-700">חיסכון במבצעים {formatPrice(b.savings)}</div>
+          )}
+          {b.clubSavings > 0 && (
+            <div className="mt-0.5 text-xs text-violet-700">לחברי מועדון: עוד {formatPrice(b.clubSavings)}</div>
           )}
           {s.pricesFileTime && (
             <div className={`mt-1 text-xs ${b.stale ? "text-amber-600" : "text-slate-400"}`}>

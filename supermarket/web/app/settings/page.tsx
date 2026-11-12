@@ -1,6 +1,6 @@
-import { chainStatuses, listAddresses, overview, type ChainStatus, type RunInfo } from "@/lib/settings";
+import { chainStatuses, listAddresses, listClubs, overview, type ChainStatus, type RunInfo } from "@/lib/settings";
 import { formatUpdated } from "@/lib/format";
-import { addAddress, deleteAddress, requestPrices, requestStores, updateRadius } from "./actions";
+import { addAddress, deleteAddress, requestPrices, requestStores, setClub, updateRadius } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,12 @@ const REQUEST_LABELS: Record<string, string> = {
 };
 
 export default async function SettingsPage() {
-  const [addresses, chains, info] = await Promise.all([listAddresses(), chainStatuses(), overview()]);
+  const [addresses, chains, info, clubs] = await Promise.all([
+    listAddresses(),
+    chainStatuses(),
+    overview(),
+    listClubs(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -109,6 +114,40 @@ export default async function SettingsPage() {
       </section>
 
       <section className="space-y-3">
+        <h2 className="text-lg font-bold">מועדוני לקוחות</h2>
+        <p className="text-sm text-slate-500">
+          מבצע מועדון נכלל בחישוב רק אם סימנתם שאתם חברים. אחרת הוא מוצג כחיסכון אפשרי.
+        </p>
+        {clubs.length === 0 ? (
+          <p className="rounded-2xl bg-white p-4 text-sm text-slate-500">עוד לא נטענו מבצעי מועדון.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            {clubs.map((club) => (
+              <li key={`${club.chainKey}-${club.clubId}`} className="flex items-center justify-between gap-3 p-3 text-sm">
+                <div className="min-w-0">
+                  <div className="font-medium">{club.chainName}</div>
+                  <div className="truncate text-xs text-slate-500">{club.name}</div>
+                </div>
+                <form action={setClub}>
+                  <input type="hidden" name="chain" value={club.chainKey} />
+                  <input type="hidden" name="club" value={club.clubId} />
+                  <input type="hidden" name="member" value={club.member ? "0" : "1"} />
+                  <button
+                    aria-pressed={club.member}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                      club.member ? "bg-emerald-600 text-white" : "border border-slate-300 text-slate-600"
+                    }`}
+                  >
+                    {club.member ? "חבר/ה ✓" : "לא חבר/ה"}
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-3">
         <h2 className="text-lg font-bold">סטטוס טעינה</h2>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
           <div>
@@ -169,7 +208,7 @@ function runLine(label: string, run: RunInfo | null) {
 
 function ChainRow({ chain: c }: { chain: ChainStatus }) {
   const b = badge(c);
-  const error = (c.pricesRun?.error ?? c.storesRun?.error)?.split("\n")[0];
+  const error = (c.pricesRun?.error ?? c.promosRun?.error ?? c.storesRun?.error)?.split("\n")[0];
   return (
     <li className="p-4 text-sm">
       <div className="flex items-center justify-between gap-3">
@@ -188,6 +227,7 @@ function ChainRow({ chain: c }: { chain: ChainStatus }) {
         </div>
         {runLine("רשימת סניפים", c.storesRun)}
         {runLine("מחירים", c.pricesRun)}
+        {runLine("מבצעים", c.promosRun)}
         {error && <div className="mt-1 break-words text-rose-700">{error.slice(0, 160)}</div>}
       </div>
     </li>

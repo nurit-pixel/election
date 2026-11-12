@@ -29,6 +29,9 @@ for _name in ("Logger", "mylogger"):
 
 STORE = FileTypesFilters.STORE_FILE.name
 PRICE_FULL = FileTypesFilters.PRICE_FULL_FILE.name
+PROMO_FULL = FileTypesFilters.PROMO_FULL_FILE.name
+FILE_TYPE = {"stores": STORE, "prices": PRICE_FULL, "promos": PROMO_FULL}
+SEARCH = {STORE: "Stores", PRICE_FULL: "PriceFull", PROMO_FULL: "PromoFull"}
 CHAIN_TIMEOUT_SECONDS = 45 * 60
 
 
@@ -81,7 +84,7 @@ def _download_cerberus(cfg: Config, chain: Chain, file_type: str,
                        store_ids: Optional[list[str]], already_loaded: set[str]) -> list[str]:
     client = CerberusClient(chain.username, chain.password, chain.path, cfg.request_delay)
     client.login()
-    names = client.list_files("Stores" if file_type == STORE else "PriceFull")
+    names = client.list_files(SEARCH[file_type])
     wanted = filenames.latest_per_store(
         names, file_type, set(store_ids) if store_ids is not None else None
     )
@@ -122,7 +125,7 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
         return 0, 0, 0, errors
 
     async for dump in DataLoader(cfg.dumps_dir).load(
-        enabled_scraper=[chain.key], files_types=[STORE, PRICE_FULL]
+        enabled_scraper=[chain.key], files_types=[STORE, PRICE_FULL, PROMO_FULL]
     ):
         path = dump.get_full_path
         try:
@@ -136,17 +139,21 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
                 count = db.load_stores(conn, chain, dump.file_name, dump.extracted_date,
                                        file_chain_id, rows)
             else:
-                rows = [r for r in (normalize.price_row(x, chain.key) for x in raw) if r]
                 # מספר הסניף ומזהה הרשת נלקחים מתוך ה-XML; שם הקובץ הוא רק גיבוי
                 first = raw[0] if raw else {}
                 store_id = normalize.store_number(first.get("storeid")) \
                     or normalize.store_number(dump.extracted_store_number)
                 if store_id is None:
                     raise ValueError("לא נמצא StoreId בקובץ")
-                count = db.load_price_full(
-                    conn, chain, normalize.chain_id(first.get("chainid")) or file_chain_id,
-                    store_id, dump.file_name, dump.extracted_date, rows,
-                )
+                xml_chain_id = normalize.chain_id(first.get("chainid")) or file_chain_id
+                if dump.detected_filetype.name == PROMO_FULL:
+                    rows = [r for r in map(normalize.promo_row, raw) if r]
+                    count = db.load_promo_full(conn, chain, xml_chain_id, store_id,
+                                               dump.file_name, dump.extracted_date, rows)
+                else:
+                    rows = [r for r in (normalize.price_row(x, chain.key) for x in raw) if r]
+                    count = db.load_price_full(conn, chain, xml_chain_id, store_id,
+                                               dump.file_name, dump.extracted_date, rows)
             log.info("%s: נטען %s (%d שורות)", chain.name, dump.file_name, count)
             loaded += 1
             total_rows += count
@@ -165,9 +172,9 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
 
 def run_chain(cfg: Config, conn, chain: Chain, kind: str,
               store_ids: Optional[list[str]] = None, force: bool = False) -> str:
-    """kind: "stores" (רשימת סניפים) או "prices" (PriceFull; store_ids=None -> כל הסניפים).
-    נרשם ב-ingest_runs. מחזיר את הסטטוס הסופי: ok / partial / failed."""
-    file_type = STORE if kind == "stores" else PRICE_FULL
+    """kind: "stores" (רשימת סניפים), "prices" (PriceFull) או "promos" (PromoFull).
+    store_ids=None -> כל הסניפים. נרשם ב-ingest_runs. מחזיר את הסטטוס: ok / partial / failed."""
+    file_type = FILE_TYPE[kind]
     run_id = db.start_run(conn, chain, kind)
     loaded = failed = rows = 0
     errors: list[str] = []
@@ -201,11 +208,14 @@ def refresh_stores(cfg: Config, conn, chains: list[Chain], force: bool = False) 
 
 def refresh_prices(cfg: Config, conn, chains: list[Chain], address_id: Optional[int] = None,
                    all_stores: bool = False, force: bool = False) -> dict[str, str]:
-    """מחירים לסניפים ברדיוס הכתובות השמורות (או לכל הסניפים). רשת בלי סניפים ברדיוס מדולגת."""
+    """מחירים ומבצעים לסניפים ברדיוס הכתובות השמורות (או לכל הסניפים).
+    רשת בלי סניפים ברדיוס מדולגת. המבצעים נטענים אחרי המחירים, כי הם מפנים למוצרים."""
     statuses: dict[str, str] = {}
     for chain in chains:
         store_ids = None if all_stores else db.store_ids_in_radius(conn, chain, address_id)
         if store_ids is not None and not store_ids:
             continue
         statuses[chain.key] = run_chain(cfg, conn, chain, "prices", store_ids, force)
+        if statuses[chain.key] != "failed":
+            run_chain(cfg, conn, chain, "promos", store_ids, force)
     return statuses
