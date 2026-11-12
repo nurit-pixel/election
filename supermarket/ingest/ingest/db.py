@@ -12,6 +12,10 @@ import psycopg
 from .chains import CHAINS, Chain
 
 
+class EmptyFile(ValueError):
+    """קובץ תקין בלי שורות (למשל סניף סגור). לא נטען ולא נחשב ככשל."""
+
+
 def connect(database_url: str) -> psycopg.Connection:
     # autocommit: כל פקודה בודדת נשמרת מיד, ו-conn.transaction() פותח טרנזקציה אמיתית.
     # הזמנים בקבצים הם שעון ישראל בלי אזור זמן.
@@ -94,7 +98,7 @@ def load_stores(conn, chain: Chain, file_name: str, file_time: datetime, fallbac
                 rows: list[dict]) -> int:
     """טעינת רשימת סניפים. כתובת שהשתנתה מאפסת את ה-geocoding כדי שיחושב מחדש."""
     if not rows:
-        raise ValueError("קובץ סניפים ריק")
+        raise EmptyFile("קובץ סניפים ריק")
     changed = "(stores.address, stores.city) IS DISTINCT FROM (EXCLUDED.address, EXCLUDED.city)"
     with conn.transaction(), conn.cursor() as cur:
         for r in rows:
@@ -170,7 +174,7 @@ def load_price_full(conn, chain: Chain, chain_id: str, store_id: str, file_name:
                     file_time: datetime, rows: list[dict]) -> int:
     """טעינת קובץ PriceFull: מחליף את כל מחירי הסניף בתמונת המצב החדשה."""
     if not rows:
-        raise ValueError("קובץ מחירים ריק")
+        raise EmptyFile("קובץ מחירים ריק")
     with conn.transaction(), conn.cursor() as cur:
         store_pk, current_time = _find_or_create_store(cur, chain, chain_id, store_id)
         cur.execute("SELECT %s::timestamptz", (file_time,))

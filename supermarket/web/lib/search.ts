@@ -57,6 +57,7 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
               (SELECT count(*) FROM prices pr WHERE pr.product_id = p.id) AS store_count
        FROM products p
        WHERE ${where}
+         AND EXISTS (SELECT 1 FROM prices pr WHERE pr.product_id = p.id)
        ORDER BY store_count DESC, length(p.name), p.name
        LIMIT $${limitIdx}
      )

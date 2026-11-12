@@ -151,6 +151,9 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
             loaded += 1
             total_rows += count
             os.remove(path)
+        except db.EmptyFile:
+            log.info("%s: %s ריק, מדלג", chain.name, dump.file_name)
+            os.remove(path)
         except Exception as exc:  # pylint: disable=broad-exception-caught
             failed += 1
             errors.append(f"{dump.file_name}: {exc}")
