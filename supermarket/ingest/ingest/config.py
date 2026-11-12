@@ -31,6 +31,6 @@ def load() -> Config:
         request_delay=float(os.environ.get("REQUEST_DELAY_SECONDS", "1")),
         geocoder_url=os.environ.get("GEOCODER_URL", "https://nominatim.openstreetmap.org/search"),
         geocoder_user_agent=os.environ.get("GEOCODER_USER_AGENT", "supermarket-basket-compare/0.2"),
-        geocoder_delay=float(os.environ.get("GEOCODER_DELAY_SECONDS", "1.1")),
+        geocoder_delay=float(os.environ.get("GEOCODER_DELAY_SECONDS", "1.5")),
         max_file_age_days=int(os.environ.get("MAX_FILE_AGE_DAYS", "7")),
     )

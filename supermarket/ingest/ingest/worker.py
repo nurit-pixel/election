@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import traceback
 
 from . import db, geocode
@@ -16,6 +17,7 @@ from .config import Config
 log = logging.getLogger("ingest.worker")
 GEOCODE_BATCH = 15
 IDLE_WAIT_SECONDS = 30
+GEOCODE_BACKOFF_SECONDS = (300, 900, 1800, 3600)   # המתנה אחרי כשל (למשל 429 משירות ה-geocoding)
 
 
 def enqueue(conn, kind: str, address_id: int | None = None) -> None:
@@ -64,6 +66,8 @@ def run(cfg: Config) -> None:
         conn.execute("LISTEN ingest")
         log.info("ה-worker פעיל")
         geocoding_active = False
+        geocode_failures = 0
+        geocode_resume_at = 0.0
         while True:
             request = conn.execute(
                 """UPDATE ingest_requests SET status = 'running', started_at = now()
@@ -87,13 +91,18 @@ def run(cfg: Config) -> None:
                 log.info("בקשה %d: %s – %s", request_id, status, message)
                 continue
 
+            if time.monotonic() < geocode_resume_at:
+                _wait(conn)
+                continue
             try:
                 done = geocode.geocode_stores(cfg, conn, GEOCODE_BATCH)
+                geocode_failures = 0
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                log.warning("geocoding נכשל זמנית: %s", exc)
-                done = 0
-                geocoding_active = False
-                _wait(conn)
+                pause = GEOCODE_BACKOFF_SECONDS[min(geocode_failures, len(GEOCODE_BACKOFF_SECONDS) - 1)]
+                geocode_failures += 1
+                geocode_resume_at = time.monotonic() + pause
+                log.warning("geocoding נכשל, ניסיון נוסף בעוד %d דקות: %s", pause // 60,
+                            str(exc)[:120])
                 continue
             if done:
                 geocoding_active = True

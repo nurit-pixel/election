@@ -12,6 +12,8 @@ export type Address = {
   state: "pending" | "ok" | "failed";
   storesInRadius: number;
   storesWithPrices: number;
+  /** סניפים שמוקמו רק לפי העיר ולא לפי הכתובת */
+  storesApproximate: number;
 };
 
 export async function listAddresses(): Promise<Address[]> {
@@ -20,7 +22,8 @@ export async function listAddresses(): Promise<Address[]> {
             CASE WHEN a.geocoded_at IS NULL THEN 'pending'
                  WHEN a.lat IS NULL THEN 'failed' ELSE 'ok' END AS state,
             count(s.id) AS in_radius,
-            count(s.id) FILTER (WHERE s.prices_file_time IS NOT NULL) AS with_prices
+            count(s.id) FILTER (WHERE s.prices_file_time IS NOT NULL) AS with_prices,
+            count(s.id) FILTER (WHERE s.geocode_precision = 'city') AS approximate
      FROM addresses a
      LEFT JOIN stores s
        ON a.lat IS NOT NULL AND s.lat IS NOT NULL
@@ -35,6 +38,7 @@ export async function listAddresses(): Promise<Address[]> {
     state: r.state,
     storesInRadius: Number(r.in_radius),
     storesWithPrices: Number(r.with_prices),
+    storesApproximate: Number(r.approximate),
   }));
 }
 

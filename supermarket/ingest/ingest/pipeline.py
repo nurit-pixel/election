@@ -94,8 +94,8 @@ def _download_cerberus(cfg: Config, chain: Chain, file_type: str,
             client.download(f.name, chain_dump_dir(cfg, chain))
         except Exception as exc:  # pylint: disable=broad-exception-caught
             errors.append(f"{f.name}: {exc}")
-    if not wanted:
-        errors.append("לא נמצאו קבצים מתאימים באתר")
+    if not any(filenames.parse(n) and filenames.parse(n).file_type == file_type for n in names):
+        errors.append("לא נמצאו קבצים מהסוג הזה באתר")
     return errors
 
 

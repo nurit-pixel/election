@@ -33,24 +33,39 @@ def simplify_address(address: str) -> str:
     return _tidy(re.sub(r"\s*,\s*", " ", text))
 
 
+def street_only(address: str) -> str:
+    """שם הרחוב בלי מספר הבית, לניסיון נוסף כשהמספר לא מוכר לשירות."""
+    return _tidy(re.sub(r"\d+\S*", " ", simplify_address(address)))
+
+
+def infer_city(name: Optional[str]) -> Optional[str]:
+    """רשתות שלא מפרסמות עיר נותנות בדרך כלל את שם היישוב בשם הסניף.
+    מחפשים שם יישוב רשמי כמילה שלמה; אם יש כמה – הארוך ביותר.
+    בכתובת לא מחפשים: יש יישובים ששמם מילה נפוצה בכתובות (למשל המושב "רחוב")."""
+    from .normalize import CITY_NAMES
+
+    words = f" {re.sub(r'[,.()/-]', ' ', _tidy(name))} "
+    found = [c for c in CITY_NAMES if len(c) >= 3 and f" {c} " in words]
+    return max(found, key=len) if found else None
+
+
 def store_queries(address: Optional[str], city: Optional[str],
                   name: Optional[str] = None) -> list[tuple[str, str]]:
-    """שאילתות לפי סדר עדיפות: (שאילתה, רמת דיוק).
-    רשתות שלא מפרסמות עיר נותנות בדרך כלל את שם היישוב בשם הסניף."""
-    address, city, name = _tidy(address), _tidy(city), _tidy(name)
+    """שאילתות לפי סדר עדיפות: (שאילתה, רמת דיוק address / street / city).
+    בלי עיר לא שולחים כתובת לבדה: אותו רחוב קיים בערים רבות."""
+    address, city = _tidy(address), _tidy(city) or infer_city(name)
+    if not city:
+        return []
     queries: list[tuple[str, str]] = []
-    if address and city:
-        for street in dict.fromkeys((address, simplify_address(address))):
+    if address and address != city:
+        simple = simplify_address(address)
+        for street in dict.fromkeys((address, simple)):
             if street:
                 queries.append((street if city in street else f"{street}, {city}", "address"))
-    elif address:
-        if name and name not in address:
-            queries.append((f"{address}, {name}", "address"))
-        queries.append((address, "address"))
-    if city:
-        queries.append((city, "city"))
-    elif name:
-        queries.append((name, "city"))
+        street = street_only(address)
+        if street and street != simple and street != city:
+            queries.append((f"{street}, {city}", "street"))
+    queries.append((city, "city"))
     return queries
 
 

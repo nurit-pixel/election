@@ -33,7 +33,7 @@ services:
       REQUEST_DELAY_SECONDS: ${REQUEST_DELAY_SECONDS:-1}
       GEOCODER_URL: ${GEOCODER_URL:-https://nominatim.openstreetmap.org/search}
       GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-supermarket-basket-compare/0.2}
-      GEOCODER_DELAY_SECONDS: ${GEOCODER_DELAY_SECONDS:-1.1}
+      GEOCODER_DELAY_SECONDS: ${GEOCODER_DELAY_SECONDS:-1.5}
       TZ: ${TZ:-Asia/Jerusalem}
     volumes:
       - dumps:/data/dumps

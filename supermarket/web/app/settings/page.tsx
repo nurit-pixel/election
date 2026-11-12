@@ -45,6 +45,7 @@ export default async function SettingsPage() {
                 {a.state === "ok" && (
                   <span className="text-slate-600">
                     {a.storesInRadius} סניפים ברדיוס · {a.storesWithPrices} עם מחירים
+                    {a.storesApproximate > 0 && ` · ${a.storesApproximate} במיקום משוער (לפי עיר)`}
                   </span>
                 )}
               </div>

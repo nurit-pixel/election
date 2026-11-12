@@ -19,6 +19,7 @@ def _load_cities() -> dict[str, str]:
 
 
 _CITIES = _load_cities()   # סמל יישוב של הלמ"ס -> שם יישוב
+CITY_NAMES = frozenset(_CITIES.values())
 
 
 def city_name(value) -> Optional[str]:

@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS stores (
     store_type     text,
     lat            double precision,
     lng            double precision,
-    geocode_precision text,                  -- address / city / none
+    geocode_precision text,                  -- address / street / city / none
     geocoded_at    timestamptz,              -- NULL = עדיין לא נוסה
     updated_at     timestamptz NOT NULL DEFAULT now(),
     prices_file_time  timestamptz,           -- חותמת הזמן של קובץ המחירים האחרון שנטען
