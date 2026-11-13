@@ -144,7 +144,7 @@ export async function overview(): Promise<Overview> {
 }
 
 /** בקשה ל-worker של ה-ingest. בקשה זהה שכבר ממתינה לא נוצרת שוב. */
-export async function enqueue(kind: "address" | "stores" | "prices", addressId: number | null = null) {
+export async function enqueue(kind: "address" | "stores" | "prices" | "track", addressId: number | null = null) {
   await pool.query(
     `INSERT INTO ingest_requests (kind, address_id)
      SELECT $1, $2 WHERE NOT EXISTS (

@@ -61,7 +61,9 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-medium leading-snug">{l.itemName}</div>
-                  {l.productName !== l.itemName && <div className="text-xs text-slate-500">{l.productName}</div>}
+                  <Link href={`/product/${l.productId}`} className="block text-xs text-emerald-700">
+                    {l.productName !== l.itemName ? l.productName : "גרף מחירים"}
+                  </Link>
                   <div className="mt-0.5 text-xs text-slate-500">
                     {formatQuantity(l.quantity, l.isWeighted)} · {formatPrice(l.unitPrice)}
                     {l.isWeighted ? " לק״ג" : " ליחידה"}

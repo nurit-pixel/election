@@ -1,5 +1,8 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { pool } from "./db";
+
+export const LIST_COOKIE = "active_list";
 
 export type ListProduct = {
   id: number;
@@ -20,9 +23,38 @@ export type ListItem = {
 
 export type ShoppingList = { id: number; name: string; items: ListItem[] };
 
-/** הרשימה הפעילה. נוצרת בכניסה הראשונה. */
+export type ListSummary = { id: number; name: string; itemCount: number };
+
+/** כל הרשימות השמורות. */
+export async function listSummaries(): Promise<ListSummary[]> {
+  const { rows } = await pool.query(
+    `SELECT l.id, l.name, count(i.id) AS item_count
+     FROM lists l LEFT JOIN list_items i ON i.list_id = l.id
+     GROUP BY l.id ORDER BY l.id`,
+  );
+  return rows.map((r) => ({ id: r.id, name: r.name, itemCount: Number(r.item_count) }));
+}
+
+export async function createList(name: string): Promise<number> {
+  const { rows } = await pool.query(`INSERT INTO lists (name) VALUES ($1) RETURNING id`, [name]);
+  return rows[0].id;
+}
+
+export async function renameList(listId: number, name: string): Promise<void> {
+  await pool.query(`UPDATE lists SET name = $2 WHERE id = $1`, [listId, name]);
+}
+
+export async function deleteList(listId: number): Promise<void> {
+  await pool.query(`DELETE FROM lists WHERE id = $1`, [listId]);
+}
+
+/** הרשימה הפעילה (לפי העוגייה; אחרת הראשונה). נוצרת בכניסה הראשונה. */
 export async function getList(): Promise<ShoppingList> {
-  let { rows } = await pool.query(`SELECT id, name FROM lists ORDER BY id LIMIT 1`);
+  const wanted = Number((await cookies()).get(LIST_COOKIE)?.value);
+  let { rows } = await pool.query(
+    `SELECT id, name FROM lists ORDER BY (id = $1) DESC, id LIMIT 1`,
+    [Number.isInteger(wanted) ? wanted : 0],
+  );
   if (rows.length === 0) {
     ({ rows } = await pool.query(`INSERT INTO lists (name) VALUES ('הרשימה שלי') RETURNING id, name`));
   }

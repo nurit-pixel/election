@@ -1,8 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as lists from "@/lib/lists";
+import { enqueue } from "@/lib/settings";
 
 const id = (value: FormDataEntryValue | null) => Number(value);
 
@@ -15,6 +17,8 @@ export async function addProduct(formData: FormData) {
   } else {
     await lists.addProductToList((await lists.getList()).id, productId);
   }
+  // מוצר ברשימה שמורה נכנס למעקב: שומרים מיד את המחיר הנוכחי בהיסטוריה
+  await enqueue("track");
   revalidatePath("/");
   redirect(itemId ? `/#item-${itemId}` : "/");
 }
@@ -38,5 +42,37 @@ export async function removeAlternative(formData: FormData) {
 export async function renameItem(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
   if (name) await lists.renameItem(id(formData.get("item")), name);
+  revalidatePath("/");
+}
+
+async function activate(listId: number) {
+  (await cookies()).set(lists.LIST_COOKIE, String(listId), {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
+    path: "/",
+  });
+}
+
+export async function switchList(formData: FormData) {
+  await activate(id(formData.get("list")));
+  revalidatePath("/");
+}
+
+export async function createList(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim().slice(0, 40);
+  if (!name) return;
+  await activate(await lists.createList(name));
+  revalidatePath("/");
+}
+
+export async function renameList(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim().slice(0, 40);
+  if (name) await lists.renameList(id(formData.get("list")), name);
+  revalidatePath("/");
+}
+
+export async function deleteList(formData: FormData) {
+  await lists.deleteList(id(formData.get("list")));
   revalidatePath("/");
 }

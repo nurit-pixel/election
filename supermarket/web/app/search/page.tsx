@@ -51,7 +51,11 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
     <li className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-semibold leading-snug">{p.name}</h2>
+          <h2 className="font-semibold leading-snug">
+            <Link href={`/product/${p.id}`} className="underline-offset-2 hover:underline">
+              {p.name}
+            </Link>
+          </h2>
           <p className="mt-0.5 text-xs text-slate-500">
             {p.manufacturer && <span>{p.manufacturer} · </span>}
             <span dir="ltr">{p.barcode}</span>
@@ -88,7 +92,9 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
             </button>
           </form>
         )}
-        <span className="text-xs text-slate-500">{p.prices.length} סניפים</span>
+        <Link href={`/product/${p.id}`} className="text-xs text-emerald-700">
+          גרף ומעקב · {p.prices.length} סניפים
+        </Link>
       </div>
 
       {p.prices.length > 0 && (

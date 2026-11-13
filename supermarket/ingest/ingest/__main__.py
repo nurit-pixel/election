@@ -7,13 +7,15 @@
     python -m ingest prices --chain SHUFERSAL --stores 1,2,3
     python -m ingest prices --all-stores           # כל הארץ (כמו INGEST_ALL_STORES=true)
     python -m ingest address "בית" "הרצל 1, תל אביב" [--radius 5]
+    python -m ingest track                         # היסטוריית מחירים והתראות
+    python -m ingest digest                        # המייל היומי המרוכז
     python -m ingest status
 """
 import argparse
 import logging
 import sys
 
-from . import config, db, geocode
+from . import config, db, geocode, tracking
 from .chains import CHAINS
 
 
@@ -36,6 +38,8 @@ def main() -> int:
     a.add_argument("address")
     a.add_argument("--radius", type=float, default=5)
     sub.add_parser("status", help="מצב הטעינה לכל רשת")
+    sub.add_parser("track", help="עדכון היסטוריית מחירים והתראות")
+    sub.add_parser("digest", help="שליחת המייל היומי המרוכז")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -60,6 +64,16 @@ def main() -> int:
             ):
                 print(f"{started:%d.%m %H:%M} {name} [{kind}] {status}: {loaded} קבצים, "
                       f"{failed} כשלים, {rows} שורות" + (f" | {error[:150]}" if error else ""))
+            return 0
+
+        if args.command == "track":
+            saved, created = tracking.update(conn, cfg)
+            print(f"{saved} נקודות היסטוריה, {created} התראות חדשות")
+            return 0
+
+        if args.command == "digest":
+            sent = tracking.send_digest(conn, cfg)
+            print(f"נשלחו {sent} התראות" if sent else "אין התראות לשליחה, או שהמייל לא מוגדר")
             return 0
 
         if args.command == "geocode":
@@ -94,6 +108,7 @@ def main() -> int:
             statuses = pipeline.refresh_prices(
                 cfg, conn, chains, all_stores=args.all_stores or cfg.ingest_all_stores,
                 force=args.force)
+            tracking.update(conn, cfg)
         failed = [k for k, s in statuses.items() if s == "failed"]
         print(f"הסתיים: {len(statuses) - len(failed)} רשתות הצליחו, {len(failed)} נכשלו"
               + (f" ({', '.join(failed)})" if failed else ""))

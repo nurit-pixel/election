@@ -18,6 +18,15 @@ class Config:
     geocoder_user_agent: str
     geocoder_delay: float
     max_file_age_days: int
+    alert_change_pct: float
+    smtp_host: str
+    smtp_port: int
+    smtp_user: str
+    smtp_password: str
+    smtp_from: str
+    smtp_starttls: bool
+    alert_email_to: list[str]
+    app_url: str
 
 
 def load() -> Config:
@@ -33,4 +42,14 @@ def load() -> Config:
         geocoder_user_agent=os.environ.get("GEOCODER_USER_AGENT", "supermarket-basket-compare/0.2"),
         geocoder_delay=float(os.environ.get("GEOCODER_DELAY_SECONDS", "1.5")),
         max_file_age_days=int(os.environ.get("MAX_FILE_AGE_DAYS", "7")),
+        alert_change_pct=float(os.environ.get("ALERT_CHANGE_PCT", "10")),
+        smtp_host=os.environ.get("SMTP_HOST", ""),
+        smtp_port=int(os.environ.get("SMTP_PORT") or 587),
+        smtp_user=os.environ.get("SMTP_USER", ""),
+        smtp_password=os.environ.get("SMTP_PASSWORD", ""),
+        smtp_from=os.environ.get("SMTP_FROM", ""),
+        smtp_starttls=_bool("SMTP_STARTTLS", True),
+        alert_email_to=[a.strip() for a in os.environ.get("ALERT_EMAIL_TO", "").split(",")
+                        if a.strip()],
+        app_url=os.environ.get("APP_URL", ""),
     )

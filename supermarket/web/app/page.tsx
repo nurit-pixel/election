@@ -1,16 +1,73 @@
 import Link from "next/link";
-import { getList, type ListItem } from "@/lib/lists";
+import { getList, listSummaries, type ListItem } from "@/lib/lists";
 import { SearchBar } from "@/components/SearchBar";
 import { QuantityControl } from "@/components/QuantityControl";
-import { removeAlternative, removeItem, renameItem } from "./actions";
+import {
+  createList,
+  deleteList,
+  removeAlternative,
+  removeItem,
+  renameItem,
+  renameList,
+  switchList,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function ListPage() {
   const list = await getList();
+  const all = await listSummaries();
   return (
     <div className="space-y-4 pb-24">
       <h1 className="text-lg font-bold">{list.name}</h1>
+      <details className="rounded-2xl border border-slate-200 bg-white p-3 text-sm shadow-sm">
+        <summary className="cursor-pointer select-none text-emerald-700">
+          רשימות שמורות ({all.length})
+        </summary>
+        <ul className="mt-2 divide-y divide-slate-100">
+          {all.map((l) => (
+            <li key={l.id} className="flex items-center justify-between gap-3 py-2">
+              <span className={l.id === list.id ? "font-semibold" : ""}>
+                {l.name} <span className="text-xs font-normal text-slate-400">({l.itemCount} פריטים)</span>
+              </span>
+              {l.id === list.id ? (
+                <span className="text-xs text-slate-400">פעילה</span>
+              ) : (
+                <form action={switchList}>
+                  <input type="hidden" name="list" value={l.id} />
+                  <button className="rounded-lg border border-slate-300 px-3 py-1 font-medium">מעבר</button>
+                </form>
+              )}
+            </li>
+          ))}
+        </ul>
+        <form action={createList} className="mt-2 flex gap-2">
+          <input
+            name="name"
+            required
+            placeholder="רשימה חדשה (למשל: שבת, מנגל)"
+            aria-label="שם רשימה חדשה"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5"
+          />
+          <button className="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white">יצירה</button>
+        </form>
+        <form action={renameList} className="mt-2 flex gap-2">
+          <input type="hidden" name="list" value={list.id} />
+          <input
+            name="name"
+            defaultValue={list.name}
+            aria-label="שם הרשימה הפעילה"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5"
+          />
+          <button className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium">שינוי שם</button>
+        </form>
+        {all.length > 1 && (
+          <form action={deleteList} className="mt-2">
+            <input type="hidden" name="list" value={list.id} />
+            <button className="text-rose-600">מחיקת הרשימה ״{list.name}״</button>
+          </form>
+        )}
+      </details>
       <SearchBar />
 
       {list.items.length === 0 ? (
@@ -69,7 +126,9 @@ function ItemCard({ item }: { item: ListItem }) {
           {item.products.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-3 py-2">
               <div className="min-w-0">
-                <div className="truncate">{p.name}</div>
+                <Link href={`/product/${p.id}`} className="block truncate text-emerald-800 underline-offset-2 hover:underline">
+                  {p.name}
+                </Link>
                 <div className="text-xs text-slate-400">
                   {p.manufacturer && `${p.manufacturer} · `}
                   <span dir="ltr">{p.barcode}</span>

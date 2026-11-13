@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS ingest_files (
 -- תור בקשות מהאפליקציה ל-worker של ה-ingest (למשל אחרי הוספת כתובת)
 CREATE TABLE IF NOT EXISTS ingest_requests (
     id           serial PRIMARY KEY,
-    kind         text NOT NULL,              -- address / stores / prices / geocode
+    kind         text NOT NULL,              -- address / stores / prices / track
     address_id   integer,
     requested_at timestamptz NOT NULL DEFAULT now(),
     started_at   timestamptz,

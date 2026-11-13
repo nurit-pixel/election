@@ -10,7 +10,7 @@ import logging
 import time
 import traceback
 
-from . import db, geocode
+from . import db, geocode, tracking
 from .chains import CHAINS
 from .config import Config
 
@@ -48,12 +48,18 @@ def handle(cfg: Config, conn, kind: str, address_id: int | None) -> str:
             return "הכתובת לא נמצאה ב-geocoding"
         statuses = pipeline.refresh_prices(cfg, conn, chains, address_id=address_id,
                                            all_stores=False)
+        tracking.update(conn, cfg)
         return f"מחירים נטענו ל-{len(statuses)} רשתות ליד הכתובת"
     if kind == "prices":
         geocode.geocode_addresses(cfg, conn)
         statuses = pipeline.refresh_prices(cfg, conn, chains, all_stores=cfg.ingest_all_stores)
         ok = sum(s in ("ok", "partial") for s in statuses.values())
-        return f"מחירים: {ok} מתוך {len(statuses)} רשתות"
+        _, created = tracking.update(conn, cfg)
+        return f"מחירים: {ok} מתוך {len(statuses)} רשתות, {created} התראות חדשות"
+    if kind == "track":
+        # מוצר נוסף למעקב או לרשימה: שומרים מיד את המחיר הנוכחי שלו
+        tracking.update(conn, cfg)
+        return "היסטוריית המחירים עודכנה"
     raise ValueError(f"סוג בקשה לא מוכר: {kind}")
 
 
