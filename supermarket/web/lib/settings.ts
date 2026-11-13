@@ -131,7 +131,7 @@ export type Overview = {
   stores: number;
   geocoded: number;
   geocodePending: number;
-  activeRequests: { kind: string; status: string }[];
+  activeRequests: { kind: string; status: string; message: string | null }[];
   /** הריצה הלילית האחרונה */
   nightly: { status: string; startedAt: string | null; message: string | null } | null;
   nightlyTime: string;
@@ -144,8 +144,8 @@ export async function overview(): Promise<Overview> {
               count(*) FILTER (WHERE geocoded_at IS NULL) AS pending FROM stores`,
     ),
     pool.query(
-      `SELECT kind, status FROM ingest_requests
-       WHERE status IN ('pending', 'running') ORDER BY id`,
+      `SELECT kind, status, message FROM ingest_requests
+       WHERE status IN ('pending', 'running') ORDER BY (status = 'running') DESC, id`,
     ),
     pool.query(
       `SELECT status, started_at, message FROM ingest_requests

@@ -7,9 +7,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import os
+import threading
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import TimeoutError as FuturesTimeout
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -37,6 +41,8 @@ CHAIN_TIMEOUT_SECONDS = 45 * 60
 # סניף שניסינו לטעון לאחרונה ולא התקבל לו קובץ לא מנוסה שוב בכל בקשת כתובת
 RETRY_MISSING_AFTER_SECONDS = 6 * 60 * 60
 _recent_attempts: dict[tuple[str, str], float] = {}
+# ההורדות רצות במקביל; הטעינה למסד נעשית קובץ אחד בכל פעם, כדי ששתי רשתות לא ינעלו זו את זו
+_DB_LOAD_LOCK = threading.Lock()
 
 
 def chain_dump_dir(cfg: Config, chain: Chain) -> str:
@@ -145,8 +151,9 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
             file_chain_id = normalize.chain_id(dump.extracted_chain_id) or ""
             if dump.detected_filetype.name == STORE:
                 rows = [r for r in map(normalize.store_row, raw) if r]
-                count = db.load_stores(conn, chain, dump.file_name, dump.extracted_date,
-                                       file_chain_id, rows)
+                with _DB_LOAD_LOCK:
+                    count = db.load_stores(conn, chain, dump.file_name, dump.extracted_date,
+                                           file_chain_id, rows)
             else:
                 # מספר הסניף ומזהה הרשת נלקחים מתוך ה-XML; שם הקובץ הוא רק גיבוי
                 first = raw[0] if raw else {}
@@ -157,12 +164,14 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
                 xml_chain_id = normalize.chain_id(first.get("chainid")) or file_chain_id
                 if dump.detected_filetype.name == PROMO_FULL:
                     rows = [r for r in map(normalize.promo_row, raw) if r]
-                    count = db.load_promo_full(conn, chain, xml_chain_id, store_id,
-                                               dump.file_name, dump.extracted_date, rows)
+                    with _DB_LOAD_LOCK:
+                        count = db.load_promo_full(conn, chain, xml_chain_id, store_id,
+                                                   dump.file_name, dump.extracted_date, rows)
                 else:
                     rows = [r for r in (normalize.price_row(x, chain.key) for x in raw) if r]
-                    count = db.load_price_full(conn, chain, xml_chain_id, store_id,
-                                               dump.file_name, dump.extracted_date, rows)
+                    with _DB_LOAD_LOCK:
+                        count = db.load_price_full(conn, chain, xml_chain_id, store_id,
+                                                   dump.file_name, dump.extracted_date, rows)
             log.info("%s: נטען %s (%d שורות)", chain.name, dump.file_name, count)
             loaded += 1
             total_rows += count
@@ -185,6 +194,8 @@ def run_chain(cfg: Config, conn, chain: Chain, kind: str,
     """kind: "stores" (רשימת סניפים), "prices" (PriceFull) או "promos" (PromoFull).
     store_ids=None -> כל הסניפים. נרשם ב-ingest_runs. מחזיר את הסטטוס: ok / partial / failed."""
     file_type = FILE_TYPE[kind]
+    log.info("%s (%s): מתחיל, %s", chain.name, kind,
+             "כל הסניפים" if store_ids is None else f"{len(store_ids)} סניפים")
     run_id = db.start_run(conn, chain, kind)
     loaded = failed = rows = 0
     errors: list[str] = []
@@ -228,11 +239,16 @@ def not_recently_attempted(chain_key: str, store_ids: list[str], now: float) -> 
 def refresh_prices(cfg: Config, conn, chains: list[Chain], address_id: Optional[int] = None,
                    all_stores: bool = False, force: bool = False,
                    missing_hours: Optional[int] = None,
-                   timeout: int = CHAIN_TIMEOUT_SECONDS) -> dict[str, str]:
+                   timeout: int = CHAIN_TIMEOUT_SECONDS,
+                   progress=None) -> dict[str, str]:
     """מחירים ומבצעים לסניפים ברדיוס הכתובות השמורות (או לכל הסניפים).
     רשת בלי סניפים ברדיוס מדולגת. המבצעים נטענים אחרי המחירים, כי הם מפנים למוצרים.
-    missing_hours: רק סניפים בלי מחירים עדכניים, כך שאזור שכבר נטען לא יורד שוב."""
-    statuses: dict[str, str] = {}
+    missing_hours: רק סניפים בלי מחירים עדכניים, כך שאזור שכבר נטען לא יורד שוב.
+    progress(done, total, chain_name): נקרא בכל פעם שרשת מסתיימת.
+
+    כמה רשתות נטענות במקביל (cfg.parallel_chains), כל אחת בחיבור משלה למסד. הרשתות
+    שיושבות על אותו אתר (Cerberus) נטענות זו אחרי זו, כדי לא להעמיס עליו."""
+    jobs: list[tuple[Chain, Optional[list[str]]]] = []
     for chain in chains:
         store_ids = None if all_stores else db.store_ids_in_radius(
             conn, chain, address_id, missing_hours)
@@ -240,7 +256,48 @@ def refresh_prices(cfg: Config, conn, chains: list[Chain], address_id: Optional[
             store_ids = not_recently_attempted(chain.key, store_ids, time.monotonic())
         if store_ids is not None and not store_ids:
             continue
-        statuses[chain.key] = run_chain(cfg, conn, chain, "prices", store_ids, force, timeout)
-        if statuses[chain.key] != "failed":
-            run_chain(cfg, conn, chain, "promos", store_ids, force, timeout)
+        jobs.append((chain, store_ids))
+    statuses: dict[str, str] = {}
+    if not jobs:
+        return statuses
+
+    done = 0
+    lock = threading.Lock()
+
+    def load(group: list[tuple[Chain, Optional[list[str]]]]) -> None:
+        nonlocal done
+        own = db.connect(cfg.database_url)
+        try:
+            for chain, store_ids in group:
+                status = run_chain(cfg, own, chain, "prices", store_ids, force, timeout)
+                if status != "failed":
+                    run_chain(cfg, own, chain, "promos", store_ids, force, timeout)
+                with lock:
+                    statuses[chain.key] = status
+                    done += 1
+                    if progress:
+                        progress(done, len(jobs), chain.name)
+        finally:
+            own.close()
+
+    shared_site = [job for job in jobs if job[0].source == "cerberus"]
+    groups = [[job] for job in jobs if job[0].source != "cerberus"]
+    if shared_site:
+        groups.append(shared_site)
+    workers = max(1, min(cfg.parallel_chains, len(groups)))
+    # גג לכל הריצה: גם אם רשת נתקעת בלי לחזור, הבקשה מסתיימת והתור ממשיך
+    longest = max(len(group) for group in groups)
+    overall = 2 * timeout * max(longest, math.ceil(len(groups) / workers)) + 120
+    executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="chain")
+    futures = [executor.submit(load, group) for group in groups]
+    try:
+        for future in as_completed(futures, timeout=overall):
+            if future.exception() is not None:
+                log.error("טעינת רשת נכשלה: %r", future.exception())
+    except FuturesTimeout:
+        log.error("טעינת המחירים חרגה מ-%d דקות; ממשיכים בלי הרשתות שנתקעו", overall // 60)
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    for chain, _ in jobs:
+        statuses.setdefault(chain.key, "failed")
     return statuses

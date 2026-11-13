@@ -14,6 +14,7 @@ class Config:
     schema_dir: str
     ingest_all_stores: bool
     request_delay: float
+    parallel_chains: int
     geocoder_url: str
     geocoder_user_agent: str
     geocoder_delay: float
@@ -39,6 +40,7 @@ def load() -> Config:
         schema_dir=os.environ.get("SCHEMA_DIR", "/schema"),
         ingest_all_stores=_bool("INGEST_ALL_STORES"),
         request_delay=float(os.environ.get("REQUEST_DELAY_SECONDS", "1")),
+        parallel_chains=int(os.environ.get("INGEST_PARALLEL_CHAINS") or 4),
         geocoder_url=os.environ.get("GEOCODER_URL", "https://nominatim.openstreetmap.org/search"),
         geocoder_user_agent=os.environ.get("GEOCODER_USER_AGENT", "supermarket-basket-compare/0.2"),
         geocoder_delay=float(os.environ.get("GEOCODER_DELAY_SECONDS", "1.5")),

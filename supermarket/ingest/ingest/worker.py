@@ -36,10 +36,27 @@ def enqueue(conn, kind: str, address_id: int | None = None) -> None:
     conn.execute("NOTIFY ingest")
 
 
-def handle(cfg: Config, conn, kind: str, address_id: int | None) -> str:
-    from . import pipeline  # ייבוא מאוחר: הספריות כבדות
-
+def handle(cfg: Config, conn, kind: str, address_id: int | None,
+           request_id: int | None = None) -> str:
     chains = list(CHAINS.values())
+    # ההתקדמות נכתבת לבקשה עצמה, ומוצגת במסך ההגדרות. חיבור נפרד, כי היא מדווחת מ-thread אחר
+    progress_conn = db.connect(cfg.database_url) if request_id is not None else None
+
+    def progress(done: int, total: int, chain_name: str) -> None:
+        if progress_conn is not None:
+            progress_conn.execute("UPDATE ingest_requests SET message = %s WHERE id = %s",
+                                  (f"{done} מתוך {total} רשתות נטענו (אחרונה: {chain_name})", request_id))
+
+    try:
+        return _handle(cfg, conn, kind, address_id, chains, progress)
+    finally:
+        if progress_conn is not None:
+            progress_conn.close()
+
+
+def _handle(cfg: Config, conn, kind: str, address_id: int | None, chains, progress) -> str:
+    from . import pipeline  # pylint: disable=import-outside-toplevel
+
     if kind == "stores":
         statuses = pipeline.refresh_stores(cfg, conn, chains)
         ok = sum(s in ("ok", "partial") for s in statuses.values())
@@ -56,14 +73,16 @@ def handle(cfg: Config, conn, kind: str, address_id: int | None) -> str:
         statuses = pipeline.refresh_prices(cfg, conn, chains, address_id=address_id,
                                            all_stores=False,
                                            missing_hours=ADDRESS_MISSING_HOURS,
-                                           timeout=ADDRESS_CHAIN_TIMEOUT_SECONDS)
+                                           timeout=ADDRESS_CHAIN_TIMEOUT_SECONDS,
+                                           progress=progress)
         if not statuses:
             return "לכל הסניפים שליד הכתובת כבר יש מחירים עדכניים"
         tracking.update(conn, cfg)
         return f"מחירים נטענו ל-{len(statuses)} רשתות ליד הכתובת"
     if kind == "prices":
         geocode.geocode_addresses(cfg, conn)
-        statuses = pipeline.refresh_prices(cfg, conn, chains, all_stores=cfg.ingest_all_stores)
+        statuses = pipeline.refresh_prices(cfg, conn, chains, all_stores=cfg.ingest_all_stores,
+                                           progress=progress)
         ok = sum(s in ("ok", "partial") for s in statuses.values())
         _, created = tracking.update(conn, cfg)
         return f"מחירים: {ok} מתוך {len(statuses)} רשתות, {created} התראות חדשות"
@@ -144,7 +163,7 @@ def run(cfg: Config) -> None:
                 request_id, kind, address_id = request
                 log.info("בקשה %d: %s", request_id, kind)
                 try:
-                    status, message = "done", handle(cfg, conn, kind, address_id)
+                    status, message = "done", handle(cfg, conn, kind, address_id, request_id)
                 except Exception as exc:  # pylint: disable=broad-exception-caught
                     status, message = "failed", f"{type(exc).__name__}: {exc}"
                     log.error("בקשה %d נכשלה\n%s", request_id, traceback.format_exc())

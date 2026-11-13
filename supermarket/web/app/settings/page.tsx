@@ -316,8 +316,11 @@ export default async function SettingsPage({
           </div>
           {info.activeRequests.length > 0 && (
             <div className="mt-1 text-aging">
-              בתהליך:{" "}
-              {info.activeRequests.map((r) => REQUEST_LABELS[r.kind] ?? r.kind).join(", ")}
+              בתהליך: {REQUEST_LABELS[info.activeRequests[0].kind] ?? info.activeRequests[0].kind}
+              {info.activeRequests[0].status === "running" && info.activeRequests[0].message
+                ? ` – ${info.activeRequests[0].message}`
+                : ""}
+              {info.activeRequests.length > 1 && ` · עוד ${info.activeRequests.length - 1} בקשות ממתינות`}
             </div>
           )}
           <div className="mt-1 text-muted">
