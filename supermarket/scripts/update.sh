@@ -2,6 +2,7 @@
 # עדכון האפליקציה לגרסה האחרונה מ-GitHub: גיבוי, משיכת הקוד, בנייה והפעלה מחדש.
 # הנתונים (מסד, קבצים שהורדו, תעודות) נשמרים ב-volumes ואינם נמחקים.
 # הרצה מתוך תיקיית הפרויקט:  ./scripts/update.sh
+# לבנייה מחדש גם כשאין קוד חדש (למשל אחרי git pull ידני):  ./scripts/update.sh --force
 set -eu
 cd "$(dirname "$0")/.."
 . ./.env
@@ -9,7 +10,7 @@ cd "$(dirname "$0")/.."
 before=$(git rev-parse --short HEAD)
 git pull --ff-only
 after=$(git rev-parse --short HEAD)
-if [ "$before" = "$after" ]; then
+if [ "$before" = "$after" ] && [ "${1:-}" != "--force" ]; then
   echo "אין עדכון חדש (גרסה $after)"
   exit 0
 fi
