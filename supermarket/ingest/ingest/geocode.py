@@ -112,8 +112,14 @@ def lookup(cfg: Config, conn, query: str) -> Optional[tuple[float, float]]:
 def geocode_stores(cfg: Config, conn, limit: Optional[int] = None) -> int:
     """Geocoding לסניפים שעוד לא נוסו. מחזיר כמה סניפים טופלו."""
     rows = conn.execute(
-        """SELECT id, address, city, name FROM stores WHERE geocoded_at IS NULL
-           ORDER BY id LIMIT %s""",
+        # קודם סניפים בערים של הכתובות השמורות, כדי שמחירים ליד הבית ייטענו מהר
+        """SELECT s.id, s.address, s.city, s.name FROM stores s
+           WHERE s.geocoded_at IS NULL
+           ORDER BY (s.city IS NOT NULL AND EXISTS (
+                        SELECT 1 FROM addresses a
+                        WHERE a.address ILIKE '%%' || split_part(s.city, ' - ', 1) || '%%')) DESC,
+                    s.id
+           LIMIT %s""",
         (limit,),
     ).fetchall()
     for store_pk, address, city, name in rows:

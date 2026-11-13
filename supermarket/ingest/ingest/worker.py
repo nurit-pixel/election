@@ -18,6 +18,7 @@ from .config import Config
 log = logging.getLogger("ingest.worker")
 GEOCODE_BATCH = 15
 IDLE_WAIT_SECONDS = 30
+PRICES_DURING_GEOCODE_SECONDS = 20 * 60
 GEOCODE_BACKOFF_SECONDS = (300, 900, 1800, 3600)   # המתנה אחרי כשל (למשל 429 משירות ה-geocoding)
 
 
@@ -121,6 +122,7 @@ def run(cfg: Config) -> None:
         geocoding_active = False
         geocode_failures = 0
         geocode_resume_at = 0.0
+        next_prices_at = 0.0
         while True:
             _schedule_nightly(cfg, conn)
             request = conn.execute(
@@ -163,6 +165,16 @@ def run(cfg: Config) -> None:
                 remaining = conn.execute(
                     "SELECT count(*) FROM stores WHERE geocoded_at IS NULL").fetchone()[0]
                 log.info("geocoding: נותרו %d סניפים", remaining)
+                # תוך כדי האיתור: אם נכנסו לרדיוס סניפים שעוד אין להם מחירים, טוענים אותם
+                # בלי לחכות לסוף הסבב (לכל היותר פעם ב-PRICES_DURING_GEOCODE_SECONDS)
+                if time.monotonic() >= next_prices_at and conn.execute(
+                    """SELECT 1 FROM stores s JOIN addresses a
+                         ON a.lat IS NOT NULL AND s.lat IS NOT NULL
+                        AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km
+                       WHERE s.prices_file_time IS NULL LIMIT 1"""
+                ).fetchone():
+                    next_prices_at = time.monotonic() + PRICES_DURING_GEOCODE_SECONDS
+                    enqueue(conn, "prices")
                 continue
             if geocoding_active:
                 # הסתיים סבב geocoding: ייתכן שסניפים חדשים נכנסו לרדיוס של כתובת שמורה
