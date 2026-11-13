@@ -41,7 +41,7 @@ def test_digest_email():
     ]
     message = tracking.build_digest(alerts, date(2026, 11, 13), "from@example.org",
                                     ["a@example.org", "b@example.org"], "https://sal.example.org/")
-    assert message["Subject"] == "השוואת סל: 3 התראות מחיר"
+    assert message["Subject"] == "פראיירמטר: 3 התראות מחיר"
     assert message["To"] == "a@example.org, b@example.org"
     body = message.get_body(("plain",)).get_content()
     assert "13.11.2026" in body

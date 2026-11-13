@@ -75,7 +75,7 @@ def build_digest(alerts: list[Alert], day: date, sender: str, recipients: list[s
     if app_url:
         lines.append(f"לכל ההתראות: {app_url.rstrip('/')}/alerts")
     message = EmailMessage()
-    message["Subject"] = f"השוואת סל: {len(alerts)} התראות מחיר"
+    message["Subject"] = f"פראיירמטר: {len(alerts)} התראות מחיר"
     message["From"] = sender
     message["To"] = ", ".join(recipients)
     message.set_content("\n".join(lines))
