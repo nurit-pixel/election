@@ -101,6 +101,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </div>
       <Quip place="login" className="mt-7" />
       <p className="mt-3 text-center text-xs text-muted">נורית בנתה. גילי כבר חוסכת.</p>
+      <footer className="mt-6 border-t border-line pt-4 text-center text-xs text-muted">נבנה ע״י נורית תמם</footer>
     </div>
   );
 }

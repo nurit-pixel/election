@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function ReceiptPage() {
   const list = await getList();
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4">
       <div>
         <Link href="/" className="text-sm text-link">
           חזרה לרשימה
