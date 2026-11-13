@@ -2,7 +2,8 @@
 
 - הוספת כתובת באפליקציה יוצרת בקשת "address": geocoding לכתובת וטעינה מיידית של הסניפים שלידה.
 - כשאין בקשות, ה-worker מתקדם ב-geocoding של סניפים במנות קטנות, כך שבקשה חדשה לא ממתינה.
-- הריצה הלילית תתווסף בשלב 7.
+- ריצה לילית בשעה קבועה לפי שעון ישראל (schedule.py): רשימות סניפים, מחירים ומבצעים,
+  היסטוריה והתראות, והמייל היומי המרוכז.
 """
 from __future__ import annotations
 
@@ -10,7 +11,7 @@ import logging
 import time
 import traceback
 
-from . import db, geocode, tracking
+from . import db, geocode, schedule, tracking
 from .chains import CHAINS
 from .config import Config
 
@@ -56,11 +57,53 @@ def handle(cfg: Config, conn, kind: str, address_id: int | None) -> str:
         ok = sum(s in ("ok", "partial") for s in statuses.values())
         _, created = tracking.update(conn, cfg)
         return f"מחירים: {ok} מתוך {len(statuses)} רשתות, {created} התראות חדשות"
+    if kind == "nightly":
+        return nightly(cfg, conn)
     if kind == "track":
         # מוצר נוסף למעקב או לרשימה: שומרים מיד את המחיר הנוכחי שלו
         tracking.update(conn, cfg)
         return "היסטוריית המחירים עודכנה"
     raise ValueError(f"סוג בקשה לא מוכר: {kind}")
+
+
+def nightly(cfg: Config, conn) -> str:
+    """הריצה הלילית. כשל ברשת אחת (או בשלב אחד) אינו עוצר את השאר."""
+    from . import pipeline
+
+    chains = list(CHAINS.values())
+    parts: list[str] = []
+
+    def step(name: str, action) -> None:
+        try:
+            parts.append(f"{name}: {action()}")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            parts.append(f"{name}: נכשל ({type(exc).__name__}: {exc})")
+            log.error("ריצה לילית – השלב %s נכשל\n%s", name, traceback.format_exc())
+
+    def stores() -> str:
+        statuses = pipeline.refresh_stores(cfg, conn, chains)
+        return f"{sum(s != 'failed' for s in statuses.values())}/{len(statuses)} רשתות"
+
+    def prices() -> str:
+        geocode.geocode_addresses(cfg, conn)
+        statuses = pipeline.refresh_prices(cfg, conn, chains, all_stores=cfg.ingest_all_stores)
+        return f"{sum(s != 'failed' for s in statuses.values())}/{len(statuses)} רשתות"
+
+    step("סניפים", stores)
+    step("מחירים ומבצעים", prices)
+    step("התראות חדשות", lambda: tracking.update(conn, cfg)[1])
+    step("מייל", lambda: f"{tracking.send_digest(conn, cfg)} התראות נשלחו")
+    step("ניקוי", lambda: db.prune(conn, cfg.retention_days) or "בוצע")
+    return " · ".join(parts)
+
+
+def _schedule_nightly(cfg: Config, conn) -> None:
+    now = schedule.now_in_israel()
+    if schedule.nightly_due(now, schedule.last_run(conn), schedule.parse_time(cfg.nightly_time)):
+        # מסמנים לפני הריצה: ריצה שנקטעה לא תתחיל שוב ושוב באותו יום
+        schedule.mark_run(conn, now.date())
+        enqueue(conn, "nightly")
+        log.info("ריצה לילית נכנסה לתור (%s)", now.strftime("%d.%m %H:%M"))
 
 
 def run(cfg: Config) -> None:
@@ -75,6 +118,7 @@ def run(cfg: Config) -> None:
         geocode_failures = 0
         geocode_resume_at = 0.0
         while True:
+            _schedule_nightly(cfg, conn)
             request = conn.execute(
                 """UPDATE ingest_requests SET status = 'running', started_at = now()
                    WHERE id = (SELECT id FROM ingest_requests WHERE status = 'pending'

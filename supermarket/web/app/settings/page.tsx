@@ -26,6 +26,8 @@ const REQUEST_LABELS: Record<string, string> = {
   address: "טעינת סניפים ליד כתובת",
   stores: "רענון רשימות סניפים",
   prices: "טעינת מחירים",
+  track: "עדכון היסטוריית מחירים",
+  nightly: "הריצה הלילית",
 };
 
 export default async function SettingsPage() {
@@ -204,6 +206,15 @@ export default async function SettingsPage() {
               {info.activeRequests.map((r) => REQUEST_LABELS[r.kind] ?? r.kind).join(", ")}
             </div>
           )}
+          <div className="mt-1 text-slate-600">
+            ריצה לילית כל יום ב-{info.nightlyTime} (שעון ישראל).{" "}
+            {info.nightly?.startedAt
+              ? `האחרונה: ${formatUpdated(info.nightly.startedAt)}${
+                  info.nightly.status === "failed" ? " – נכשלה" : info.nightly.status === "running" ? " – רצה עכשיו" : ""
+                }`
+              : "עוד לא רצה."}
+          </div>
+          {info.nightly?.message && <div className="mt-1 text-xs text-slate-500">{info.nightly.message}</div>}
           <div className="mt-3 flex flex-wrap gap-2">
             <form action={requestPrices}>
               <button className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium">

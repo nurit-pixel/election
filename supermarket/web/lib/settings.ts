@@ -122,10 +122,13 @@ export type Overview = {
   geocoded: number;
   geocodePending: number;
   activeRequests: { kind: string; status: string }[];
+  /** הריצה הלילית האחרונה */
+  nightly: { status: string; startedAt: string | null; message: string | null } | null;
+  nightlyTime: string;
 };
 
 export async function overview(): Promise<Overview> {
-  const [stores, requests] = await Promise.all([
+  const [stores, requests, nightly] = await Promise.all([
     pool.query(
       `SELECT count(*) AS stores, count(lat) AS geocoded,
               count(*) FILTER (WHERE geocoded_at IS NULL) AS pending FROM stores`,
@@ -134,12 +137,20 @@ export async function overview(): Promise<Overview> {
       `SELECT kind, status FROM ingest_requests
        WHERE status IN ('pending', 'running') ORDER BY id`,
     ),
+    pool.query(
+      `SELECT status, started_at, message FROM ingest_requests
+       WHERE kind = 'nightly' ORDER BY id DESC LIMIT 1`,
+    ),
   ]);
   return {
     stores: Number(stores.rows[0].stores),
     geocoded: Number(stores.rows[0].geocoded),
     geocodePending: Number(stores.rows[0].pending),
     activeRequests: requests.rows,
+    nightly: nightly.rows[0]
+      ? { status: nightly.rows[0].status, startedAt: nightly.rows[0].started_at, message: nightly.rows[0].message }
+      : null,
+    nightlyTime: process.env.NIGHTLY_TIME ?? "06:00",
   };
 }
 

@@ -9,6 +9,7 @@
     python -m ingest address "בית" "הרצל 1, תל אביב" [--radius 5]
     python -m ingest track                         # היסטוריית מחירים והתראות
     python -m ingest digest                        # המייל היומי המרוכז
+    python -m ingest nightly                       # הריצה הלילית המלאה, עכשיו
     python -m ingest status
 """
 import argparse
@@ -40,6 +41,7 @@ def main() -> int:
     sub.add_parser("status", help="מצב הטעינה לכל רשת")
     sub.add_parser("track", help="עדכון היסטוריית מחירים והתראות")
     sub.add_parser("digest", help="שליחת המייל היומי המרוכז")
+    sub.add_parser("nightly", help="הריצה הלילית המלאה, עכשיו")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -74,6 +76,11 @@ def main() -> int:
         if args.command == "digest":
             sent = tracking.send_digest(conn, cfg)
             print(f"נשלחו {sent} התראות" if sent else "אין התראות לשליחה, או שהמייל לא מוגדר")
+            return 0
+
+        if args.command == "nightly":
+            from . import worker
+            print(worker.nightly(cfg, conn))
             return 0
 
         if args.command == "geocode":

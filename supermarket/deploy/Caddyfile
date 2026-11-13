@@ -1,0 +1,5 @@
+# HTTPS אוטומטי (Let's Encrypt) מול האפליקציה. הדומיין מגיע מ-APP_DOMAIN בקובץ .env
+{$APP_DOMAIN} {
+	encode gzip
+	reverse_proxy web:3000
+}

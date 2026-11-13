@@ -1,5 +1,12 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
+    logging: *logging
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -18,8 +25,9 @@ services:
       timeout: 3s
       retries: 20
 
-  # תהליך רקע: רשימות סניפים, geocoding, וטעינת מחירים לפי בקשות מהאפליקציה
+  # תהליך רקע: ריצה לילית, רשימות סניפים, geocoding, וטעינת מחירים לפי בקשות מהאפליקציה
   ingest:
+    logging: *logging
     build: ./ingest
     restart: unless-stopped
     depends_on:
@@ -43,12 +51,15 @@ services:
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
       ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
       APP_URL: ${APP_URL:-}
+      NIGHTLY_TIME: ${NIGHTLY_TIME:-06:00}
+      RETENTION_DAYS: ${RETENTION_DAYS:-60}
       TZ: ${TZ:-Asia/Jerusalem}
     volumes:
       - dumps:/data/dumps
       - ./db/init:/schema:ro
 
   web:
+    logging: *logging
     build: ./web
     restart: unless-stopped
     depends_on:
@@ -59,11 +70,12 @@ services:
       STALE_PRICE_HOURS: ${STALE_PRICE_HOURS:-36}
       DEFAULT_RADIUS_KM: ${DEFAULT_RADIUS_KM:-5}
       SPLIT_MIN_SAVING: ${SPLIT_MIN_SAVING:-20}
+      NIGHTLY_TIME: ${NIGHTLY_TIME:-06:00}
       FAMILY_PASSWORD: ${FAMILY_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET:-}
       TZ: ${TZ:-Asia/Jerusalem}
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-3000}:3000"
 
 volumes:
   pgdata:

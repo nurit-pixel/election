@@ -27,6 +27,8 @@ class Config:
     smtp_starttls: bool
     alert_email_to: list[str]
     app_url: str
+    nightly_time: str
+    retention_days: int
 
 
 def load() -> Config:
@@ -52,4 +54,6 @@ def load() -> Config:
         alert_email_to=[a.strip() for a in os.environ.get("ALERT_EMAIL_TO", "").split(",")
                         if a.strip()],
         app_url=os.environ.get("APP_URL", ""),
+        nightly_time=os.environ.get("NIGHTLY_TIME", "06:00"),
+        retention_days=int(os.environ.get("RETENTION_DAYS", "60")),
     )

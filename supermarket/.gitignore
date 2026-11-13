@@ -9,3 +9,4 @@ dumps/
 next-env.d.ts
 *.tsbuildinfo
 *.log
+backups/

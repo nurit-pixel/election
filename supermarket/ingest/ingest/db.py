@@ -324,3 +324,15 @@ def load_promo_full(conn, chain: Chain, chain_id: str, store_id: str, file_name:
         cur.execute("UPDATE stores SET promos_file_time = %s WHERE id = %s", (file_time, store_pk))
         _record_file(cur, file_name, chain.key, store_id, "PROMO_FULL_FILE", file_time, loaded)
     return loaded
+
+
+# ---------- תחזוקה ----------
+
+def prune(conn, retention_days: int) -> None:
+    """מוחק רישומי ריצות, קבצים ובקשות ישנים. היסטוריית המחירים וההתראות נשמרות."""
+    for table, column in (("ingest_runs", "started_at"), ("ingest_files", "loaded_at"),
+                          ("ingest_requests", "requested_at")):
+        conn.execute(
+            f"DELETE FROM {table} WHERE {column} < now() - make_interval(days => %s)",
+            (retention_days,),
+        )
