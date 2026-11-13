@@ -79,6 +79,15 @@ export default async function ListPage() {
         )}
       </details>
       <SearchBar />
+      <Link
+        href="/receipt"
+        className="flex min-h-11 items-center justify-center gap-2 rounded-pm border border-line bg-card px-4 py-2 text-sm font-bold text-link"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 8h6M9 12h6" />
+        </svg>
+        הוספה מחשבונית
+      </Link>
 
       {showTip && (
         <form action={dismissTip} className="rounded-pm-lg border border-info/40 bg-info-surface p-4 text-sm text-info">
@@ -95,7 +104,7 @@ export default async function ListPage() {
         <div className="flex flex-col items-center gap-2 rounded-pm-lg bg-card p-6 text-center shadow-card">
           <Mascot />
           <p className="font-bold">הרשימה ריקה</p>
-          <p className="text-sm text-muted">מחפשים מוצר לפי שם, או סורקים ברקוד, והוא נכנס לרשימה.</p>
+          <p className="text-sm text-muted">מחפשים מוצר לפי שם, סורקים ברקוד או מעלים חשבונית, והמוצרים נכנסים לרשימה.</p>
         </div>
       ) : (
         <ul className="space-y-3">

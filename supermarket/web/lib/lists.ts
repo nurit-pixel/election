@@ -89,24 +89,24 @@ export async function getItem(itemId: number): Promise<ListItem | null> {
   return (await getList()).items.find((i) => i.id === itemId) ?? null;
 }
 
-/** פריט חדש ברשימה מתוך מוצר. אם המוצר כבר ברשימה – מגדיל את הכמות. */
-export async function addProductToList(listId: number, productId: number): Promise<void> {
+/** פריט חדש ברשימה מתוך מוצר, בכמות נתונה. אם המוצר כבר ברשימה – מגדיל את הכמות. */
+export async function addProductToList(listId: number, productId: number, quantity = 1): Promise<void> {
   const existing = await pool.query(
     `SELECT i.id FROM list_items i JOIN list_item_products ip ON ip.item_id = i.id
      WHERE i.list_id = $1 AND ip.product_id = $2 LIMIT 1`,
     [listId, productId],
   );
   if (existing.rows.length > 0) {
-    await pool.query(`UPDATE list_items SET quantity = quantity + 1 WHERE id = $1`, [existing.rows[0].id]);
+    await pool.query(`UPDATE list_items SET quantity = quantity + $2 WHERE id = $1`, [existing.rows[0].id, quantity]);
     return;
   }
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const { rows } = await client.query(
-      `INSERT INTO list_items (list_id, name, is_weighted)
-       SELECT $1, name, is_weighted FROM products WHERE id = $2 RETURNING id`,
-      [listId, productId],
+      `INSERT INTO list_items (list_id, name, is_weighted, quantity)
+       SELECT $1, name, is_weighted, $3 FROM products WHERE id = $2 RETURNING id`,
+      [listId, productId, quantity],
     );
     if (rows.length > 0) {
       await client.query(`INSERT INTO list_item_products (item_id, product_id) VALUES ($1, $2)`, [

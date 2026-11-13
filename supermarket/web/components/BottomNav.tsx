@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
-  { href: "/", label: "רשימה", match: ["/", "/search", "/product"], icon: "M5 6h14M5 12h14M5 18h9" },
+  { href: "/", label: "רשימה", match: ["/", "/search", "/product", "/receipt"], icon: "M5 6h14M5 12h14M5 18h9" },
   { href: "/compare", label: "השוואה", match: ["/compare", "/store", "/split"], icon: "M12 4v16M5 8l-2 6h6L7 8M19 8l-2 6h6l-2-6M5 8h14" },
   { href: "/alerts", label: "התראות", match: ["/alerts"], icon: "M6 16V11a6 6 0 1 1 12 0v5l2 2H4l2-2zM10 20h4" },
   { href: "/settings", label: "הגדרות", match: ["/settings"], icon: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6" },
