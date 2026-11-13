@@ -1,0 +1,72 @@
+:root {
+  color-scheme: light;
+  --pm-deep-purple: #30003f;
+  --pm-turquoise: #12e2d2;
+  --pm-orange: #ff7a00;
+  --pm-hot-pink: #ff087f;
+  --pm-yellow: #fff000;
+  --pm-lime: #a8f200;
+  --pm-warm-white: #fff9f4;
+
+  --pm-canvas: #f7f2f8;
+  --pm-card: #ffffff;
+  --pm-subtle: #f0e8f2;
+  --pm-text: #30003f;
+  --pm-text-muted: #655a6b;
+  --pm-border: #d7cdd9;
+
+  --pm-fresh: #17684f;
+  --pm-fresh-surface: #ecfff9;
+  --pm-aging: #725000;
+  --pm-aging-surface: #fff7d6;
+  --pm-missing: #8d1b42;
+  --pm-missing-surface: #fff0f7;
+  --pm-focus: #007a70;
+
+  --pm-font-display: "Rubik", "SF Hebrew Rounded", "Arial Hebrew", sans-serif;
+  --pm-font-body: "Heebo", "SF Hebrew", "Arial Hebrew", Arial, sans-serif;
+  --pm-font-numeric: "Inter", Arial, sans-serif;
+
+  --pm-radius-sm: 0.5rem;
+  --pm-radius-md: 0.875rem;
+  --pm-radius-lg: 1.125rem;
+  --pm-radius-xl: 1.375rem;
+  --pm-radius-pill: 9999px;
+  --pm-shadow-card: 0 8px 24px rgb(48 0 63 / 10%);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --pm-canvas: #17081f;
+  --pm-card: #271030;
+  --pm-subtle: #35193f;
+  --pm-text: #fff9f4;
+  --pm-text-muted: #d8c8dd;
+  --pm-border: #5d4365;
+}
+
+html[dir="rtl"] body {
+  font-family: var(--pm-font-body);
+  color: var(--pm-text);
+  background: var(--pm-canvas);
+}
+
+:focus-visible {
+  outline: 3px solid var(--pm-focus);
+  outline-offset: 3px;
+}
+
+.pm-tabular-price {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: var(--pm-font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

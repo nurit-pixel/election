@@ -1,5 +1,154 @@
 @import "tailwindcss";
 
+/* גופני המותג: Rubik לכותרות, Heebo לגוף, Inter למחירים ולמספרים */
+@import "@fontsource/rubik/hebrew-700.css";
+@import "@fontsource/rubik/hebrew-800.css";
+@import "@fontsource/rubik/hebrew-900.css";
+@import "@fontsource/rubik/latin-800.css";
+@import "@fontsource/heebo/hebrew-400.css";
+@import "@fontsource/heebo/hebrew-500.css";
+@import "@fontsource/heebo/hebrew-700.css";
+@import "@fontsource/heebo/hebrew-800.css";
+@import "@fontsource/heebo/latin-400.css";
+@import "@fontsource/heebo/latin-700.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-800.css";
+
+/* מצב כהה: לפי בחירה בהגדרות (data-theme), או לפי המכשיר כשלא נבחר */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------- טוקנים של חבילת המיתוג (Brand Kit 1.0) ---------- */
+:root {
+  color-scheme: light;
+  --pm-deep-purple: #30003f;
+  --pm-turquoise: #12e2d2;
+  --pm-orange: #ff7a00;
+  --pm-hot-pink: #ff087f;
+  --pm-yellow: #fff000;
+  --pm-lime: #a8f200;
+  --pm-warm-white: #fff9f4;
+
+  --pm-canvas: #f7f2f8;
+  --pm-card: #ffffff;
+  --pm-subtle: #f0e8f2;
+  --pm-text: #30003f;
+  --pm-text-muted: #655a6b;
+  --pm-border: #d7cdd9;
+
+  --pm-fresh: #17684f;
+  --pm-fresh-surface: #ecfff9;
+  --pm-aging: #725000;
+  --pm-aging-surface: #fff7d6;
+  --pm-missing: #8d1b42;
+  --pm-missing-surface: #fff0f7;
+  --pm-focus: #007a70;
+
+  /* תוספות לממשק: פעולה ראשית, קישור, מועדון, הצעת פיצול */
+  --pm-primary: #30003f;
+  --pm-on-primary: #ffffff;
+  --pm-link: #30003f;
+  --pm-club: #4b2a8f;
+  --pm-club-surface: #f1ecff;
+  --pm-info: #0b4f73;
+  --pm-info-surface: #e9f6ff;
+  --pm-shadow: 48 0 63;
+}
+
+/* ערכי המצב הכהה. חלים עם data-theme="dark", או כשהמכשיר במצב כהה ולא נבחר "בהיר" */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --pm-canvas: #17081f;
+  --pm-card: #271030;
+  --pm-subtle: #35193f;
+  --pm-text: #fff9f4;
+  --pm-text-muted: #d8c8dd;
+  --pm-border: #5d4365;
+
+  --pm-fresh: #7fe6c6;
+  --pm-fresh-surface: #0f3a2e;
+  --pm-aging: #ffd76a;
+  --pm-aging-surface: #3d2f00;
+  --pm-missing: #ffa3c4;
+  --pm-missing-surface: #4a1028;
+  --pm-focus: #12e2d2;
+
+  --pm-primary: #12e2d2;
+  --pm-on-primary: #30003f;
+  --pm-link: #12e2d2;
+  --pm-club: #cdbcff;
+  --pm-club-surface: #2c1a4d;
+  --pm-info: #a6dcff;
+  --pm-info-surface: #10314a;
+  --pm-shadow: 0 0 0;
+}
+
+@theme inline {
+  --color-canvas: var(--pm-canvas);
+  --color-card: var(--pm-card);
+  --color-subtle: var(--pm-subtle);
+  --color-ink: var(--pm-text);
+  --color-muted: var(--pm-text-muted);
+  --color-line: var(--pm-border);
+  --color-primary: var(--pm-primary);
+  --color-on-primary: var(--pm-on-primary);
+  --color-link: var(--pm-link);
+  --color-fresh: var(--pm-fresh);
+  --color-fresh-surface: var(--pm-fresh-surface);
+  --color-aging: var(--pm-aging);
+  --color-aging-surface: var(--pm-aging-surface);
+  --color-missing: var(--pm-missing);
+  --color-missing-surface: var(--pm-missing-surface);
+  --color-club: var(--pm-club);
+  --color-club-surface: var(--pm-club-surface);
+  --color-info: var(--pm-info);
+  --color-info-surface: var(--pm-info-surface);
+  --color-focus: var(--pm-focus);
+  --color-pm-purple: #30003f;
+  --color-pm-turquoise: #12e2d2;
+  --color-pm-orange: #ff7a00;
+  --color-pm-pink: #ff087f;
+  --color-pm-yellow: #fff000;
+  --color-pm-cream: #fff9f4;
+
+  --font-display: "Rubik", "SF Hebrew Rounded", "Arial Hebrew", sans-serif;
+  --font-sans: "Heebo", "SF Hebrew", "Arial Hebrew", Arial, sans-serif;
+  --font-numeric: "Inter", Arial, sans-serif;
+
+  --radius-pm-sm: 0.5rem;
+  --radius-pm: 0.875rem;
+  --radius-pm-lg: 1.125rem;
+  --radius-pm-xl: 1.375rem;
+  --shadow-card: 0 8px 24px rgb(var(--pm-shadow) / 10%);
+  --shadow-float: 0 16px 40px rgb(var(--pm-shadow) / 16%);
+}
+
 body {
-  font-family: system-ui, "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+  font-family: var(--font-sans);
+  color: var(--pm-text);
+  background: var(--pm-canvas);
+}
+
+h1, h2 {
+  font-family: var(--font-display);
+}
+
+:focus-visible {
+  outline: 3px solid var(--pm-focus);
+  outline-offset: 3px;
+}
+
+/* מחיר: תמיד משמאל לימין, בספרות ברוחב קבוע, כדי שהספרות לא יתהפכו בתוך משפט בעברית */
+.pm-price {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

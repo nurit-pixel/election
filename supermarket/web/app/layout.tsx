@@ -1,41 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { unreadAlertCount } from "@/lib/tracking";
+import { THEME_COOKIE } from "@/lib/theme";
+import { Shell } from "@/components/Shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "פראיירמטר",
-  description: "השוואת מחירי סל קניות בין סופרמרקטים",
+  description: "משווים את הסל. רואים מה חסר. בוחרים חכם.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#30003f" },
+    { media: "(prefers-color-scheme: dark)", color: "#17081f" },
+  ],
+};
+
+/** כשלא נבחר מצב בהגדרות, הולכים לפי המכשיר. רץ לפני הציור כדי שלא יהיה הבהוב. */
+const SYSTEM_THEME = `try{if(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const unread = await unreadAlertCount();
+  const [unread, store] = await Promise.all([unreadAlertCount(), cookies()]);
+  const chosen = store.get(THEME_COOKIE)?.value;
+  const theme = chosen === "dark" || chosen === "light" ? chosen : undefined;
+
   return (
-    <html lang="he" dir="rtl">
-      <body className="min-h-dvh bg-slate-50 text-slate-900 antialiased">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-            <Link href="/" className="text-lg font-bold text-emerald-700">
-              פראיירמטר
-            </Link>
-            <nav className="flex items-center gap-3 text-sm font-medium text-slate-600">
-              <Link href="/">רשימה</Link>
-              <Link href="/compare">השוואה</Link>
-              <Link href="/alerts" className="flex items-center gap-1">
-                התראות
-                {unread > 0 && (
-                  <span className="rounded-full bg-rose-600 px-1.5 text-xs font-semibold text-white">
-                    {unread > 99 ? "99+" : unread}
-                  </span>
-                )}
-              </Link>
-              <Link href="/settings">הגדרות</Link>
-            </nav>
-          </div>
-        </header>
-        <main className="mx-auto max-w-2xl px-4 py-4">{children}</main>
+    <html lang="he" dir="rtl" data-theme={theme} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME }} />
+      </head>
+      <body className="min-h-dvh bg-canvas text-ink antialiased">
+        <Shell unread={unread}>{children}</Shell>
       </body>
     </html>
   );

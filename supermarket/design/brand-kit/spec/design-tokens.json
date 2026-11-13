@@ -1,0 +1,82 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "brand": {
+      "deepPurple": { "$type": "color", "$value": "#30003F" },
+      "turquoise": { "$type": "color", "$value": "#12E2D2" },
+      "orange": { "$type": "color", "$value": "#FF7A00" },
+      "hotPink": { "$type": "color", "$value": "#FF087F" },
+      "yellow": { "$type": "color", "$value": "#FFF000" },
+      "lime": { "$type": "color", "$value": "#A8F200" },
+      "warmWhite": { "$type": "color", "$value": "#FFF9F4" }
+    },
+    "surface": {
+      "canvas": { "$type": "color", "$value": "#F7F2F8" },
+      "card": { "$type": "color", "$value": "#FFFFFF" },
+      "subtle": { "$type": "color", "$value": "#F0E8F2" },
+      "inverse": { "$type": "color", "$value": "#30003F" }
+    },
+    "text": {
+      "strong": { "$type": "color", "$value": "#30003F" },
+      "muted": { "$type": "color", "$value": "#655A6B" },
+      "inverse": { "$type": "color", "$value": "#FFFFFF" },
+      "link": { "$type": "color", "$value": "#8D1B58" }
+    },
+    "status": {
+      "fresh": { "$type": "color", "$value": "#17684F" },
+      "freshSurface": { "$type": "color", "$value": "#ECFFF9" },
+      "aging": { "$type": "color", "$value": "#725000" },
+      "agingSurface": { "$type": "color", "$value": "#FFF7D6" },
+      "missing": { "$type": "color", "$value": "#8D1B42" },
+      "missingSurface": { "$type": "color", "$value": "#FFF0F7" },
+      "focus": { "$type": "color", "$value": "#007A70" }
+    },
+    "border": {
+      "default": { "$type": "color", "$value": "#D7CDD9" },
+      "strong": { "$type": "color", "$value": "#806A86" }
+    }
+  },
+  "font": {
+    "family": {
+      "display": { "$type": "fontFamily", "$value": ["Rubik", "SF Hebrew Rounded", "Arial Hebrew", "sans-serif"] },
+      "body": { "$type": "fontFamily", "$value": ["Heebo", "SF Hebrew", "Arial Hebrew", "Arial", "sans-serif"] },
+      "numeric": { "$type": "fontFamily", "$value": ["Inter", "Arial", "sans-serif"] }
+    },
+    "size": {
+      "xs": { "$type": "dimension", "$value": "0.75rem" },
+      "sm": { "$type": "dimension", "$value": "0.875rem" },
+      "md": { "$type": "dimension", "$value": "1rem" },
+      "lg": { "$type": "dimension", "$value": "1.125rem" },
+      "xl": { "$type": "dimension", "$value": "1.5rem" },
+      "2xl": { "$type": "dimension", "$value": "2rem" },
+      "3xl": { "$type": "dimension", "$value": "2.75rem" }
+    },
+    "lineHeight": {
+      "tight": { "$type": "number", "$value": 1.15 },
+      "title": { "$type": "number", "$value": 1.25 },
+      "body": { "$type": "number", "$value": 1.5 }
+    }
+  },
+  "space": {
+    "1": { "$type": "dimension", "$value": "0.25rem" },
+    "2": { "$type": "dimension", "$value": "0.5rem" },
+    "3": { "$type": "dimension", "$value": "0.75rem" },
+    "4": { "$type": "dimension", "$value": "1rem" },
+    "5": { "$type": "dimension", "$value": "1.25rem" },
+    "6": { "$type": "dimension", "$value": "1.5rem" },
+    "8": { "$type": "dimension", "$value": "2rem" },
+    "10": { "$type": "dimension", "$value": "2.5rem" },
+    "12": { "$type": "dimension", "$value": "3rem" }
+  },
+  "radius": {
+    "sm": { "$type": "dimension", "$value": "0.5rem" },
+    "md": { "$type": "dimension", "$value": "0.875rem" },
+    "lg": { "$type": "dimension", "$value": "1.125rem" },
+    "xl": { "$type": "dimension", "$value": "1.375rem" },
+    "pill": { "$type": "dimension", "$value": "9999px" }
+  },
+  "shadow": {
+    "card": { "$type": "shadow", "$value": { "color": "#30003F1A", "offsetX": "0px", "offsetY": "8px", "blur": "24px", "spread": "0px" } },
+    "focus": { "$type": "shadow", "$value": { "color": "#12E2D266", "offsetX": "0px", "offsetY": "0px", "blur": "0px", "spread": "4px" } }
+  }
+}

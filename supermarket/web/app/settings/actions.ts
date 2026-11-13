@@ -1,6 +1,8 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { THEME_COOKIE } from "@/lib/theme";
 import { pool } from "@/lib/db";
 import { enqueue, setChainHidden, setSplitMinSaving } from "@/lib/settings";
 
@@ -61,4 +63,15 @@ export async function updateSplitThreshold(formData: FormData) {
 export async function toggleChain(formData: FormData) {
   await setChainHidden(String(formData.get("chain")), formData.get("hidden") === "1");
   revalidatePath("/settings");
+}
+
+export async function setTheme(formData: FormData) {
+  const theme = String(formData.get("theme"));
+  const store = await cookies();
+  if (theme === "light" || theme === "dark") {
+    store.set(THEME_COOKIE, theme, { sameSite: "lax", maxAge: 60 * 60 * 24 * 365, path: "/" });
+  } else {
+    store.delete(THEME_COOKIE);
+  }
+  revalidatePath("/", "layout");
 }

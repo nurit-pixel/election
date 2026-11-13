@@ -7,8 +7,8 @@ type Point = { day: string; price: number };
 const WIDTH = 640;
 const HEIGHT = 240;
 const PAD = { top: 16, right: 64, bottom: 28, left: 44 };
-const SERIES = "#2a78d6";
-const SURFACE = "#ffffff";
+const SERIES = "var(--pm-hot-pink)";
+const SURFACE = "var(--pm-card)";
 
 /** צעד "עגול" לציר המחירים */
 function niceStep(range: number): number {
@@ -70,29 +70,29 @@ export function PriceChart({ points, target, unit }: { points: Point[]; target: 
       >
         {ticks.map((tick) => (
           <g key={tick}>
-            <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y(tick)} y2={y(tick)} stroke="#e7e5e4" strokeWidth={1} />
-            <text x={PAD.left - 8} y={y(tick) + 4} textAnchor="end" fontSize={12} fill="#78716c">
+            <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y(tick)} y2={y(tick)} stroke="var(--pm-border)" strokeWidth={1} />
+            <text x={PAD.left - 8} y={y(tick) + 4} textAnchor="end" fontSize={12} fill="var(--pm-text-muted)">
               {Number.isInteger(tick) ? tick : tick.toFixed(1)}
             </text>
           </g>
         ))}
         {labelled.map((i) => (
-          <text key={i} x={x(i)} y={HEIGHT - 8} textAnchor="middle" fontSize={12} fill="#78716c">
+          <text key={i} x={x(i)} y={HEIGHT - 8} textAnchor="middle" fontSize={12} fill="var(--pm-text-muted)">
             {dayLabel(points[i].day)}
           </text>
         ))}
 
         {target != null && (
           <g>
-            <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y(target)} y2={y(target)} stroke="#78716c" strokeWidth={1} />
-            <text x={WIDTH - PAD.right + 6} y={y(target) + 4} fontSize={11} fill="#57534e">
+            <line x1={PAD.left} x2={WIDTH - PAD.right} y1={y(target)} y2={y(target)} stroke="var(--pm-text-muted)" strokeWidth={1} />
+            <text x={WIDTH - PAD.right + 6} y={y(target) + 4} fontSize={11} fill="var(--pm-text-muted)">
               יעד {target}
             </text>
           </g>
         )}
 
         {hover != null && (
-          <line x1={x(active)} x2={x(active)} y1={PAD.top} y2={PAD.top + innerH} stroke="#a8a29e" strokeWidth={1} />
+          <line x1={x(active)} x2={x(active)} y1={PAD.top} y2={PAD.top + innerH} stroke="var(--pm-text-muted)" strokeWidth={1} />
         )}
         {points.length > 1 && (
           <path d={path} fill="none" stroke={SERIES} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
@@ -109,13 +109,13 @@ export function PriceChart({ points, target, unit }: { points: Point[]; target: 
           />
         ))}
         {hover == null && (
-          <text x={x(last) + 9} y={y(points[last].price) + 4} fontSize={13} fontWeight={600} fill="#1c1917">
+          <text x={x(last) + 9} y={y(points[last].price) + 4} fontSize={13} fontWeight={600} fill="var(--pm-text)">
             {points[last].price.toFixed(2)}
           </text>
         )}
       </svg>
-      <figcaption dir="rtl" className="mt-1 min-h-5 text-center text-sm text-slate-600">
-        {dayLabel(points[active].day)}: <b className="tabular-nums text-slate-900">{money(points[active].price)}</b>
+      <figcaption dir="rtl" className="mt-1 min-h-5 text-center text-sm text-muted">
+        {dayLabel(points[active].day)}: <b className="tabular-nums text-ink">{money(points[active].price)}</b>
         {unit}
         {hover == null && " (עדכני)"}
       </figcaption>

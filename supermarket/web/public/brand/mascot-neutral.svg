@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="720" viewBox="0 0 640 720" role="img" aria-labelledby="title desc">
+  <title id="title">פריי - הקמע של פראיירמטר</title><desc id="desc">מד מחירים קורץ עם ידיים ונעליים</desc>
+  <defs><clipPath id="clip"><path d="M90 366A230 230 0 0 1 550 366H430A110 110 0 0 0 210 366Z"/></clipPath></defs>
+  <path d="M90 366A230 230 0 0 1 550 366H430A110 110 0 0 0 210 366Z" fill="#FFF9F4" stroke="#30003F" stroke-width="20"/>
+  <g clip-path="url(#clip)"><path d="M70 380V178H215V380Z" fill="#12DDD0"/><path d="M161 124L271 67L287 244L218 270Z" fill="#A8F200"/><path d="M271 67L382 66L369 244L287 244Z" fill="#FFF000"/><path d="M382 66L498 138L424 286L369 244Z" fill="#FF8A0A"/><path d="M498 138L584 248L438 338L424 286Z" fill="#FF087F"/></g>
+  <path d="M210 366A110 110 0 0 1 430 366Z" fill="#FFF9F4"/>
+  <path d="M90 366A230 230 0 0 1 550 366M210 366A110 110 0 0 1 430 366" fill="none" stroke="#30003F" stroke-width="20" stroke-linecap="round"/>
+  <path d="M246 306Q271 276 302 301M345 300Q371 269 401 299M248 321Q276 351 307 319M345 325Q374 337 403 315" fill="none" stroke="#30003F" stroke-width="11" stroke-linecap="round"/>
+  <path d="M321 365L476 247" stroke="#30003F" stroke-width="34" stroke-linecap="round"/><path d="M321 365L476 247" stroke="#FF087F" stroke-width="17" stroke-linecap="round"/><circle cx="321" cy="365" r="34" fill="#30003F"/><circle cx="321" cy="365" r="21" fill="#12E2D2"/>
+  <path d="M110 371Q59 399 70 465" fill="none" stroke="#30003F" stroke-width="18" stroke-linecap="round"/><circle cx="71" cy="478" r="31" fill="#FFF9F4" stroke="#30003F" stroke-width="16"/>
+  <path d="M530 372Q594 393 566 454" fill="none" stroke="#30003F" stroke-width="18" stroke-linecap="round"/><path d="M549 447Q585 421 595 456Q600 486 560 498Q527 501 525 471Z" fill="#FFF9F4" stroke="#30003F" stroke-width="16"/>
+  <path d="M243 385L219 575M398 385L421 575" stroke="#30003F" stroke-width="22" stroke-linecap="round"/>
+  <g><path d="M142 566Q205 538 261 580L252 630Q184 652 126 616Z" fill="#12DDD0" stroke="#30003F" stroke-width="18"/><path d="M128 612Q193 627 254 609L251 648Q188 669 124 647Z" fill="#FFF9F4" stroke="#30003F" stroke-width="15"/><path d="M382 580Q439 538 500 566L516 616Q458 652 389 630Z" fill="#12DDD0" stroke="#30003F" stroke-width="18"/><path d="M390 609Q452 627 515 612L519 647Q455 669 392 648Z" fill="#FFF9F4" stroke="#30003F" stroke-width="15"/></g>
+  <path d="M474 179L498 133M503 198L552 168M516 229L569 221" fill="none" stroke="#FF087F" stroke-width="15" stroke-linecap="round"/>
+</svg>

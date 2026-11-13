@@ -16,7 +16,7 @@ export function QuantityControl({ itemId, quantity, isWeighted }: { itemId: numb
     startTransition(() => changeQuantity(itemId, clean));
   };
   const current = Number(value) || min;
-  const button = "h-10 w-10 rounded-lg border border-slate-300 text-lg font-semibold active:bg-slate-100";
+  const button = "h-10 w-10 rounded-lg border border-line text-lg font-semibold active:bg-subtle";
 
   return (
     <div className={`flex items-center gap-1 ${pending ? "opacity-60" : ""}`}>
@@ -29,12 +29,12 @@ export function QuantityControl({ itemId, quantity, isWeighted }: { itemId: numb
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => commit(current)}
-        className="h-10 w-14 rounded-lg border border-slate-300 text-center tabular-nums"
+        className="h-10 w-14 rounded-lg border border-line text-center tabular-nums"
       />
       <button type="button" aria-label="יותר" className={button} onClick={() => commit(current + step)}>
         +
       </button>
-      {isWeighted && <span className="text-sm text-slate-500">ק״ג</span>}
+      {isWeighted && <span className="text-sm text-muted">ק״ג</span>}
     </div>
   );
 }

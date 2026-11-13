@@ -16,7 +16,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   return (
     <div className="space-y-4">
       {item ? (
-        <div className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">
+        <div className="rounded-pm bg-fresh-surface p-3 text-sm text-fresh">
           בוחרים חלופה לפריט <b>{item.name}</b>
           {item.isWeighted ? " (מוצר שקיל)" : ""}.{" "}
           <Link href="/" className="underline">
@@ -29,7 +29,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <SearchBar query={q} itemId={item?.id} autoFocus={!q} />
 
       {q && results.length === 0 && (
-        <p className="rounded-xl bg-white p-4 text-slate-600">לא נמצאו מוצרים עבור ״{q}״.</p>
+        <p className="rounded-pm bg-card p-4 text-muted">לא נמצאו מוצרים עבור ״{q}״.</p>
       )}
       <ul className="space-y-3">
         {results.map((p) => (
@@ -48,7 +48,7 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
   const wrongKind = item != null && item.isWeighted !== p.isWeighted;
 
   return (
-    <li className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <li className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-semibold leading-snug">
@@ -56,7 +56,7 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
               {p.name}
             </Link>
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-muted">
             {p.manufacturer && <span>{p.manufacturer} · </span>}
             <span dir="ltr">{p.barcode}</span>
             {p.chainName && <span> · רק ב{p.chainName}</span>}
@@ -65,49 +65,49 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
         </div>
         {cheapest && (
           <div className="shrink-0 text-left">
-            <div className="text-lg font-bold text-emerald-700">
+            <div className="text-lg font-bold text-link">
               {formatPrice(cheapest.price)}
               {priciest.price !== cheapest.price && (
-                <span className="text-sm font-normal text-slate-400"> – {formatPrice(priciest.price)}</span>
+                <span className="text-sm font-normal text-muted"> – {formatPrice(priciest.price)}</span>
               )}
             </div>
-            {unit && <div className="text-xs text-slate-500">{unit.trim()}</div>}
+            {unit && <div className="text-xs text-muted">{unit.trim()}</div>}
           </div>
         )}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3">
         {already ? (
-          <span className="text-sm text-slate-500">כבר בין החלופות</span>
+          <span className="text-sm text-muted">כבר בין החלופות</span>
         ) : wrongKind ? (
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-muted">
             {item!.isWeighted ? "אפשר להוסיף רק מוצר שקיל" : "אי אפשר לשלב מוצר שקיל עם מוצר ארוז"}
           </span>
         ) : (
           <form action={addProduct}>
             <input type="hidden" name="product" value={p.id} />
             {item && <input type="hidden" name="item" value={item.id} />}
-            <button className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+            <button className="rounded-pm bg-primary px-4 py-2 text-sm font-semibold text-on-primary">
               {item ? "הוספה כחלופה" : "הוספה לרשימה"}
             </button>
           </form>
         )}
-        <Link href={`/product/${p.id}`} className="text-xs text-emerald-700">
+        <Link href={`/product/${p.id}`} className="text-xs text-link">
           גרף ומעקב · {p.prices.length} סניפים
         </Link>
       </div>
 
       {p.prices.length > 0 && (
         <details className="mt-2 text-sm">
-          <summary className="cursor-pointer select-none text-emerald-700">מחירים לפי סניף</summary>
-          <ul className="mt-2 divide-y divide-slate-100 border-t border-slate-100">
+          <summary className="cursor-pointer select-none text-link">מחירים לפי סניף</summary>
+          <ul className="mt-2 divide-y divide-subtle border-t border-subtle">
             {p.prices.map((s) => (
               <li key={s.storePk} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0">
                   <div className="truncate">
                     {s.chainName} · {s.storeName}
                   </div>
-                  <div className={`text-xs ${s.stale ? "text-amber-600" : "text-slate-400"}`}>
+                  <div className={`text-xs ${s.stale ? "text-aging" : "text-muted"}`}>
                     עודכן {formatUpdated(s.fileTime)}
                     {s.stale && " · מחיר ישן"}
                   </div>

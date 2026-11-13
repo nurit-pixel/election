@@ -7,7 +7,9 @@ import {
   type ChainStatus,
   type RunInfo,
 } from "@/lib/settings";
+import { cookies } from "next/headers";
 import { formatUpdated } from "@/lib/format";
+import { THEME_COOKIE } from "@/lib/theme";
 import {
   addAddress,
   deleteAddress,
@@ -16,6 +18,7 @@ import {
   setClub,
   toggleChain,
   updateRadius,
+  setTheme,
   updateSplitThreshold,
 } from "./actions";
 
@@ -38,37 +41,43 @@ export default async function SettingsPage() {
     listClubs(),
     splitMinSaving(),
   ]);
+  const saved = (await cookies()).get(THEME_COOKIE)?.value;
+  const theme = saved === "light" || saved === "dark" ? saved : "system";
 
   return (
-    <div className="space-y-6">
-      <section className="space-y-3">
-        <h1 className="text-lg font-bold">כתובות ורדיוס</h1>
-        <p className="text-sm text-slate-500">
+    <div className="space-y-3">
+      <h1 className="text-2xl font-extrabold">הגדרות</h1>
+      <details open className="group space-y-3">
+        <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
+          <h2 className="text-lg font-bold">כתובות ורדיוס</h2>
+          <span aria-hidden className="text-pm-pink transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <p className="text-sm text-muted">
           מחירים נטענים רק לסניפים שברדיוס מהכתובות השמורות. הוספת כתובת מפעילה טעינה מיידית.
         </p>
 
         <ul className="space-y-2">
           {addresses.map((a) => (
-            <li key={a.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <li key={a.id} className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-semibold">{a.label}</div>
                   {a.label !== a.address && (
-                    <div className="truncate text-sm text-slate-500">{a.address}</div>
+                    <div className="truncate text-sm text-muted">{a.address}</div>
                   )}
                 </div>
                 <form action={deleteAddress}>
                   <input type="hidden" name="id" value={a.id} />
-                  <button className="text-sm text-rose-600">מחיקה</button>
+                  <button className="text-sm text-missing">מחיקה</button>
                 </form>
               </div>
               <div className="mt-2 text-sm">
-                {a.state === "pending" && <span className="text-slate-500">מאתר את הכתובת…</span>}
+                {a.state === "pending" && <span className="text-muted">מאתר את הכתובת…</span>}
                 {a.state === "failed" && (
-                  <span className="text-rose-600">הכתובת לא נמצאה. נסו לכתוב רחוב, מספר ועיר.</span>
+                  <span className="text-missing">הכתובת לא נמצאה. נסו לכתוב רחוב, מספר ועיר.</span>
                 )}
                 {a.state === "ok" && (
-                  <span className="text-slate-600">
+                  <span className="text-muted">
                     {a.storesInRadius} סניפים ברדיוס · {a.storesWithPrices} עם מחירים
                     {a.storesApproximate > 0 && ` · ${a.storesApproximate} במיקום משוער (לפי עיר)`}
                   </span>
@@ -76,7 +85,7 @@ export default async function SettingsPage() {
               </div>
               <form action={updateRadius} className="mt-3 flex items-center gap-2 text-sm">
                 <input type="hidden" name="id" value={a.id} />
-                <label htmlFor={`radius-${a.id}`} className="text-slate-500">
+                <label htmlFor={`radius-${a.id}`} className="text-muted">
                   רדיוס (ק״מ)
                 </label>
                 <input
@@ -88,9 +97,9 @@ export default async function SettingsPage() {
                   max="50"
                   step="0.5"
                   defaultValue={a.radiusKm}
-                  className="w-20 rounded-lg border border-slate-300 px-2 py-1.5"
+                  className="w-20 rounded-lg border border-line px-2 py-1.5"
                 />
-                <button className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium">
+                <button className="rounded-lg border border-line px-3 py-1.5 font-medium">
                   עדכון
                 </button>
               </form>
@@ -98,21 +107,21 @@ export default async function SettingsPage() {
           ))}
         </ul>
 
-        <form action={addAddress} className="space-y-2 rounded-2xl border border-dashed border-slate-300 bg-white p-4">
+        <form action={addAddress} className="space-y-2 rounded-pm-lg border border-dashed border-line bg-card p-4">
           <div className="font-semibold">כתובת חדשה</div>
           <input
             name="label"
             placeholder="שם (בית, עבודה…)"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+            className="w-full rounded-pm border border-line px-3 py-2.5"
           />
           <input
             name="address"
             required
             placeholder="רחוב ומספר, עיר"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2.5"
+            className="w-full rounded-pm border border-line px-3 py-2.5"
           />
           <div className="flex items-center gap-2">
-            <label htmlFor="new-radius" className="text-sm text-slate-500">
+            <label htmlFor="new-radius" className="text-sm text-muted">
               רדיוס (ק״מ)
             </label>
             <input
@@ -124,29 +133,32 @@ export default async function SettingsPage() {
               max="50"
               step="0.5"
               defaultValue={DEFAULT_RADIUS}
-              className="w-20 rounded-xl border border-slate-300 px-2 py-2.5"
+              className="w-20 rounded-pm border border-line px-2 py-2.5"
             />
-            <button className="mr-auto rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white">
+            <button className="mr-auto rounded-pm bg-primary px-5 py-2.5 font-semibold text-on-primary">
               הוספה
             </button>
           </div>
         </form>
-      </section>
+      </details>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold">מועדוני לקוחות</h2>
-        <p className="text-sm text-slate-500">
+      <details className="group space-y-3">
+        <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
+          <h2 className="text-lg font-bold">מועדוני לקוחות</h2>
+          <span aria-hidden className="text-pm-pink transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <p className="text-sm text-muted">
           מבצע מועדון נכלל בחישוב רק אם סימנתם שאתם חברים. אחרת הוא מוצג כחיסכון אפשרי.
         </p>
         {clubs.length === 0 ? (
-          <p className="rounded-2xl bg-white p-4 text-sm text-slate-500">עוד לא נטענו מבצעי מועדון.</p>
+          <p className="rounded-pm-lg bg-card p-4 text-sm text-muted">עוד לא נטענו מבצעי מועדון.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <ul className="divide-y divide-subtle rounded-pm-lg border border-line bg-card shadow-card">
             {clubs.map((club) => (
               <li key={`${club.chainKey}-${club.clubId}`} className="flex items-center justify-between gap-3 p-3 text-sm">
                 <div className="min-w-0">
                   <div className="font-medium">{club.chainName}</div>
-                  <div className="truncate text-xs text-slate-500">{club.name}</div>
+                  <div className="truncate text-xs text-muted">{club.name}</div>
                 </div>
                 <form action={setClub}>
                   <input type="hidden" name="chain" value={club.chainKey} />
@@ -155,7 +167,7 @@ export default async function SettingsPage() {
                   <button
                     aria-pressed={club.member}
                     className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                      club.member ? "bg-emerald-600 text-white" : "border border-slate-300 text-slate-600"
+                      club.member ? "bg-primary text-on-primary" : "border border-line text-muted"
                     }`}
                   >
                     {club.member ? "חבר/ה ✓" : "לא חבר/ה"}
@@ -165,15 +177,18 @@ export default async function SettingsPage() {
             ))}
           </ul>
         )}
-      </section>
+      </details>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold">פיצול לשני סניפים</h2>
+      <details className="group space-y-3">
+        <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
+          <h2 className="text-lg font-bold">פיצול לשני סניפים</h2>
+          <span aria-hidden className="text-pm-pink transition-transform group-open:rotate-180">▾</span>
+        </summary>
         <form
           action={updateSplitThreshold}
-          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm"
+          className="flex items-center gap-2 rounded-pm-lg border border-line bg-card p-4 text-sm shadow-card"
         >
-          <label htmlFor="threshold" className="flex-1 text-slate-600">
+          <label htmlFor="threshold" className="flex-1 text-muted">
             להציע פיצול רק כשהוא חוסך לפחות (₪)
           </label>
           <input
@@ -185,28 +200,53 @@ export default async function SettingsPage() {
             max="1000"
             step="1"
             defaultValue={threshold}
-            className="w-20 rounded-lg border border-slate-300 px-2 py-1.5"
+            className="w-20 rounded-lg border border-line px-2 py-1.5"
           />
-          <button className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium">עדכון</button>
+          <button className="rounded-lg border border-line px-3 py-1.5 font-medium">עדכון</button>
         </form>
-      </section>
+      </details>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold">רשתות וסטטוס טעינה</h2>
-        <p className="text-sm text-slate-500">רשת מוסתרת לא מופיעה בחיפוש, בהשוואה ובפיצול.</p>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
+      <details className="group space-y-3">
+        <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
+          <h2 className="text-lg font-bold">תצוגה</h2>
+          <span aria-hidden className="text-pm-pink transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <form action={setTheme} className="flex gap-2 rounded-pm-lg border border-line bg-card p-4 shadow-card">
+          {(["system", "light", "dark"] as const).map((value) => (
+            <button
+              key={value}
+              name="theme"
+              value={value}
+              aria-pressed={theme === value}
+              className={`min-h-11 flex-1 rounded-pm border px-3 text-sm font-bold ${
+                theme === value ? "border-primary bg-primary text-on-primary" : "border-line text-ink"
+              }`}
+            >
+              {value === "system" ? "לפי המכשיר" : value === "light" ? "בהיר" : "כהה"}
+            </button>
+          ))}
+        </form>
+      </details>
+
+      <details className="group space-y-3">
+        <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
+          <h2 className="text-lg font-bold">רשתות וסטטוס טעינה</h2>
+          <span aria-hidden className="text-pm-pink transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <p className="text-sm text-muted">רשת מוסתרת לא מופיעה בחיפוש, בהשוואה ובפיצול.</p>
+        <div className="rounded-pm-lg border border-line bg-card p-4 text-sm shadow-card">
           <div>
             {info.stores.toLocaleString("he-IL")} סניפים בארץ ·{" "}
             {info.geocoded.toLocaleString("he-IL")} עם מיקום
             {info.geocodePending > 0 && ` · ${info.geocodePending.toLocaleString("he-IL")} ממתינים לאיתור`}
           </div>
           {info.activeRequests.length > 0 && (
-            <div className="mt-1 text-amber-700">
+            <div className="mt-1 text-aging">
               בתהליך:{" "}
               {info.activeRequests.map((r) => REQUEST_LABELS[r.kind] ?? r.kind).join(", ")}
             </div>
           )}
-          <div className="mt-1 text-slate-600">
+          <div className="mt-1 text-muted">
             ריצה לילית כל יום ב-{info.nightlyTime} (שעון ישראל).{" "}
             {info.nightly?.startedAt
               ? `האחרונה: ${formatUpdated(info.nightly.startedAt)}${
@@ -214,39 +254,39 @@ export default async function SettingsPage() {
                 }`
               : "עוד לא רצה."}
           </div>
-          {info.nightly?.message && <div className="mt-1 text-xs text-slate-500">{info.nightly.message}</div>}
+          {info.nightly?.message && <div className="mt-1 text-xs text-muted">{info.nightly.message}</div>}
           <div className="mt-3 flex flex-wrap gap-2">
             <form action={requestPrices}>
-              <button className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium">
+              <button className="rounded-lg border border-line px-3 py-1.5 font-medium">
                 טעינת מחירים עכשיו
               </button>
             </form>
             <form action={requestStores}>
-              <button className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium">
+              <button className="rounded-lg border border-line px-3 py-1.5 font-medium">
                 רענון רשימות סניפים
               </button>
             </form>
           </div>
         </div>
 
-        <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <ul className="divide-y divide-subtle rounded-pm-lg border border-line bg-card shadow-card">
           {chains.map((c) => (
             <ChainRow key={c.key} chain={c} />
           ))}
         </ul>
-      </section>
+      </details>
     </div>
   );
 }
 
 function badge(c: ChainStatus): { text: string; className: string } {
   const run = c.pricesRun ?? c.storesRun;
-  if (run?.status === "running") return { text: "בטעינה", className: "bg-sky-100 text-sky-800" };
-  if (c.notUpdated) return { text: "לא עודכן", className: "bg-amber-100 text-amber-800" };
-  if (!run) return { text: "טרם נטען", className: "bg-slate-100 text-slate-600" };
-  if (run.status === "failed") return { text: "נכשל", className: "bg-rose-100 text-rose-800" };
-  if (run.status === "partial") return { text: "חלקי", className: "bg-amber-100 text-amber-800" };
-  return { text: "תקין", className: "bg-emerald-100 text-emerald-800" };
+  if (run?.status === "running") return { text: "בטעינה", className: "bg-info-surface text-info" };
+  if (c.notUpdated) return { text: "לא עודכן", className: "bg-aging-surface text-aging" };
+  if (!run) return { text: "טרם נטען", className: "bg-subtle text-muted" };
+  if (run.status === "failed") return { text: "נכשל", className: "bg-missing-surface text-missing" };
+  if (run.status === "partial") return { text: "חלקי", className: "bg-aging-surface text-aging" };
+  return { text: "תקין", className: "bg-fresh-surface text-fresh" };
 }
 
 function runLine(label: string, run: RunInfo | null) {
@@ -268,21 +308,21 @@ function ChainRow({ chain: c }: { chain: ChainStatus }) {
       <div className="flex items-center justify-between gap-3">
         <div className="font-semibold">
           {c.name}
-          {c.isPharm && <span className="mr-2 text-xs font-normal text-slate-400">פארם</span>}
-          {c.hidden && <span className="mr-2 text-xs font-normal text-rose-500">מוסתרת</span>}
+          {c.isPharm && <span className="mr-2 text-xs font-normal text-muted">פארם</span>}
+          {c.hidden && <span className="mr-2 text-xs font-normal text-missing">מוסתרת</span>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <form action={toggleChain}>
             <input type="hidden" name="chain" value={c.key} />
             <input type="hidden" name="hidden" value={c.hidden ? "0" : "1"} />
-            <button className="rounded-full border border-slate-300 px-2.5 py-0.5 text-xs text-slate-600">
+            <button className="rounded-full border border-line px-2.5 py-0.5 text-xs text-muted">
               {c.hidden ? "הצגה" : "הסתרה"}
             </button>
           </form>
           <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${b.className}`}>{b.text}</span>
         </div>
       </div>
-      <div className="mt-1 text-xs text-slate-500">
+      <div className="mt-1 text-xs text-muted">
         <div>
           {c.stores} סניפים · {c.geocoded} עם מיקום · {c.storesWithPrices} עם מחירים
           {c.oldestPrices && ` (מ-${formatUpdated(c.oldestPrices)})`}
@@ -290,7 +330,7 @@ function ChainRow({ chain: c }: { chain: ChainStatus }) {
         {runLine("רשימת סניפים", c.storesRun)}
         {runLine("מחירים", c.pricesRun)}
         {runLine("מבצעים", c.promosRun)}
-        {error && <div className="mt-1 break-words text-rose-700">{error.slice(0, 160)}</div>}
+        {error && <div className="mt-1 break-words text-missing">{error.slice(0, 160)}</div>}
       </div>
     </li>
   );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, familyPassword, safeEqual, sessionToken } from "@/lib/auth";
 
-export const config = { matcher: ["/((?!_next/|favicon.ico|login).*)"] };
+export const config = { matcher: ["/((?!_next/|favicon.ico|login|brand/|app-icon|icon|apple-icon|manifest.webmanifest).*)"] };
 
 export async function middleware(req: NextRequest) {
   const fail = () =>

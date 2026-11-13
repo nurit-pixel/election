@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="384" viewBox="0 0 512 384" role="img" aria-labelledby="title desc">
+  <title id="title">סמל פראיירמטר</title><desc id="desc">מד מחירים צבעוני וקורץ עם מחוג ורוד</desc>
+  <defs><clipPath id="clip"><path d="M48 286A208 208 0 0 1 464 286H364A108 108 0 0 0 148 286Z"/></clipPath></defs>
+  <path d="M48 286A208 208 0 0 1 464 286H364A108 108 0 0 0 148 286Z" fill="#FFF9F4" stroke="#30003F" stroke-width="18"/>
+  <g clip-path="url(#clip)"><path d="M36 296V118H144V296Z" fill="#11D9CD"/><path d="M108 84L208 32L225 149L148 203Z" fill="#A8F200"/><path d="M208 32L306 27L298 150L225 149Z" fill="#FFF000"/><path d="M306 27L405 84L350 190L298 150Z" fill="#FF8A0A"/><path d="M405 84L485 179L365 247L350 190Z" fill="#FF087F"/><path d="M129 139L165 174M216 65L230 111M305 58L295 109M392 115L354 160" fill="none" stroke="#30003F" stroke-width="13" stroke-linecap="round"/></g>
+  <path d="M148 286A108 108 0 0 1 364 286Z" fill="#FFF9F4"/>
+  <path d="M48 286A208 208 0 0 1 464 286M148 286A108 108 0 0 1 364 286" fill="none" stroke="#30003F" stroke-width="18" stroke-linecap="round"/>
+  <path d="M186 236Q212 210 239 233M283 233Q308 205 333 232M191 250Q215 276 241 249M283 253Q307 265 332 246" fill="none" stroke="#30003F" stroke-width="10" stroke-linecap="round"/>
+  <path d="M256 286L397 174" stroke="#30003F" stroke-width="30" stroke-linecap="round"/><path d="M256 286L397 174" stroke="#FF087F" stroke-width="15" stroke-linecap="round"/><circle cx="256" cy="286" r="31" fill="#30003F"/><circle cx="256" cy="286" r="19" fill="#12E2D2"/>
+  <path d="M408 103L430 64M427 126L470 101M438 151L482 145" fill="none" stroke="#FF087F" stroke-width="14" stroke-linecap="round"/>
+</svg>

@@ -36,9 +36,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
         <h1 className="text-lg font-bold leading-snug">{product.name}</h1>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-0.5 text-xs text-muted">
           {product.manufacturer && `${product.manufacturer} · `}
           <span dir="ltr">{product.barcode}</span>
           {product.chainName && ` · רק ב${product.chainName}`}
@@ -46,36 +46,36 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         </p>
         {cheapest ? (
           <div className="mt-3 flex items-end justify-between gap-3">
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-muted">
               הזול ביותר: {cheapest.chainName} · {cheapest.storeName}
             </div>
-            <div className="shrink-0 text-2xl font-bold tabular-nums text-emerald-700">
+            <div className="shrink-0 text-2xl font-bold tabular-nums text-link">
               {formatPrice(cheapest.price)}
-              <span className="text-sm font-normal text-slate-500">{unit}</span>
+              <span className="text-sm font-normal text-muted">{unit}</span>
             </div>
           </div>
         ) : (
-          <p className="mt-3 text-sm text-slate-500">אין מחיר עדכני בסניפים שברדיוס.</p>
+          <p className="mt-3 text-sm text-muted">אין מחיר עדכני בסניפים שברדיוס.</p>
         )}
         <div className="mt-3 flex flex-wrap gap-2">
           <form action={addProduct}>
             <input type="hidden" name="product" value={product.id} />
-            <button className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">הוספה לרשימה</button>
+            <button className="rounded-pm bg-primary px-4 py-2 text-sm font-semibold text-on-primary">הוספה לרשימה</button>
           </form>
         </div>
         {product.inLists.length > 0 && (
-          <p className="mt-2 text-xs text-slate-500">נמצא ברשימות: {product.inLists.join(", ")}</p>
+          <p className="mt-2 text-xs text-muted">נמצא ברשימות: {product.inLists.join(", ")}</p>
         )}
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
         <h2 className="font-semibold">מעקב מחיר</h2>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-0.5 text-xs text-muted">
           התראה תישלח כשהמחיר משתנה ב-10% ומעלה, או כשהוא יורד אל מחיר היעד.
         </p>
         <form action={track} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
           <input type="hidden" name="product" value={product.id} />
-          <label htmlFor="target" className="text-slate-600">
+          <label htmlFor="target" className="text-muted">
             מחיר יעד (₪, לא חובה)
           </label>
           <input
@@ -86,42 +86,42 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             min="0.1"
             step="0.1"
             defaultValue={product.targetPrice ?? ""}
-            className="w-24 rounded-lg border border-slate-300 px-2 py-1.5"
+            className="w-24 rounded-lg border border-line px-2 py-1.5"
           />
-          <button className="rounded-lg bg-slate-900 px-3 py-1.5 font-medium text-white">
+          <button className="rounded-lg bg-primary px-3 py-1.5 font-medium text-on-primary">
             {product.tracked ? "עדכון" : "הוספה למעקב"}
           </button>
         </form>
         {product.tracked && (
           <form action={untrack} className="mt-2">
             <input type="hidden" name="product" value={product.id} />
-            <button className="text-sm text-rose-600">הסרה מהמעקב</button>
+            <button className="text-sm text-missing">הסרה מהמעקב</button>
           </form>
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
         <h2 className="font-semibold">המחיר הזול ביותר לאורך זמן</h2>
         {product.history.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-muted">
             {product.tracked || product.inLists.length > 0
               ? "ההיסטוריה תתחיל להיאסף בטעינת המחירים הבאה."
               : "היסטוריית מחירים נשמרת רק למוצרים במעקב או ברשימה שמורה."}
           </p>
         ) : (
           <>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-muted">
               בסניפים שברדיוס, {product.history.length === 1 ? "יום אחד" : `${product.history.length} ימים`}
             </p>
             <div className="mt-2">
               <PriceChart points={product.history} target={product.targetPrice} unit={unit} />
             </div>
             <details className="mt-2 text-sm">
-              <summary className="cursor-pointer select-none text-emerald-700">טבלה לפי רשת</summary>
+              <summary className="cursor-pointer select-none text-link">טבלה לפי רשת</summary>
               <div className="mt-2 overflow-x-auto">
                 <table className="w-full text-right text-xs">
                   <thead>
-                    <tr className="border-b border-slate-200 text-slate-500">
+                    <tr className="border-b border-line text-muted">
                       <th className="py-1 pl-3 font-medium">רשת</th>
                       {days.map((day) => (
                         <th key={day} className="px-2 py-1 font-medium tabular-nums">
@@ -132,7 +132,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                   </thead>
                   <tbody>
                     {product.historyByChain.map((chain) => (
-                      <tr key={chain.chainName} className="border-b border-slate-100">
+                      <tr key={chain.chainName} className="border-b border-subtle">
                         <td className="py-1 pl-3">{chain.chainName}</td>
                         {days.map((day) => {
                           const point = chain.points.find((p) => p.day === day);
@@ -153,16 +153,16 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       </section>
 
       {product.prices.length > 0 && (
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-pm-lg border border-line bg-card shadow-card">
           <h2 className="p-4 pb-2 font-semibold">מחירים עכשיו ({product.prices.length} סניפים)</h2>
-          <ul className="divide-y divide-slate-100 text-sm">
+          <ul className="divide-y divide-subtle text-sm">
             {product.prices.slice(0, 30).map((s) => (
               <li key={s.storePk} className="flex items-center justify-between gap-3 px-4 py-2">
                 <div className="min-w-0">
                   <Link href={`/store/${s.storePk}`} className="block truncate">
                     {s.chainName} · {s.storeName}
                   </Link>
-                  <div className={`text-xs ${s.stale ? "text-amber-600" : "text-slate-400"}`}>
+                  <div className={`text-xs ${s.stale ? "text-aging" : "text-muted"}`}>
                     עודכן {formatUpdated(s.fileTime)}
                     {s.stale && " · מחיר ישן"}
                   </div>
@@ -175,7 +175,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             ))}
           </ul>
           {product.prices.length > 30 && (
-            <p className="p-4 pt-2 text-xs text-slate-400">מוצגים 30 הסניפים הזולים.</p>
+            <p className="p-4 pt-2 text-xs text-muted">מוצגים 30 הסניפים הזולים.</p>
           )}
         </section>
       )}

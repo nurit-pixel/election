@@ -12,9 +12,9 @@ export function SearchBar({ query = "", itemId, autoFocus = false }: { query?: s
           enterKeyHint="search"
           placeholder="שם מוצר או ברקוד"
           autoFocus={autoFocus}
-          className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          className="min-w-0 flex-1 rounded-pm border border-line bg-card px-4 py-3 text-base outline-none focus:border-fresh focus:ring-2 focus:ring-focus/20"
         />
-        <button className="rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white active:bg-emerald-700">חיפוש</button>
+        <button className="rounded-pm bg-primary px-4 py-3 font-semibold text-on-primary active:bg-primary">חיפוש</button>
       </form>
       <BarcodeScanner itemId={itemId} />
     </div>

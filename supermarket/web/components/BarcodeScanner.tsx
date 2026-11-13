@@ -69,7 +69,7 @@ export function BarcodeScanner({ itemId }: { itemId?: number }) {
           setError("");
           setOpen(true);
         }}
-        className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-medium"
+        className="rounded-pm border border-line bg-card px-4 py-3 font-medium"
       >
         סריקה
       </button>
@@ -81,8 +81,8 @@ export function BarcodeScanner({ itemId }: { itemId?: number }) {
               סגירה
             </button>
           </div>
-          <video ref={videoRef} playsInline muted className="mt-4 min-h-0 flex-1 rounded-xl object-cover" />
-          {error && <p className="mt-3 rounded-xl bg-white p-3 text-sm text-rose-700">{error}</p>}
+          <video ref={videoRef} playsInline muted className="mt-4 min-h-0 flex-1 rounded-pm object-cover" />
+          {error && <p className="mt-3 rounded-pm bg-card p-3 text-sm text-missing">{error}</p>}
         </div>
       )}
     </>

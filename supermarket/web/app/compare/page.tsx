@@ -1,141 +1,196 @@
 import Link from "next/link";
 import { compareStores, type RankedStore } from "@/lib/compare";
-import { formatDistance, formatPrice, formatUpdated } from "@/lib/format";
+import { formatDistance } from "@/lib/format";
+import { freshness, winnerIndex, worstFreshness, type Freshness } from "@/lib/freshness";
+import { FreshnessLine, Mascot, Price } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function ComparePage() {
+const FRESH_HOURS = Number(process.env.STALE_PRICE_HOURS ?? 36);
+const FIRST_PAGE = 5;
+
+type Row = RankedStore & { freshness: Freshness; observedAt: string | null };
+
+/** רעננות הסל בסניף: לפי המחיר הישן ביותר מבין הפריטים שנמצאו */
+function withFreshness(store: RankedStore, now: Date): Row {
+  const times = store.basket.lines.flatMap((l) => (l.found ? [l.fileTime] : []));
+  const oldest = times.length > 0 ? times.reduce((a, b) => (a < b ? a : b)) : null;
+  return {
+    ...store,
+    freshness: worstFreshness(times.map((t) => freshness(t, now, FRESH_HOURS))),
+    observedAt: oldest,
+  };
+}
+
+export default async function ComparePage({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
+  const showAll = (await searchParams).all === "1";
   const { list, ranked, storesInRadius, bestSplit } = await compareStores();
-  const complete = ranked.filter((s) => s.basket.complete);
-  const partial = ranked.filter((s) => !s.basket.complete);
-  const cheapest = complete[0]?.basket.total;
+  const now = new Date();
+  const rows = ranked.map((s) => withFreshness(s, now));
+  const winner = winnerIndex(
+    rows.map((r) => ({ complete: r.basket.complete, freshness: r.freshness, total: r.basket.total })),
+  );
+  const visible = showAll ? rows : rows.slice(0, FIRST_PAGE);
+  const hidden = rows.length - visible.length;
+  const cheapestComplete = rows.find((r) => r.basket.complete)?.basket.total ?? null;
+  const firstPartial = visible.findIndex((r) => !r.basket.complete);
 
   if (list.items.length === 0) {
     return (
-      <p className="rounded-2xl bg-white p-4 text-slate-600">
-        הרשימה ריקה.{" "}
-        <Link href="/" className="text-emerald-700 underline">
-          הוסיפו מוצרים
-        </Link>{" "}
-        כדי להשוות סניפים.
-      </p>
+      <div className="flex flex-col items-center gap-3 rounded-pm-lg bg-card p-6 text-center shadow-card">
+        <Mascot />
+        <p className="text-muted">הרשימה ריקה. מוסיפים מוצרים, ואז רואים איפה הסל הכי משתלם.</p>
+        <Link href="/" className="rounded-pm bg-primary px-5 py-3 font-bold text-on-primary">
+          לרשימה
+        </Link>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-bold">השוואת סניפים</h1>
-        <p className="text-sm text-slate-500">
-          {list.items.length} פריטים · {storesInRadius} סניפים ברדיוס · כולל מבצעים
+        <h1 className="text-2xl font-extrabold">השוואת סניפים</h1>
+        <p className="text-sm text-muted">
+          {list.name} · {list.items.length} פריטים · {storesInRadius} סניפים ברדיוס · כולל מבצעים
         </p>
       </div>
 
+      <div className="flex items-start gap-3 rounded-pm-lg border border-pm-pink/40 bg-missing-surface p-4">
+        <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pm-pink text-sm font-black text-white">
+          !
+        </span>
+        <div>
+          <div className="font-bold">השוואה הוגנת, בלי להמציא</div>
+          <div className="text-sm text-muted">סניף חסר לא מקבל תג זוכה, גם אם הסכום נמוך.</div>
+        </div>
+      </div>
+
       {storesInRadius === 0 && (
-        <p className="rounded-2xl bg-white p-4 text-slate-600">
+        <p className="rounded-pm-lg bg-card p-4 text-muted shadow-card">
           אין סניפים עם מחירים ברדיוס.{" "}
-          <Link href="/settings" className="text-emerald-700 underline">
-            הוסיפו כתובת בהגדרות
+          <Link href="/settings" className="font-bold text-link underline">
+            מוסיפים כתובת בהגדרות
           </Link>
           .
         </p>
       )}
 
       {bestSplit && (
-        <Link
-          href="/split"
-          className="block rounded-2xl border border-sky-300 bg-sky-50 p-4 text-sm text-sky-900 shadow-sm"
-        >
-          <div className="font-semibold">
-            {bestSplit.saving != null
-              ? `פיצול לשני סניפים חוסך ${formatPrice(bestSplit.saving)}`
-              : "בפיצול לשני סניפים נמצאים יותר פריטים"}
+        <Link href="/split" className="block rounded-pm-lg border border-info/40 bg-info-surface p-4 text-sm text-info shadow-card">
+          <div className="font-bold">
+            {bestSplit.saving != null ? (
+              <>
+                פיצול לשני סניפים חוסך <Price value={bestSplit.saving} />
+              </>
+            ) : (
+              "בפיצול לשני סניפים נמצאים יותר פריטים"
+            )}
           </div>
           <div className="mt-0.5">
             {bestSplit.a.chainName} · {bestSplit.a.name} + {bestSplit.b.chainName} · {bestSplit.b.name} –{" "}
-            {formatPrice(bestSplit.total)} ←
+            <Price value={bestSplit.total} /> ←
           </div>
         </Link>
       )}
 
-      {complete.length > 0 && (
-        <ol className="space-y-2">
-          {complete.map((s, i) => (
-            <StoreRow key={s.storePk} store={s} rank={i + 1} diff={i === 0 ? null : s.basket.total - cheapest!} />
-          ))}
-        </ol>
-      )}
+      <ol className="space-y-3">
+        {visible.map((row, i) => (
+          <li key={row.storePk}>
+            {i === firstPartial && (
+              <h2 className="pb-2 pt-1 text-sm font-bold text-muted">
+                {firstPartial > 0 ? "סניפים שחסרים בהם פריטים" : "באף סניף אין את כל הפריטים"}
+              </h2>
+            )}
+            <StoreCard
+              row={row}
+              now={now}
+              winner={rows.indexOf(row) === winner}
+              diff={row.basket.complete && cheapestComplete != null ? row.basket.total - cheapestComplete : null}
+            />
+          </li>
+        ))}
+      </ol>
 
-      {partial.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="pt-2 text-sm font-semibold text-slate-600">
-            {complete.length > 0 ? "סניפים שחסרים בהם פריטים" : "באף סניף אין את כל הפריטים"}
-          </h2>
-          <ul className="space-y-2">
-            {partial.map((s) => (
-              <StoreRow key={s.storePk} store={s} rank={null} diff={null} />
-            ))}
-          </ul>
-        </section>
+      {hidden > 0 && (
+        <Link
+          href="/compare?all=1"
+          className="block rounded-pm border border-line bg-card px-5 py-3 text-center font-bold text-link"
+        >
+          הצגת עוד {hidden} סניפים
+        </Link>
+      )}
+      {showAll && rows.length > FIRST_PAGE && (
+        <Link href="/compare" className="block px-5 py-2 text-center text-sm font-bold text-link">
+          הצגת 5 הזולים בלבד
+        </Link>
       )}
     </div>
   );
 }
 
-function StoreRow({ store: s, rank, diff }: { store: RankedStore; rank: number | null; diff: number | null }) {
+function StoreCard({ row: s, now, winner, diff }: { row: Row; now: Date; winner: boolean; diff: number | null }) {
   const b = s.basket;
+  const missing = b.itemCount - b.foundCount;
   return (
-    <li>
-      <Link
-        href={`/store/${s.storePk}`}
-        className={`flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-sm ${
-          rank === 1 ? "border-emerald-500 ring-1 ring-emerald-500" : "border-slate-200"
-        }`}
-      >
-        {rank != null && (
-          <div
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-              rank === 1 ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {rank}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold leading-snug">
+    <Link
+      href={`/store/${s.storePk}`}
+      className={`relative block overflow-hidden rounded-pm-xl bg-card shadow-card ${
+        winner ? "border-2 border-fresh" : "border border-line"
+      }`}
+    >
+      {winner && (
+        <div className="absolute start-0 top-0 rounded-ee-pm bg-fresh px-4 py-1 text-sm font-bold text-card">
+          הכי משתלם
+        </div>
+      )}
+      <div className={`flex items-start justify-between gap-3 px-4 pb-3 ${winner ? "pt-10" : "pt-4"}`}>
+        <div className="min-w-0 space-y-1">
+          <div className="text-lg font-bold leading-snug">
             {s.chainName} · {s.name}
           </div>
-          <div className="mt-0.5 text-xs text-slate-500">
+          <div className="text-xs text-muted">
             {[s.address, s.city].filter(Boolean).join(", ")}
             {s.distanceKm != null && ` · ${formatDistance(s.distanceKm)}`}
             {s.approximate && " (מיקום משוער)"}
           </div>
-          {!b.complete && (
-            <div className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-              נמצאו {b.foundCount} מתוך {b.itemCount}
+          <FreshnessLine status={s.freshness} observedAt={s.observedAt} now={now} className="block" />
+          {b.complete ? (
+            <div className="text-sm font-medium text-fresh">כל {b.itemCount} הפריטים זמינים</div>
+          ) : (
+            <div className="text-sm font-medium text-missing">
+              {missing === 1 ? "חסר מחיר לפריט אחד" : `חסרים מחירים ל-${missing} פריטים`}. הסכום המוצג חלקי.
             </div>
           )}
           {b.savings > 0 && (
-            <div className="mt-1 text-xs text-emerald-700">חיסכון במבצעים {formatPrice(b.savings)}</div>
+            <div className="text-sm font-medium text-fresh">
+              חיסכון במבצעים <Price value={b.savings} />
+            </div>
           )}
           {b.clubSavings > 0 && (
-            <div className="mt-0.5 text-xs text-violet-700">לחברי מועדון: עוד {formatPrice(b.clubSavings)}</div>
-          )}
-          {s.pricesFileTime && (
-            <div className={`mt-1 text-xs ${b.stale ? "text-amber-600" : "text-slate-400"}`}>
-              עודכן {formatUpdated(s.pricesFileTime)}
-              {b.stale && " · מחירים ישנים"}
+            <div className="text-xs text-club">
+              לחברי מועדון: עוד <Price value={b.clubSavings} />
             </div>
           )}
         </div>
-        <div className="shrink-0 text-left">
-          <div className={`text-lg font-bold tabular-nums ${b.complete ? "text-slate-900" : "text-slate-500"}`}>
-            {formatPrice(b.total)}
+        <div className="shrink-0 text-end">
+          <Price value={b.total} className={`block text-3xl font-extrabold ${b.complete ? "text-ink" : "text-muted"}`} />
+          <div className="text-xs text-muted">
+            {b.complete ? `סל מלא · ${b.foundCount} מתוך ${b.itemCount}` : `לפי ${b.foundCount} מתוך ${b.itemCount} פריטים`}
           </div>
-          {diff != null && diff > 0 && <div className="text-xs text-rose-600">+{formatPrice(diff)}</div>}
-          {!b.complete && <div className="text-xs text-slate-400">סל חלקי</div>}
+          {diff != null && diff > 0 && (
+            <div className="text-xs font-medium text-missing">
+              <Price value={diff} /> יותר מהזול
+            </div>
+          )}
         </div>
-      </Link>
-    </li>
+      </div>
+      <div className="mx-4 flex items-center justify-between border-t border-line py-3 text-sm font-bold">
+        <span>לצפייה בפירוט הסל</span>
+        <span aria-hidden className="text-lg text-pm-pink">
+          ←
+        </span>
+      </div>
+    </Link>
   );
 }
