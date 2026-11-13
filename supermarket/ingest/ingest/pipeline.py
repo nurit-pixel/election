@@ -123,6 +123,7 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
     errors: list[str] = []
     if not os.path.isdir(chain_dump_dir(cfg, chain)):
         return 0, 0, 0, errors
+    oldest = datetime.now() - timedelta(days=cfg.max_file_age_days)
 
     async for dump in DataLoader(cfg.dumps_dir).load(
         enabled_scraper=[chain.key], files_types=[STORE, PRICE_FULL, PROMO_FULL]
@@ -130,6 +131,10 @@ async def load_dumps(cfg: Config, chain: Chain, conn, already_loaded: set[str],
         path = dump.get_full_path
         try:
             if not force and db.stem(dump.file_name) in already_loaded:
+                os.remove(path)
+                continue
+            if dump.extracted_date < oldest:
+                # חלק מהאתרים מחזירים גם קבצים של ימים קודמים; קובץ ישן לא נטען
                 os.remove(path)
                 continue
             raw = [row async for row in converter.read(dump)]
