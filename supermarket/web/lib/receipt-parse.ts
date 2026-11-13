@@ -8,6 +8,8 @@ const SKIP =
 
 const PRICE = /-?\d{1,4}[.,]\d{2}(?!\d)-?/g;
 const BARCODE = /(?<!\d)\d{7,14}(?!\d)/;
+// קוד פנימי קצר של הרשת: מודפס בתחילת שורת המוצר
+const SHORT_CODE = /^(\d{4,6})\s+(?=\S*[א-ת])/;
 const WEIGHT = /(\d{1,2}[.,]\d{1,3})\s*(?:ק["״']?ג|קילו|kg)/i;
 const UNITS = [
   /(?:^|\s)(\d{1,3})\s*[xX×*]\s*\d/, // 2 X 5.90
@@ -45,6 +47,8 @@ export function parseReceiptText(text: string): ReceiptLine[] {
 
     const barcode = line.match(BARCODE)?.[0] ?? null;
     let rest = barcode ? line.replace(barcode, " ") : line;
+    const shortCode = barcode ? null : (rest.match(SHORT_CODE)?.[1] ?? null);
+    if (shortCode) rest = rest.replace(SHORT_CODE, "");
 
     const weight = rest.match(WEIGHT);
     let units: number | null = null;
@@ -80,7 +84,7 @@ export function parseReceiptText(text: string): ReceiptLine[] {
       const draft: Draft = {
         printed: name.slice(0, 120),
         name: name.slice(0, 120),
-        barcode: barcode ?? pendingBarcode,
+        barcode: barcode ?? pendingBarcode ?? shortCode,
         unit: weight ? "kg" : "unit",
         quantity: quantity && quantity > 0 ? quantity : 1,
         total: prices.length ? prices[prices.length - 1].value : null,
@@ -103,7 +107,7 @@ export function parseReceiptText(text: string): ReceiptLine[] {
           last.total = positive[positive.length - 1].value;
         }
       }
-      if (barcode && !last.barcode) last.barcode = barcode;
+      if (barcode && (!last.barcode || last.barcode.length < 7)) last.barcode = barcode;
       else if (barcode && barcode !== last.barcode) pendingBarcode = barcode;
     } else if (!last && barcode && hebrewLetters(name) < 2) {
       pendingBarcode = barcode; // ברקוד שמודפס מעל שם המוצר

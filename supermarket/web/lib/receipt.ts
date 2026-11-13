@@ -7,6 +7,8 @@ import { searchProducts } from "./search";
 import { parseReceiptText } from "./receipt-parse";
 import {
   normalizeBarcode,
+  normalizeShortCode,
+  shortCodeIsCertain,
   queryVariants,
   type Candidate,
   type Confidence,
@@ -84,25 +86,38 @@ export async function readReceipt(data: Buffer, mediaType: string): Promise<Rece
 const CANDIDATES = 5;
 
 async function matchLine(line: ReceiptLine): Promise<MatchedLine> {
-  const toCandidates = (products: Awaited<ReturnType<typeof searchProducts>>): Candidate[] =>
+  // מוצרים עם ברקוד רגיל קודמים למוצרים עם קוד פנימי של רשת אחת
+  const toCandidates = (products: Awaited<ReturnType<typeof searchProducts>>, allowInternal: boolean): Candidate[] =>
     products
-      .filter((p) => !p.internal)
+      .filter((p) => allowInternal || !p.internal)
+      .sort((a, b) => Number(a.internal) - Number(b.internal))
       .slice(0, CANDIDATES)
       .map((p) => ({
         id: p.id,
         name: p.name,
         manufacturer: p.manufacturer,
         isWeighted: p.isWeighted,
+        chainName: p.internal ? p.chainName : null,
         minPrice: p.prices.length ? Math.min(...p.prices.map((x) => Number(x.price))) : null,
       }));
 
+  // 1. קודם כול לפי הקוד שהודפס בחשבונית: ברקוד מלא, ואם אין – קוד פנימי קצר של הרשת
   const barcode = normalizeBarcode(line.barcode);
   if (barcode) {
-    const found = toCandidates(await searchProducts(barcode, CANDIDATES));
+    const found = toCandidates(await searchProducts(barcode, CANDIDATES), true);
     if (found.length) return { ...line, confidence: "barcode", candidates: found };
   }
+  const shortCode = barcode ? null : normalizeShortCode(line.barcode);
+  if (shortCode) {
+    const found = toCandidates(await searchProducts(shortCode, CANDIDATES), true);
+    if (found.length) {
+      const confidence: Confidence = shortCodeIsCertain(line.printed, found) ? "barcode" : "loose";
+      return { ...line, confidence, candidates: found };
+    }
+  }
+  // 2. רק אם הקוד לא נמצא במאגר: לפי השם
   for (const variant of queryVariants(line)) {
-    const found = toCandidates(await searchProducts(variant.query, CANDIDATES * 2));
+    const found = toCandidates(await searchProducts(variant.query, CANDIDATES * 2), false);
     if (found.length) {
       const confidence: Confidence = variant.exact ? "name" : "loose";
       return { ...line, confidence, candidates: found };
@@ -111,7 +126,7 @@ async function matchLine(line: ReceiptLine): Promise<MatchedLine> {
   return { ...line, confidence: "none", candidates: [] };
 }
 
-/** התאמת כל שורה למוצרים במאגר: לפי ברקוד אם הודפס, אחרת לפי שם. */
+/** התאמת כל שורה למוצרים במאגר: קודם לפי הקוד שהודפס, ורק אם לא נמצא – לפי שם. */
 export async function matchLines(lines: ReceiptLine[]): Promise<MatchedLine[]> {
   const matched: MatchedLine[] = [];
   for (let i = 0; i < lines.length; i += 4) {

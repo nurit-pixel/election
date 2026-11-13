@@ -145,7 +145,7 @@ export function ReceiptImport() {
 }
 
 const BADGE: Record<MatchedLine["confidence"], { text: string; className: string }> = {
-  barcode: { text: "זוהה לפי ברקוד", className: "bg-fresh-surface text-fresh" },
+  barcode: { text: "זוהה לפי קוד", className: "bg-fresh-surface text-fresh" },
   name: { text: "זוהה לפי שם", className: "bg-fresh-surface text-fresh" },
   loose: { text: "לא בטוח, לבחור", className: "bg-aging-surface text-aging" },
   none: { text: "לא נמצא במאגר", className: "bg-missing-surface text-missing" },
@@ -172,6 +172,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
           name: p.name,
           manufacturer: p.manufacturer,
           isWeighted: p.isWeighted,
+          chainName: null,
           minPrice: p.prices.length ? Math.min(...p.prices.map((x: { price: number }) => Number(x.price))) : null,
         }));
       if (candidates.length === 0) setEmpty(true);
@@ -196,6 +197,12 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
                 <Price value={line.total} />
               </>
             )}
+            {line.barcode && (
+              <>
+                {" · קוד "}
+                <span dir="ltr">{line.barcode}</span>
+              </>
+            )}
           </p>
         </div>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${badge.className}`}>{badge.text}</span>
@@ -217,6 +224,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
               <span className="text-xs text-muted">
                 {candidate.manufacturer}
                 {candidate.isWeighted && " · שקיל"}
+                {candidate.chainName && ` · רק ב${candidate.chainName}`}
               </span>
             </span>
             {candidate.minPrice != null && (

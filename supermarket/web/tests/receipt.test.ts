@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { listQuantity, normalizeBarcode, preselected, queryVariants, type Candidate } from "../lib/receipt-match";
 
-const candidate = (id: number): Candidate => ({ id, name: `מוצר ${id}`, manufacturer: null, isWeighted: false, minPrice: 5 });
+const candidate = (id: number): Candidate => ({ id, name: `מוצר ${id}`, manufacturer: null, isWeighted: false, chainName: null, minPrice: 5 });
 
 describe("ברקוד מחשבונית", () => {
   it("מסיר אפסים מובילים ותווים שאינם ספרות", () => {
@@ -124,5 +124,29 @@ describe("סדר הפוך של כמות ב-PDF", () => {
 describe("פרטי החנות ב-PDF", () => {
   it("מספר ח.פ אינו ברקוד של מוצר", () => {
     expect(parseReceiptText("\u202bח\u202a.\u202cפ \u202a512345678\u202c\u202c\nסופר הדוגמה בע\"מ")).toEqual([]);
+  });
+});
+
+import { normalizeShortCode, shortCodeIsCertain } from "../lib/receipt-match";
+
+describe("קוד פנימי קצר של הרשת", () => {
+  it("נלקח מתחילת שורת המוצר ולא מגודל האריזה", () => {
+    const lines = parseReceiptText("40112 עגבניה שרי 6.90\nקמח לבן 1000 גרם 4.50");
+    expect(lines[0]).toMatchObject({ barcode: "40112", printed: "עגבניה שרי" });
+    expect(lines[1]).toMatchObject({ barcode: null, printed: "קמח לבן 1000 גרם" });
+  });
+  it("ברקוד מלא בשורה שמתחת גובר על קוד קצר", () => {
+    const lines = parseReceiptText("40112 עגבניה שרי 6.90\n7290000042411");
+    expect(lines[0].barcode).toBe("7290000042411");
+  });
+  it("אורך הקוד: 4 עד 6 ספרות", () => {
+    expect(normalizeShortCode("040112")).toBe("40112");
+    expect(normalizeShortCode("123")).toBeNull();
+    expect(normalizeShortCode("7290000042411")).toBeNull();
+  });
+  it("זיהוי בטוח רק כשיש מוצר אחד ששמו תואם לשורה", () => {
+    expect(shortCodeIsCertain("עגבניה שרי", [{ name: "עגבניה שרי אשכולות" }])).toBe(true);
+    expect(shortCodeIsCertain("עגבניה שרי", [{ name: "מלפפון" }])).toBe(false);
+    expect(shortCodeIsCertain("עגבניה שרי", [{ name: "עגבניה שרי" }, { name: "עגבניה תמר" }])).toBe(false);
   });
 });

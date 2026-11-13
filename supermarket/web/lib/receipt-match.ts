@@ -5,6 +5,7 @@ export type ReceiptLine = {
   printed: string;
   /** השם המלא המשוער של המוצר, בלי קיצורים */
   name: string;
+  /** הקוד שהודפס ליד המוצר: ברקוד, או קוד פנימי קצר של הרשת */
   barcode: string | null;
   unit: "unit" | "kg";
   /** יחידות, או ק״ג כשהיחידה היא kg */
@@ -13,7 +14,7 @@ export type ReceiptLine = {
   total: number | null;
 };
 
-/** barcode: זוהה לפי ברקוד · name: כל מילות השם נמצאו · loose: התאמה חלקית, דורש בדיקה */
+/** barcode: זוהה לפי הקוד שבחשבונית · name: כל מילות השם נמצאו · loose: התאמה חלקית, דורש בדיקה */
 export type Confidence = "barcode" | "name" | "loose" | "none";
 
 export type Candidate = {
@@ -21,6 +22,8 @@ export type Candidate = {
   name: string;
   manufacturer: string | null;
   isWeighted: boolean;
+  /** מוצר עם קוד פנימי: שם הרשת היחידה שמוכרת אותו */
+  chainName: string | null;
   /** המחיר הזול ביותר בסניפים שבסביבה */
   minPrice: number | null;
 };
@@ -33,6 +36,21 @@ export function normalizeBarcode(raw: string | null | undefined): string | null 
   if (digits.length < 7 || digits.length > 14) return null;
   const trimmed = digits.replace(/^0+/, "");
   return trimmed.length >= 6 ? trimmed : null;
+}
+
+/** קוד פנימי קצר של רשת (4–6 ספרות), בלי אפסים מובילים. */
+export function normalizeShortCode(raw: string | null | undefined): string | null {
+  const digits = (raw ?? "").replace(/\D/g, "");
+  if (digits.length < 4 || digits.length > 6) return null;
+  const trimmed = digits.replace(/^0+/, "");
+  return trimmed.length >= 3 ? trimmed : null;
+}
+
+/** קוד קצר חוזר על עצמו בין רשתות, ולכן הוא נחשב זיהוי בטוח רק כשיש מוצר אחד ושמו חולק מילה עם השורה. */
+export function shortCodeIsCertain(printed: string, candidates: Pick<Candidate, "name">[]): boolean {
+  if (candidates.length !== 1) return false;
+  const tokens = words(printed).filter((w) => w.length >= 3 && !/\d/.test(w));
+  return tokens.some((w) => candidates[0].name.includes(w));
 }
 
 const words = (text: string) =>
