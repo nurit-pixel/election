@@ -17,6 +17,12 @@ import {
 export const dynamic = "force-dynamic";
 
 const TIP_COOKIE = "alt_tip_seen";
+const WELCOME_COOKIE = "welcome_seen";
+
+async function dismissWelcome() {
+  "use server";
+  (await cookies()).set(WELCOME_COOKIE, "1", { sameSite: "lax", maxAge: 60 * 60 * 24 * 365 * 5, path: "/" });
+}
 
 async function dismissTip() {
   "use server";
@@ -27,7 +33,10 @@ export default async function ListPage() {
   const list = await getList();
   const all = await listSummaries();
   const needsAddress = !(await hasAddress());
-  const showTip = list.items.length > 0 && !(await cookies()).get(TIP_COOKIE);
+  const jar = await cookies();
+  // מדריך הצעדים הראשונים: עד שיש כתובת ורשימה, או עד שהמשתמש סוגר אותו
+  const showWelcome = (needsAddress || list.items.length === 0) && !jar.get(WELCOME_COOKIE);
+  const showTip = list.items.length > 0 && !showWelcome && !jar.get(TIP_COOKIE);
   return (
     <div className="space-y-4 pb-24">
       <h1 className="text-2xl font-extrabold">{list.name}</h1>
@@ -79,8 +88,54 @@ export default async function ListPage() {
           </form>
         )}
       </details>
-      {needsAddress && (
-        <Link href="/settings" className="block rounded-[18px] bg-info-surface p-4 text-sm text-info">
+      {showWelcome && (
+        <section aria-labelledby="welcome-title" className="rounded-pm-lg border-2 border-[var(--pm-button-edge)] bg-card p-4 shadow-[4px_4px_0_var(--pm-turquoise)]">
+          <h2 id="welcome-title" className="text-lg font-extrabold">
+            ברוכים הבאים לפראיירמטר
+          </h2>
+          <p className="mt-1 text-sm text-muted">שלושה צעדים, ורואים איפה הסל שלך הכי משתלם.</p>
+          <ol className="mt-3 space-y-2">
+            {[
+              { done: !needsAddress, title: "מוסיפים כתובת ורדיוס", note: "כדי לדעת אילו סניפים קרובים אליך", href: "/settings#addresses", action: "להגדרות" },
+              { done: list.items.length > 0, title: "בונים רשימה", note: "חיפוש בשם, סריקת ברקוד או צילום חשבונית, כאן למטה" },
+              { done: false, title: "משווים סניפים", note: "הכפתור הכתום מופיע כשיש פריטים ברשימה", href: list.items.length > 0 && !needsAddress ? "/compare" : undefined, action: "להשוואה" },
+            ].map((step, index) => (
+              <li key={step.title} className="flex items-start gap-3">
+                <span
+                  aria-hidden
+                  className={`grid size-8 shrink-0 place-items-center rounded-[10px] text-sm font-extrabold ${
+                    step.done ? "bg-fresh text-card" : "bg-pm-turquoise text-pm-purple"
+                  }`}
+                >
+                  {step.done ? "✓" : index + 1}
+                </span>
+                <div className="min-w-0 flex-1 text-sm">
+                  <div className={`font-bold ${step.done ? "text-muted line-through" : ""}`}>
+                    {step.title}
+                    {step.done && <span className="sr-only"> (בוצע)</span>}
+                  </div>
+                  {!step.done && <div className="text-muted">{step.note}</div>}
+                </div>
+                {!step.done && step.href && (
+                  <Link href={step.href} className="shrink-0 rounded-[11px] bg-subtle px-3 py-2 text-sm font-bold">
+                    {step.action}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ol>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-subtle pt-3 text-sm">
+            <Link href="/help" className="font-bold text-link underline underline-offset-4">
+              ההסבר המלא
+            </Link>
+            <form action={dismissWelcome}>
+              <button className="min-h-11 px-2 text-muted">הבנתי, אל תציגו שוב</button>
+            </form>
+          </div>
+        </section>
+      )}
+      {needsAddress && !showWelcome && (
+        <Link href="/settings#addresses" className="block rounded-[18px] bg-info-surface p-4 text-sm text-info">
           <span className="font-bold">מתחילים מכתובת</span>
           <span className="mt-1 block">
             מוסיפים בהגדרות כתובת ורדיוס, ואנחנו משווים את הסל בסניפים שלידך ←

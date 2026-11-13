@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   chainStatuses,
   MAX_ADDRESSES,
@@ -71,6 +72,15 @@ export default async function SettingsPage({
           <button className="min-h-11 shrink-0 rounded-[13px] bg-subtle px-4 text-sm font-bold">יציאה</button>
         </form>
       </div>
+      <Link
+        href="/help"
+        className="flex min-h-12 items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 font-bold shadow-card"
+      >
+        איך זה עובד
+        <span aria-hidden className="text-pm-pink">
+          ←
+        </span>
+      </Link>
       <details open id="addresses" className="group scroll-mt-4 space-y-3">
         <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
           <h2 className="text-lg font-bold">כתובות ורדיוס</h2>
