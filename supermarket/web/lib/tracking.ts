@@ -1,15 +1,13 @@
 import "server-only";
 import { pool } from "./db";
 import { enqueue } from "./settings";
+import { chainVisible, storeInRadius } from "./scope";
+import { currentUserId, uid } from "./session";
 
 const STALE_HOURS = Number(process.env.STALE_PRICE_HOURS ?? 36);
 
-/** סינון לסניפים שברדיוס הכתובות השמורות (אם יש כתובות) ולרשתות שאינן מוסתרות */
-const IN_RADIUS = `
-  NOT c.hidden AND (
-    NOT EXISTS (SELECT 1 FROM addresses WHERE lat IS NOT NULL)
-    OR EXISTS (SELECT 1 FROM addresses a WHERE a.lat IS NOT NULL AND s.lat IS NOT NULL
-               AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km))`;
+/** סינון לסניפים שברדיוס הכתובות של המשתמש (אם יש לו כתובות) ולרשתות שלא הסתיר */
+const inRadius = (user: number) => `${chainVisible(user)} AND ${storeInRadius(user)}`;
 
 export type ProductStorePrice = {
   storePk: number;
@@ -41,16 +39,18 @@ export type ProductDetails = {
 };
 
 export async function getProduct(id: number): Promise<ProductDetails | null> {
+  const user = await uid();
+  const IN_RADIUS = inRadius(user);
   const product = await pool.query(
     `SELECT p.id, p.barcode, p.name, p.manufacturer, p.is_weighted,
             (SELECT name FROM chains WHERE key = p.internal_chain) AS chain_name,
             t.product_id IS NOT NULL AS tracked, t.target_price,
             ARRAY(SELECT DISTINCT l.name FROM list_item_products ip
                   JOIN list_items i ON i.id = ip.item_id JOIN lists l ON l.id = i.list_id
-                  WHERE ip.product_id = p.id) AS in_lists
-     FROM products p LEFT JOIN tracked_products t ON t.product_id = p.id
+                  WHERE ip.product_id = p.id AND l.user_id = $2) AS in_lists
+     FROM products p LEFT JOIN tracked_products t ON t.product_id = p.id AND t.user_id = $2
      WHERE p.id = $1`,
-    [id],
+    [id, user],
   );
   if (product.rows.length === 0) return null;
   const [prices, history] = await Promise.all([
@@ -117,15 +117,15 @@ export async function getProduct(id: number): Promise<ProductDetails | null> {
 /** הוספה למעקב (או עדכון מחיר היעד). המחיר הנוכחי נשמר מיד בהיסטוריה. */
 export async function trackProduct(productId: number, targetPrice: number | null): Promise<void> {
   await pool.query(
-    `INSERT INTO tracked_products (product_id, target_price) VALUES ($1, $2)
-     ON CONFLICT (product_id) DO UPDATE SET target_price = EXCLUDED.target_price`,
-    [productId, targetPrice],
+    `INSERT INTO tracked_products (product_id, target_price, user_id) VALUES ($1, $2, $3)
+     ON CONFLICT (user_id, product_id) DO UPDATE SET target_price = EXCLUDED.target_price`,
+    [productId, targetPrice, await uid()],
   );
   await enqueue("track");
 }
 
 export async function untrackProduct(productId: number): Promise<void> {
-  await pool.query(`DELETE FROM tracked_products WHERE product_id = $1`, [productId]);
+  await pool.query(`DELETE FROM tracked_products WHERE product_id = $1 AND user_id = $2`, [productId, await uid()]);
 }
 
 export type TrackedProduct = {
@@ -138,6 +138,8 @@ export type TrackedProduct = {
 };
 
 export async function listTracked(limit = 200): Promise<{ products: TrackedProduct[]; total: number }> {
+  const user = await uid();
+  const IN_RADIUS = inRadius(user);
   const [rows, total] = await Promise.all([
     pool.query(
       `SELECT p.id, p.name, p.is_weighted, t.target_price,
@@ -145,10 +147,11 @@ export async function listTracked(limit = 200): Promise<{ products: TrackedProdu
                  JOIN chains c ON c.key = s.chain_key
                 WHERE pr.product_id = p.id AND ${IN_RADIUS}) AS best_price
        FROM tracked_products t JOIN products p ON p.id = t.product_id
+       WHERE t.user_id = $2
        ORDER BY (t.target_price IS NULL), t.created_at DESC, p.name LIMIT $1`,
-      [limit],
+      [limit, user],
     ),
-    pool.query(`SELECT count(*) FROM tracked_products`),
+    pool.query(`SELECT count(*) FROM tracked_products WHERE user_id = $1`, [user]),
   ]);
   return {
     total: Number(total.rows[0].count),
@@ -186,9 +189,10 @@ export async function listAlerts(limit = 200): Promise<AlertRow[]> {
      JOIN products p ON p.id = a.product_id
      JOIN chains c ON c.key = a.chain_key
      LEFT JOIN stores s ON s.id = a.store_pk
+     WHERE a.user_id = $2
      ORDER BY a.day DESC, (a.kind = 'target') DESC, a.pct NULLS LAST, p.name
      LIMIT $1`,
-    [limit],
+    [limit, await uid()],
   );
   const num = (v: unknown) => (v == null ? null : Number(v));
   return rows.map((r) => ({
@@ -209,7 +213,9 @@ export async function listAlerts(limit = 200): Promise<AlertRow[]> {
 
 export async function unreadAlertCount(): Promise<number> {
   try {
-    const { rows } = await pool.query(`SELECT count(*) FROM alerts WHERE read_at IS NULL`);
+    const user = await currentUserId();
+    if (user == null) return 0; // מסך הכניסה
+    const { rows } = await pool.query(`SELECT count(*) FROM alerts WHERE read_at IS NULL AND user_id = $1`, [user]);
     return Number(rows[0].count);
   } catch {
     return 0; // המסד עוד לא מוכן (הפעלה ראשונה)
@@ -217,5 +223,5 @@ export async function unreadAlertCount(): Promise<number> {
 }
 
 export async function markAlertsRead(): Promise<void> {
-  await pool.query(`UPDATE alerts SET read_at = now() WHERE read_at IS NULL`);
+  await pool.query(`UPDATE alerts SET read_at = now() WHERE read_at IS NULL AND user_id = $1`, [await uid()]);
 }

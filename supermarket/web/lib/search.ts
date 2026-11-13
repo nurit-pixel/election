@@ -1,5 +1,7 @@
 import "server-only";
 import { pool } from "./db";
+import { chainVisible, storeInRadius } from "./scope";
+import { uid } from "./session";
 
 export type StorePrice = {
   storePk: number;
@@ -31,11 +33,12 @@ export type ProductResult = {
 const STALE_HOURS = Number(process.env.STALE_PRICE_HOURS ?? 36);
 
 /** חיפוש לפי ברקוד (ספרות בלבד) או לפי כל המילים בשם המוצר.
- * המחירים מוצגים רק מסניפים שברדיוס הכתובות השמורות (אם יש כאלה). */
+ * המחירים מוצגים רק מסניפים שברדיוס הכתובות של המשתמש (אם יש כאלה). */
 export async function searchProducts(query: string, limit = 30): Promise<ProductResult[]> {
   const q = query.trim();
   if (q.length < 2) return [];
 
+  const user = await uid();
   const params: unknown[] = [];
   let where: string;
   if (/^\d{4,14}$/.test(q)) {
@@ -82,10 +85,8 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
      FROM matched m
      LEFT JOIN prices pr ON pr.product_id = m.id
      LEFT JOIN stores s ON s.id = pr.store_pk
-       AND (NOT EXISTS (SELECT 1 FROM addresses WHERE lat IS NOT NULL)
-            OR EXISTS (SELECT 1 FROM addresses a WHERE a.lat IS NOT NULL AND s.lat IS NOT NULL
-                       AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km))
-     LEFT JOIN chains c ON c.key = s.chain_key AND NOT c.hidden
+       AND ${storeInRadius(user)}
+     LEFT JOIN chains c ON c.key = s.chain_key AND ${chainVisible(user)}
      GROUP BY m.id, m.barcode, m.internal_chain, m.name, m.manufacturer, m.is_weighted, m.store_count
      ORDER BY ${rank("m")}, m.store_count DESC, length(m.name), m.name`,
     params,

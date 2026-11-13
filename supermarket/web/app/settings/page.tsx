@@ -1,5 +1,6 @@
 import {
   chainStatuses,
+  MAX_ADDRESSES,
   listAddresses,
   listClubs,
   overview,
@@ -10,9 +11,12 @@ import {
 import { cookies } from "next/headers";
 import { formatUpdated } from "@/lib/format";
 import { THEME_COOKIE } from "@/lib/theme";
+import { uid } from "@/lib/session";
+import { getUser } from "@/lib/users";
 import {
   addAddress,
   deleteAddress,
+  logout,
   requestPrices,
   requestStores,
   setClub,
@@ -34,12 +38,13 @@ const REQUEST_LABELS: Record<string, string> = {
 };
 
 export default async function SettingsPage() {
-  const [addresses, chains, info, clubs, threshold] = await Promise.all([
+  const [addresses, chains, info, clubs, threshold, user] = await Promise.all([
     listAddresses(),
     chainStatuses(),
     overview(),
     listClubs(),
     splitMinSaving(),
+    uid().then(getUser),
   ]);
   const saved = (await cookies()).get(THEME_COOKIE)?.value;
   const theme = saved === "light" || saved === "dark" ? saved : "system";
@@ -47,6 +52,17 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-3">
       <h1 className="text-2xl font-extrabold">הגדרות</h1>
+      <div className="flex items-center justify-between gap-3 rounded-pm-lg border border-line bg-card p-4 shadow-card">
+        <div className="min-w-0">
+          <div className="truncate font-bold">{user?.name ?? "החשבון שלי"}</div>
+          <div className="truncate text-sm text-muted" dir="ltr">
+            {user?.email}
+          </div>
+        </div>
+        <form action={logout}>
+          <button className="min-h-11 shrink-0 rounded-[13px] bg-subtle px-4 text-sm font-bold">יציאה</button>
+        </form>
+      </div>
       <details open className="group space-y-3">
         <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
           <h2 className="text-lg font-bold">כתובות ורדיוס</h2>
@@ -107,7 +123,13 @@ export default async function SettingsPage() {
           ))}
         </ul>
 
-        <form action={addAddress} className="space-y-2 rounded-pm-lg border border-dashed border-line bg-card p-4">
+        {addresses.length >= MAX_ADDRESSES && (
+          <p className="text-sm text-muted">אפשר לשמור עד {MAX_ADDRESSES} כתובות. כדי להוסיף כתובת, מוחקים אחת.</p>
+        )}
+        <form
+          action={addAddress}
+          className={`space-y-2 rounded-pm-lg border border-dashed border-line bg-card p-4 ${addresses.length >= MAX_ADDRESSES ? "hidden" : ""}`}
+        >
           <div className="font-semibold">כתובת חדשה</div>
           <input
             name="label"

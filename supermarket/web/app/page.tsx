@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getList, listSummaries, type ListItem } from "@/lib/lists";
+import { hasAddress } from "@/lib/settings";
 import { cookies } from "next/headers";
 import { SearchBar } from "@/components/SearchBar";
 import { QuantityControl } from "@/components/QuantityControl";
@@ -25,6 +26,7 @@ async function dismissTip() {
 export default async function ListPage() {
   const list = await getList();
   const all = await listSummaries();
+  const needsAddress = !(await hasAddress());
   const showTip = list.items.length > 0 && !(await cookies()).get(TIP_COOKIE);
   return (
     <div className="space-y-4 pb-24">
@@ -77,6 +79,14 @@ export default async function ListPage() {
           </form>
         )}
       </details>
+      {needsAddress && (
+        <Link href="/settings" className="block rounded-[18px] bg-info-surface p-4 text-sm text-info">
+          <span className="font-bold">מתחילים מכתובת</span>
+          <span className="mt-1 block">
+            מוסיפים בהגדרות כתובת ורדיוס, ואנחנו משווים את הסל בסניפים שלידך ←
+          </span>
+        </Link>
+      )}
       <SearchBar />
       <Link
         href="/receipt"

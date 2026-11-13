@@ -1,5 +1,7 @@
 import "server-only";
 import { pool } from "./db";
+import { chainVisible, userAddresses } from "./scope";
+import { uid } from "./session";
 import { priceBasket, rankStores, type BasketItem, type StoreBasket, type StorePrice } from "./basket";
 import type { Promo } from "./promos";
 import { getList, type ShoppingList } from "./lists";
@@ -53,12 +55,13 @@ function toStore(r: Record<string, unknown>): StoreInfo {
 
 /** סניפים עם מחירים שנמצאים ברדיוס של כתובת שמורה, עם המרחק מהכתובת הקרובה. */
 export async function storesInRadius(): Promise<StoreInfo[]> {
+  const user = await uid();
   const { rows } = await pool.query(
     `SELECT DISTINCT ON (s.id) ${STORE_COLUMNS},
             distance_km(a.lat, a.lng, s.lat, s.lng) AS distance_km, a.label AS nearest_address
      FROM stores s
-     JOIN chains c ON c.key = s.chain_key AND NOT c.hidden
-     JOIN addresses a ON a.lat IS NOT NULL AND s.lat IS NOT NULL
+     JOIN chains c ON c.key = s.chain_key AND ${chainVisible(user)}
+     JOIN ${userAddresses(user)} ON s.lat IS NOT NULL
       AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km
      WHERE s.prices_file_time IS NOT NULL
      ORDER BY s.id, distance_km`,
@@ -136,7 +139,7 @@ async function pricesByStore(storePks: number[], productIds: number[]) {
 
 /** המועדונים שסומנו בהגדרות, לפי רשת. */
 async function memberClubs(): Promise<Map<string, number[]>> {
-  const { rows } = await pool.query(`SELECT chain_key, club_id FROM clubs WHERE member`);
+  const { rows } = await pool.query(`SELECT chain_key, club_id FROM user_clubs WHERE user_id = $1`, [await uid()]);
   const byChain = new Map<string, number[]>();
   for (const r of rows) byChain.set(r.chain_key, [...(byChain.get(r.chain_key) ?? []), r.club_id]);
   return byChain;
@@ -241,12 +244,13 @@ export async function compareSplits(): Promise<SplitComparison> {
 
 /** הסל של הרשימה בסניף אחד. */
 export async function storeBasket(storePk: number): Promise<RankedStore | null> {
+  const user = await uid();
   const [list, storeRows, clubs] = await Promise.all([
     getList(),
     pool.query(
       `SELECT ${STORE_COLUMNS},
-              (SELECT min(distance_km(a.lat, a.lng, s.lat, s.lng)) FROM addresses a
-                WHERE a.lat IS NOT NULL AND s.lat IS NOT NULL) AS distance_km,
+              (SELECT min(distance_km(a.lat, a.lng, s.lat, s.lng)) FROM ${userAddresses(user)}
+                WHERE s.lat IS NOT NULL) AS distance_km,
               NULL AS nearest_address
        FROM stores s JOIN chains c ON c.key = s.chain_key WHERE s.id = $1`,
       [storePk],

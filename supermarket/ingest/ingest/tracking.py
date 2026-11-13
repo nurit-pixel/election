@@ -117,14 +117,41 @@ def snapshot(conn) -> int:
     ).rowcount
 
 
+def _user_watched(user_id: int) -> str:
+    """המוצרים שהמשתמש עוקב אחריהם או שנמצאים ברשימות שלו."""
+    return f"""
+        SELECT product_id FROM tracked_products WHERE user_id = {int(user_id)}
+        UNION
+        SELECT ip.product_id FROM list_item_products ip
+        JOIN list_items i ON i.id = ip.item_id JOIN lists l ON l.id = i.list_id
+        WHERE l.user_id = {int(user_id)}
+    """
+
+
+def _user_in_radius(user_id: int) -> str:
+    """הסניף (s) ברדיוס של אחת מכתובות המשתמש; למשתמש בלי כתובות, כל הסניפים."""
+    return f"""
+        (NOT EXISTS (SELECT 1 FROM addresses WHERE user_id = {int(user_id)} AND lat IS NOT NULL)
+         OR EXISTS (SELECT 1 FROM addresses a WHERE a.user_id = {int(user_id)} AND a.lat IS NOT NULL
+                    AND s.lat IS NOT NULL
+                    AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km))
+    """
+
+
 def create_alerts(conn, threshold_pct: float) -> int:
+    """התראות לכל משתמש: לפי המוצרים שלו, הסניפים שברדיוס שלו והרשתות שלא הסתיר."""
+    users = [row[0] for row in conn.execute("SELECT id FROM users ORDER BY id").fetchall()]
+    return sum(create_user_alerts(conn, user_id, threshold_pct) for user_id in users)
+
+
+def create_user_alerts(conn, user_id: int, threshold_pct: float) -> int:
     """יוצר התראות ליום האחרון שיש לו היסטוריה, מול היום הקודם של אותו מוצר באותה רשת."""
     rows = conn.execute(
         f"""WITH latest AS (      -- היום האחרון והיום שלפניו, לכל מוצר ורשת
                 SELECT product_id, chain_key, max(day) AS day,
                        (array_agg(DISTINCT day ORDER BY day DESC))[2] AS prev_day
                 FROM price_history h JOIN stores s ON s.id = h.store_pk
-                WHERE h.product_id IN ({_WATCHED})
+                WHERE h.product_id IN ({_user_watched(user_id)}) AND {_user_in_radius(user_id)}
                 GROUP BY product_id, chain_key
             )
             SELECT l.product_id, l.chain_key,
@@ -137,27 +164,30 @@ def create_alerts(conn, threshold_pct: float) -> int:
                        AS new_price,
                    t.target_price
             FROM latest l
-            JOIN chains c ON c.key = l.chain_key AND NOT c.hidden
-            JOIN stores s ON s.chain_key = l.chain_key AND {_IN_RADIUS}
+            JOIN chains c ON c.key = l.chain_key AND NOT EXISTS (
+                SELECT 1 FROM user_hidden_chains hc
+                WHERE hc.user_id = %(user)s AND hc.chain_key = c.key)
+            JOIN stores s ON s.chain_key = l.chain_key AND {_user_in_radius(user_id)}
             JOIN price_history cur ON cur.product_id = l.product_id AND cur.store_pk = s.id
                                   AND cur.day = l.day
             LEFT JOIN price_history prev ON prev.product_id = l.product_id
                                         AND prev.store_pk = s.id AND prev.day = l.prev_day
-            LEFT JOIN tracked_products t ON t.product_id = l.product_id
-            GROUP BY l.product_id, l.chain_key, l.day, t.target_price"""
+            LEFT JOIN tracked_products t ON t.product_id = l.product_id AND t.user_id = %(user)s
+            GROUP BY l.product_id, l.chain_key, l.day, t.target_price""",
+        {"user": user_id},
     ).fetchall()
     created = 0
-    insert = """INSERT INTO alerts (product_id, chain_key, store_pk, kind, day, old_price,
+    insert = """INSERT INTO alerts (user_id, product_id, chain_key, store_pk, kind, day, old_price,
                                     new_price, pct, target_price)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (product_id, chain_key, kind, day) DO NOTHING"""
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (user_id, product_id, chain_key, kind, day) DO NOTHING"""
     by_product: dict[int, list] = {}
     for row in rows:
         product_id, chain_key, store_pk, day, old, new, _target = row
         by_product.setdefault(product_id, []).append(row)
         if is_significant(old, new, threshold_pct):
-            created += conn.execute(insert, (product_id, chain_key, store_pk, "change", day, old,
-                                             new, change_pct(old, new), None)).rowcount
+            created += conn.execute(insert, (user_id, product_id, chain_key, store_pk, "change", day,
+                                             old, new, change_pct(old, new), None)).rowcount
 
     # מחיר יעד: התראה אחת למוצר, לפי המחיר הזול מבין כל הרשתות
     for product_id, chain_rows in by_product.items():
@@ -171,11 +201,12 @@ def create_alerts(conn, threshold_pct: float) -> int:
         if not crossed_target(old, new, target):
             continue
         already = conn.execute(
-            "SELECT 1 FROM alerts WHERE product_id = %s AND kind = 'target' AND day = %s",
-            (product_id, day)).fetchone()
+            """SELECT 1 FROM alerts
+               WHERE user_id = %s AND product_id = %s AND kind = 'target' AND day = %s""",
+            (user_id, product_id, day)).fetchone()
         if already is None:
-            created += conn.execute(insert, (product_id, chain_key, store_pk, "target", day, old,
-                                             new, change_pct(old, new) if old else None,
+            created += conn.execute(insert, (user_id, product_id, chain_key, store_pk, "target", day,
+                                             old, new, change_pct(old, new) if old else None,
                                              target)).rowcount
     return created
 
@@ -190,32 +221,46 @@ def update(conn, cfg: Config) -> tuple[int, int]:
 
 
 def send_digest(conn, cfg: Config) -> int:
-    """שולח מייל אחד עם כל ההתראות שעוד לא נשלחו. מחזיר כמה התראות נשלחו (0 אם אין,
-    או אם המייל לא מוגדר)."""
-    if not (cfg.smtp_host and cfg.alert_email_to):
+    """שולח לכל משתמש מייל אחד עם ההתראות שלו שעוד לא נשלחו, לכתובת ה-Gmail שלו.
+    מחזיר כמה התראות נשלחו (0 אם אין, או אם המייל לא מוגדר)."""
+    if not cfg.smtp_host:
         return 0
-    rows = conn.execute(
-        """SELECT a.id, p.name, c.name, s.name, a.kind, a.old_price, a.new_price, a.pct,
-                  a.target_price
-           FROM alerts a
-           JOIN products p ON p.id = a.product_id
-           JOIN chains c ON c.key = a.chain_key
-           LEFT JOIN stores s ON s.id = a.store_pk
-           WHERE a.emailed_at IS NULL
-           ORDER BY a.kind DESC, a.pct NULLS LAST, p.name"""
+    users = conn.execute(
+        """SELECT u.id, u.email FROM users u
+           WHERE position('@' in u.email) > 0
+             AND EXISTS (SELECT 1 FROM alerts a WHERE a.user_id = u.id AND a.emailed_at IS NULL)
+           ORDER BY u.id"""
     ).fetchall()
-    if not rows:
-        return 0
-    alerts = [Alert(*row[1:]) for row in rows]
-    message = build_digest(alerts, date.today(), cfg.smtp_from or cfg.smtp_user,
-                           cfg.alert_email_to, cfg.app_url)
-    smtp_class = smtplib.SMTP_SSL if cfg.smtp_port == 465 else smtplib.SMTP
-    with smtp_class(cfg.smtp_host, cfg.smtp_port, timeout=30) as smtp:
-        if cfg.smtp_port != 465 and cfg.smtp_starttls:
-            smtp.starttls()
-        if cfg.smtp_user:
-            smtp.login(cfg.smtp_user, cfg.smtp_password)
-        smtp.send_message(message)
-    conn.execute("UPDATE alerts SET emailed_at = now() WHERE id = ANY(%s)", ([r[0] for r in rows],))
-    log.info("נשלח מייל יומי עם %d התראות", len(rows))
-    return len(rows)
+    sent = 0
+    for user_id, email in users:
+        rows = conn.execute(
+            """SELECT a.id, p.name, c.name, s.name, a.kind, a.old_price, a.new_price, a.pct,
+                      a.target_price
+               FROM alerts a
+               JOIN products p ON p.id = a.product_id
+               JOIN chains c ON c.key = a.chain_key
+               LEFT JOIN stores s ON s.id = a.store_pk
+               WHERE a.emailed_at IS NULL AND a.user_id = %s
+               ORDER BY a.kind DESC, a.pct NULLS LAST, p.name""",
+            (user_id,),
+        ).fetchall()
+        alerts = [Alert(*row[1:]) for row in rows]
+        message = build_digest(alerts, date.today(), cfg.smtp_from or cfg.smtp_user, [email],
+                               cfg.app_url)
+        try:
+            smtp_class = smtplib.SMTP_SSL if cfg.smtp_port == 465 else smtplib.SMTP
+            with smtp_class(cfg.smtp_host, cfg.smtp_port, timeout=30) as smtp:
+                if cfg.smtp_port != 465 and cfg.smtp_starttls:
+                    smtp.starttls()
+                if cfg.smtp_user:
+                    smtp.login(cfg.smtp_user, cfg.smtp_password)
+                smtp.send_message(message)
+        except (OSError, smtplib.SMTPException) as error:  # משתמש אחד שנכשל לא עוצר את השאר
+            log.warning("המייל היומי ל-%s נכשל: %s", email, error)
+            continue
+        conn.execute("UPDATE alerts SET emailed_at = now() WHERE id = ANY(%s)",
+                     ([r[0] for r in rows],))
+        sent += len(rows)
+    if sent:
+        log.info("נשלחו %d התראות במייל היומי ל-%d משתמשים", sent, len(users))
+    return sent

@@ -90,7 +90,8 @@ def main() -> int:
 
         if args.command == "address":
             address_id = conn.execute(
-                "INSERT INTO addresses (label, address, radius_km) VALUES (%s, %s, %s) RETURNING id",
+                """INSERT INTO addresses (label, address, radius_km, user_id)
+                   VALUES (%s, %s, %s, (SELECT min(id) FROM users)) RETURNING id""",
                 (args.label, args.address, args.radius),
             ).fetchone()[0]
             from . import worker

@@ -50,14 +50,40 @@ cp .env.example .env && nano .env
 | משתנה | ערך |
 |---|---|
 | `POSTGRES_PASSWORD` | סיסמה אקראית ארוכה |
-| `FAMILY_PASSWORD` | הסיסמה המשפחתית לכניסה |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | מפתחות הכניסה עם Google (ראו "כניסה עם Google" למטה) |
 | `SESSION_SECRET` | מחרוזת אקראית (למשל הפלט של `openssl rand -hex 32`) |
 | `APP_DOMAIN` | הדומיין, למשל `sal.example.org` |
-| `APP_URL` | `https://` + הדומיין (לקישור במייל) |
+| `APP_URL` | `https://` + הדומיין, בלי לוכסן בסוף (משמש לכניסה עם Google ולקישור במייל) |
 | `WEB_BIND` | `127.0.0.1` (האפליקציה נגישה רק דרך Caddy) |
 
-למייל היומי המרוכז: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `ALERT_EMAIL_TO`.
-בלי אלה ההתראות מופיעות רק באפליקציה.
+למייל היומי המרוכז: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`. כל משתמש מקבל את
+ההתראות שלו לכתובת ה-Gmail שלו. בלי אלה ההתראות מופיעות רק באפליקציה.
+
+### כניסה עם Google
+
+הכניסה לאפליקציה היא עם חשבון Google. לכל משתמש רשימות, כתובות, מועדונים, הגדרות, מעקב והתראות משלו.
+מגדירים פעם אחת, בחינם:
+
+1. נכנסים ל-[console.cloud.google.com](https://console.cloud.google.com), יוצרים פרויקט (למשל "praiermeter").
+2. **APIs & Services → OAuth consent screen**: סוג **External**, שם האפליקציה ומייל ליצירת קשר. בסיום לוחצים
+   **Publish app** (אחרת רק "משתמשי בדיקה" שהוספתם יוכלו להיכנס).
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID**, סוג **Web application**.
+   בשדה **Authorized redirect URIs** מוסיפים בדיוק: `https://<הדומיין>/api/auth/google/callback`
+4. מעתיקים את ה-Client ID וה-Client secret לקובץ `.env` בשרת (לא ל-Git):
+
+   ```
+   GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=...
+   APP_URL=https://<הדומיין>
+   ```
+
+5. מפעילים מחדש: `./scripts/update.sh --force`.
+
+- **מי יכול להיכנס:** כל מי שיש לו חשבון Google. כדי להגביל, רושמים ב-`ALLOWED_EMAILS` את הכתובות המורשות, מופרדות בפסיק.
+- **הנתונים הקיימים** (רשימות, כתובות, מועדונים, מעקב) עוברים לחשבון ה-Google הראשון שנכנס. משתמשים אחרים מתחילים מרשימה ריקה.
+- **עד שמגדירים את Google** הכניסה ממשיכה לעבוד עם `FAMILY_PASSWORD`, לחשבון משותף אחד. ברגע ש-`GOOGLE_CLIENT_ID`
+  ו-`GOOGLE_CLIENT_SECRET` מוגדרים, הכניסה בסיסמה נכבית ואפשר למחוק את `FAMILY_PASSWORD`.
+- כל משתמש יכול לשמור עד `MAX_ADDRESSES_PER_USER` (3) כתובות. המחירים נטענים לסניפים שברדיוס של כל הכתובות של כל המשתמשים.
 
 הפעלה:
 
@@ -149,8 +175,10 @@ gunzip -c backups/supermarket-YYYYMMDD-HHMM.sql.gz | docker compose exec -T db p
 | כתובת "לא נמצאה" | לכתוב רחוב, מספר ועיר. |
 | הרבה סניפים "במיקום משוער" | שירות ה-geocoding לא מצא את הכתובת המדויקת ומיקם לפי העיר. אפשר להחליף שירות ב-`GEOCODER_URL` (כל שירות תואם Nominatim). |
 | סריקת ברקוד לא נפתחת | האתר חייב להיות ב-HTTPS, ולאשר לדפדפן גישה למצלמה. |
-| לא מגיע מייל | `docker compose exec ingest python -m ingest digest` מדפיס אם נשלח; לבדוק את `SMTP_*` ו-`ALERT_EMAIL_TO`. |
-| שכחתם את הסיסמה | לשנות `FAMILY_PASSWORD` ב-`.env` ולהריץ שוב את פקודת ההפעלה. כל המכשירים יתנתקו. |
+| לא מגיע מייל | `docker compose exec ingest python -m ingest digest` מדפיס אם נשלח; לבדוק את `SMTP_*`. |
+| "redirect_uri_mismatch" בכניסה עם Google | הכתובת ב-Authorized redirect URIs חייבת להיות זהה ל-`APP_URL` + `/api/auth/google/callback` (כולל `https`, בלי לוכסן מיותר). |
+| "החשבון הזה לא מורשה" | הכתובת לא מופיעה ב-`ALLOWED_EMAILS`. |
+| לנתק את כל המכשירים | לשנות `SESSION_SECRET` ב-`.env` ולהריץ שוב את פקודת ההפעלה. |
 
 ## מה נבדק ומה לא
 
@@ -163,4 +191,5 @@ HTTPS דרך Caddy עם תעודה מקומית (כולל הפניה מ-HTTP ו�
   הן נטענות עם `il-supermarket-scraper`; אם רשת נכשלת גם מהשרת, השגיאה תופיע במסך ההגדרות.
 - תעודת HTTPS אמיתית מ-Let's Encrypt על הדומיין שלכם, וסריקת ברקוד במצלמה של טלפון.
 - קריאת חשבונית מצילום אמיתי מהטלפון (נבדקה על חשבוניות מודפסות שיוצרו לבדיקה ועל PDF דיגיטלי).
+- כניסה מול Google האמיתי (נבדקה מול שרת מדומה שמחזיר תשובות באותו מבנה: כניסה, ביטול, חשבון לא מאומת, state מזויף).
 - שליחת מייל דרך שרת SMTP אמיתי (נבדקה רק מול שרת דואר מקומי).

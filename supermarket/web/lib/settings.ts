@@ -1,5 +1,6 @@
 import "server-only";
 import { pool } from "./db";
+import { uid } from "./session";
 
 const STALE_HOURS = Number(process.env.STALE_PRICE_HOURS ?? 36);
 
@@ -28,7 +29,9 @@ export async function listAddresses(): Promise<Address[]> {
      LEFT JOIN stores s
        ON a.lat IS NOT NULL AND s.lat IS NOT NULL
       AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km
+     WHERE a.user_id = $1
      GROUP BY a.id ORDER BY a.id`,
+    [await uid()],
   );
   return rows.map((r) => ({
     id: r.id,
@@ -69,7 +72,8 @@ export type ChainStatus = {
 
 export async function chainStatuses(): Promise<ChainStatus[]> {
   const { rows } = await pool.query(
-    `SELECT c.key, c.name, c.is_pharm, c.hidden,
+    `SELECT c.key, c.name, c.is_pharm,
+            EXISTS (SELECT 1 FROM user_hidden_chains h WHERE h.user_id = $2 AND h.chain_key = c.key) AS hidden,
             (SELECT count(*) FROM stores s WHERE s.chain_key = c.key) AS stores,
             (SELECT count(*) FROM stores s WHERE s.chain_key = c.key AND s.lat IS NOT NULL) AS geocoded,
             (SELECT count(*) FROM stores s WHERE s.chain_key = c.key
@@ -87,7 +91,7 @@ export async function chainStatuses(): Promise<ChainStatus[]> {
                SELECT status, started_at, files_loaded, files_failed, error FROM ingest_runs
                WHERE chain_key = c.key AND kind = 'promos' ORDER BY id DESC LIMIT 1) r) AS promos_run
      FROM chains c ORDER BY c.sort_order`,
-    [STALE_HOURS],
+    [STALE_HOURS, await uid()],
   );
   const run = (r: Record<string, unknown> | null): RunInfo | null =>
     r && {
@@ -171,9 +175,12 @@ export type Club = { chainKey: string; chainName: string; clubId: number; name: 
 /** מועדוני הלקוחות שנמצאו בקבצי המבצעים, לפי רשת. */
 export async function listClubs(): Promise<Club[]> {
   const { rows } = await pool.query(
-    `SELECT cl.chain_key, c.name AS chain_name, cl.club_id, cl.name, cl.member
+    `SELECT cl.chain_key, c.name AS chain_name, cl.club_id, cl.name,
+            EXISTS (SELECT 1 FROM user_clubs u WHERE u.user_id = $1 AND u.chain_key = cl.chain_key
+                    AND u.club_id = cl.club_id) AS member
      FROM clubs cl JOIN chains c ON c.key = cl.chain_key
      ORDER BY c.sort_order, cl.club_id`,
+    [await uid()],
   );
   return rows.map((r) => ({
     chainKey: r.chain_key,
@@ -186,21 +193,84 @@ export async function listClubs(): Promise<Club[]> {
 
 const DEFAULT_SPLIT_MIN_SAVING = Number(process.env.SPLIT_MIN_SAVING ?? 20);
 
-/** סף החיסכון (בש"ח) שמעליו מוצג פיצול לשני סניפים. */
+/** סף החיסכון (בש"ח) שמעליו מוצג למשתמש פיצול לשני סניפים. */
 export async function splitMinSaving(): Promise<number> {
-  const { rows } = await pool.query(`SELECT value FROM app_settings WHERE key = 'split_min_saving'`);
+  const { rows } = await pool.query(
+    `SELECT value FROM user_settings WHERE user_id = $1 AND key = 'split_min_saving'`,
+    [await uid()],
+  );
   const value = rows.length > 0 ? Number(rows[0].value) : NaN;
   return Number.isFinite(value) && value >= 0 ? value : DEFAULT_SPLIT_MIN_SAVING;
 }
 
 export async function setSplitMinSaving(value: number): Promise<void> {
   await pool.query(
-    `INSERT INTO app_settings (key, value) VALUES ('split_min_saving', $1)
-     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-    [String(value)],
+    `INSERT INTO user_settings (user_id, key, value) VALUES ($1, 'split_min_saving', $2)
+     ON CONFLICT (user_id, key) DO UPDATE SET value = EXCLUDED.value`,
+    [await uid(), String(value)],
   );
 }
 
 export async function setChainHidden(chainKey: string, hidden: boolean): Promise<void> {
-  await pool.query(`UPDATE chains SET hidden = $2 WHERE key = $1`, [chainKey, hidden]);
+  const user = await uid();
+  if (hidden) {
+    await pool.query(
+      `INSERT INTO user_hidden_chains (user_id, chain_key)
+       SELECT $1, key FROM chains WHERE key = $2 ON CONFLICT DO NOTHING`,
+      [user, chainKey],
+    );
+  } else {
+    await pool.query(`DELETE FROM user_hidden_chains WHERE user_id = $1 AND chain_key = $2`, [user, chainKey]);
+  }
+}
+
+export async function setClubMember(chainKey: string, clubId: number, member: boolean): Promise<void> {
+  const user = await uid();
+  if (member) {
+    await pool.query(
+      `INSERT INTO user_clubs (user_id, chain_key, club_id)
+       SELECT $1, chain_key, club_id FROM clubs WHERE chain_key = $2 AND club_id = $3 ON CONFLICT DO NOTHING`,
+      [user, chainKey, clubId],
+    );
+  } else {
+    await pool.query(`DELETE FROM user_clubs WHERE user_id = $1 AND chain_key = $2 AND club_id = $3`, [
+      user,
+      chainKey,
+      clubId,
+    ]);
+  }
+}
+
+export const MAX_ADDRESSES = Number(process.env.MAX_ADDRESSES_PER_USER ?? 3);
+
+/** כתובת חדשה למשתמש. מחזיר את המזהה, או null אם הגיע למספר הכתובות המרבי. */
+export async function addUserAddress(label: string, address: string, radiusKm: number): Promise<number | null> {
+  const { rows } = await pool.query(
+    `INSERT INTO addresses (label, address, radius_km, user_id)
+     SELECT $1, $2, $3, $4
+     WHERE (SELECT count(*) FROM addresses WHERE user_id = $4) < $5
+     RETURNING id`,
+    [label, address, radiusKm, await uid(), MAX_ADDRESSES],
+  );
+  return rows[0]?.id ?? null;
+}
+
+export async function deleteUserAddress(id: number): Promise<void> {
+  await pool.query(`DELETE FROM addresses WHERE id = $1 AND user_id = $2`, [id, await uid()]);
+}
+
+/** עדכון רדיוס; מחזיר האם הכתובת שייכת למשתמש. */
+export async function setAddressRadius(id: number, radiusKm: number): Promise<boolean> {
+  const { rowCount } = await pool.query(`UPDATE addresses SET radius_km = $2 WHERE id = $1 AND user_id = $3`, [
+    id,
+    radiusKm,
+    await uid(),
+  ]);
+  return (rowCount ?? 0) > 0;
+}
+
+/** האם למשתמש יש כתובת שמורה (בלי כתובת אין סניפים להשוות) */
+export async function hasAddress(): Promise<boolean> {
+  const { rows } = await pool.query(`SELECT 1 FROM addresses WHERE user_id = $1 LIMIT 1`, [await uid()]);
+  return rows.length > 0;
 }
