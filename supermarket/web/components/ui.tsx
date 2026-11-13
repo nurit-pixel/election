@@ -46,13 +46,3 @@ export function FreshnessLine({
 }
 
 /** סמל המד של פראיירמטר */
-export function LogoMark({ size = 32 }: { size?: number }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/brand/logo-mark.svg" alt="" aria-hidden width={size} height={Math.round(size * 0.75)} />;
-}
-
-/** הקמע (פריי). דקורטיבי: עד פעם אחת במסך, ולעולם לא במקום טקסט מסביר. */
-export function Mascot({ size = 96 }: { size?: number }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/brand/mascot-neutral.svg" alt="" aria-hidden width={size} height={Math.round(size * 1.125)} />;
-}

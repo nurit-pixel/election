@@ -17,7 +17,7 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
         → חזרה להשוואה
       </Link>
       <div className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
-        <h1 className="text-lg font-bold leading-snug">
+        <h1 className="pm-h1-compact text-xl font-extrabold leading-snug">
           {store.chainName} · {store.name}
         </h1>
         <p className="mt-0.5 text-sm text-muted">

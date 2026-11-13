@@ -1,85 +1,74 @@
 @import "tailwindcss";
 
-/* גופני המותג: Rubik לכותרות, Heebo לגוף, Inter למחירים ולמספרים */
-@import "@fontsource/rubik/hebrew-700.css";
-@import "@fontsource/rubik/hebrew-800.css";
-@import "@fontsource/rubik/hebrew-900.css";
-@import "@fontsource/rubik/latin-800.css";
-@import "@fontsource/heebo/hebrew-400.css";
-@import "@fontsource/heebo/hebrew-500.css";
-@import "@fontsource/heebo/hebrew-700.css";
-@import "@fontsource/heebo/hebrew-800.css";
-@import "@fontsource/heebo/latin-400.css";
-@import "@fontsource/heebo/latin-700.css";
-@import "@fontsource/inter/latin-600.css";
-@import "@fontsource/inter/latin-800.css";
-
 /* מצב כהה: לפי בחירה בהגדרות (data-theme), או לפי המכשיר כשלא נבחר */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* ---------- טוקנים של חבילת המיתוג (Brand Kit 1.0) ---------- */
+/* ---------- טוקנים של ערכת העיצוב 3.2 ---------- */
 :root {
   color-scheme: light;
-  --pm-deep-purple: #30003f;
-  --pm-turquoise: #12e2d2;
-  --pm-orange: #ff7a00;
-  --pm-hot-pink: #ff087f;
-  --pm-yellow: #fff000;
-  --pm-lime: #a8f200;
-  --pm-warm-white: #fff9f4;
+  /* צבעי המותג, לפי הלוגו שנבחר */
+  --pm-deep-purple: #2b0735;
+  --pm-turquoise: #14fbe1;
+  --pm-orange: #fd6d01;
+  --pm-hot-pink: #fc0385;
 
-  --pm-canvas: #f7f2f8;
+  --pm-canvas: #fffcf7;
   --pm-card: #ffffff;
-  --pm-subtle: #f0e8f2;
-  --pm-text: #30003f;
-  --pm-text-muted: #655a6b;
-  --pm-border: #d7cdd9;
+  --pm-subtle: #f6f0f7;
+  --pm-text: #2b0735;
+  --pm-text-muted: #66566b;
+  --pm-border: #dbd1df;
 
-  --pm-fresh: #17684f;
-  --pm-fresh-surface: #ecfff9;
-  --pm-aging: #725000;
-  --pm-aging-surface: #fff7d6;
-  --pm-missing: #8d1b42;
-  --pm-missing-surface: #fff0f7;
-  --pm-focus: #007a70;
+  /* צבעי סטטוס, נפרדים מצבעי המותג: ירוק לתקין ולחיסכון, ענבר לישן ולחלקי, אדום לכשל ולעלייה */
+  --pm-fresh: #087d5a;
+  --pm-fresh-surface: #e8f7f0;
+  --pm-aging: #8a5400;
+  --pm-aging-surface: #fff4d8;
+  --pm-missing: #b42339;
+  --pm-missing-surface: #fdecee;
+  --pm-club: #7040a0;
+  --pm-club-surface: #f1eaf9;
+  --pm-info: #17619b;
+  --pm-info-surface: #e9f4fc;
+  --pm-focus: #9f0055;
 
-  /* תוספות לממשק: פעולה ראשית, קישור, מועדון, הצעת פיצול */
-  --pm-primary: #30003f;
-  --pm-on-primary: #ffffff;
-  --pm-link: #30003f;
-  --pm-club: #4b2a8f;
-  --pm-club-surface: #f1ecff;
-  --pm-info: #0b4f73;
-  --pm-info-surface: #e9f6ff;
-  --pm-shadow: 48 0 63;
+  /* פעולה ראשית: טורקיז עם טקסט סגול, מסגרת סגולה וצל קשיח */
+  --pm-primary: var(--pm-turquoise);
+  --pm-on-primary: var(--pm-deep-purple);
+  --pm-button-edge: var(--pm-deep-purple);
+  --pm-link: #2b0735;
+  --pm-accent: #2b0735;
+  --pm-nav-edge: var(--pm-deep-purple);
+  --pm-card-shadow: 0 4px 0 #2b073510;
 }
 
 /* ערכי המצב הכהה. חלים עם data-theme="dark", או כשהמכשיר במצב כהה ולא נבחר "בהיר" */
 [data-theme="dark"] {
   color-scheme: dark;
-  --pm-canvas: #17081f;
-  --pm-card: #271030;
-  --pm-subtle: #35193f;
-  --pm-text: #fff9f4;
-  --pm-text-muted: #d8c8dd;
-  --pm-border: #5d4365;
+  --pm-canvas: #200729;
+  --pm-card: #32103e;
+  --pm-subtle: #43194f;
+  --pm-text: #fff8f2;
+  --pm-text-muted: #d5bedd;
+  --pm-border: #73537e;
 
-  --pm-fresh: #7fe6c6;
-  --pm-fresh-surface: #0f3a2e;
-  --pm-aging: #ffd76a;
-  --pm-aging-surface: #3d2f00;
-  --pm-missing: #ffa3c4;
-  --pm-missing-surface: #4a1028;
-  --pm-focus: #12e2d2;
+  --pm-fresh: #74ddb5;
+  --pm-fresh-surface: #173b30;
+  --pm-aging: #f7c970;
+  --pm-aging-surface: #3e301b;
+  --pm-missing: #ff9eae;
+  --pm-missing-surface: #431f2a;
+  --pm-club: #cba6fa;
+  --pm-club-surface: #352447;
+  --pm-info: #99cfff;
+  --pm-info-surface: #1c3147;
+  --pm-focus: var(--pm-hot-pink);
 
-  --pm-primary: #12e2d2;
-  --pm-on-primary: #30003f;
-  --pm-link: #12e2d2;
-  --pm-club: #cdbcff;
-  --pm-club-surface: #2c1a4d;
-  --pm-info: #a6dcff;
-  --pm-info-surface: #10314a;
-  --pm-shadow: 0 0 0;
+  --pm-button-edge: var(--pm-turquoise);
+  --pm-link: var(--pm-turquoise);
+  --pm-accent: var(--pm-turquoise);
+  --pm-nav-edge: var(--pm-hot-pink);
+  --pm-card-shadow: 0 4px 0 #00000025;
 }
 
 @theme inline {
@@ -103,23 +92,19 @@
   --color-info: var(--pm-info);
   --color-info-surface: var(--pm-info-surface);
   --color-focus: var(--pm-focus);
-  --color-pm-purple: #30003f;
-  --color-pm-turquoise: #12e2d2;
-  --color-pm-orange: #ff7a00;
-  --color-pm-pink: #ff087f;
-  --color-pm-yellow: #fff000;
-  --color-pm-cream: #fff9f4;
+  --color-pm-purple: var(--pm-deep-purple);
+  --color-pm-turquoise: var(--pm-turquoise);
+  --color-pm-orange: var(--pm-orange);
+  --color-pm-pink: var(--pm-hot-pink);
 
-  --font-display: "Rubik", "SF Hebrew Rounded", "Arial Hebrew", sans-serif;
-  --font-sans: "Heebo", "SF Hebrew", "Arial Hebrew", Arial, sans-serif;
-  --font-numeric: "Inter", Arial, sans-serif;
+  --font-sans: Arial, "Noto Sans Hebrew", "Arial Hebrew", sans-serif;
 
+  /* כרטיס 22px, כפתור 15px */
   --radius-pm-sm: 0.5rem;
-  --radius-pm: 0.875rem;
-  --radius-pm-lg: 1.125rem;
-  --radius-pm-xl: 1.375rem;
-  --shadow-card: 0 8px 24px rgb(var(--pm-shadow) / 10%);
-  --shadow-float: 0 16px 40px rgb(var(--pm-shadow) / 16%);
+  --radius-pm: 0.9375rem;
+  --radius-pm-lg: 1.375rem;
+  --radius-pm-xl: 1.5rem;
+  --shadow-card: var(--pm-card-shadow);
 }
 
 body {
@@ -128,8 +113,37 @@ body {
   background: var(--pm-canvas);
 }
 
-h1, h2 {
-  font-family: var(--font-display);
+/* כותרת מסך: 27px בטלפון, 30px במסך רחב. שמות ארוכים (מוצר, סניף) מקבלים pm-h1-compact */
+h1:not(.pm-h1-compact) {
+  font-size: 1.6875rem;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+@media (min-width: 431px) {
+  h1:not(.pm-h1-compact) {
+    font-size: 1.875rem;
+  }
+}
+
+/* כפתור פעולה ראשי (bg-primary): מסגרת וצל קשיח בצבע הקצה, ונלחץ פנימה */
+.bg-primary {
+  border: 2px solid var(--pm-button-edge);
+  box-shadow: 0 3px 0 var(--pm-button-edge);
+  font-weight: 800;
+}
+.bg-primary:active {
+  box-shadow: 0 1px 0 var(--pm-button-edge);
+  transform: translateY(2px);
+}
+/* הפעולה המרכזית של המסך (השוואת סניפים, הוספה לרשימה): כתום */
+.pm-cta {
+  background: var(--pm-orange);
+  color: var(--pm-deep-purple);
+}
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: var(--pm-accent);
 }
 
 :focus-visible {
@@ -141,7 +155,6 @@ h1, h2 {
 .pm-price {
   direction: ltr;
   unicode-bidi: isolate;
-  font-family: var(--font-numeric);
   font-variant-numeric: tabular-nums;
 }
 

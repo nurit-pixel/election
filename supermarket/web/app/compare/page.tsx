@@ -2,7 +2,7 @@ import Link from "next/link";
 import { compareStores, type RankedStore } from "@/lib/compare";
 import { formatDistance } from "@/lib/format";
 import { freshness, winnerIndex, worstFreshness, type Freshness } from "@/lib/freshness";
-import { FreshnessLine, Mascot, Price } from "@/components/ui";
+import { FreshnessLine, Price } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -37,10 +37,10 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   if (list.items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-pm-lg bg-card p-6 text-center shadow-card">
-        <Mascot />
-        <p className="text-muted">הרשימה ריקה. מוסיפים מוצרים, ואז רואים איפה הסל הכי משתלם.</p>
-        <Link href="/" className="rounded-pm bg-primary px-5 py-3 font-bold text-on-primary">
+      <div className="flex flex-col items-center gap-3 rounded-pm-lg border border-dashed border-line bg-card px-5 py-10 text-center">
+        <p className="font-bold">הרשימה ריקה</p>
+        <p className="text-sm text-muted">מוסיפים מוצרים, ואז רואים איפה הסל הכי משתלם.</p>
+        <Link href="/" className="rounded-pm bg-primary px-5 py-3 text-on-primary">
           לרשימה
         </Link>
       </div>
@@ -50,20 +50,10 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-extrabold">השוואת סניפים</h1>
-        <p className="text-sm text-muted">
+        <h1>איפה הסל הכי משתלם?</h1>
+        <p className="mt-1 text-sm text-muted">
           {list.name} · {list.items.length} פריטים · {storesInRadius} סניפים ברדיוס · כולל מבצעים
         </p>
-      </div>
-
-      <div className="flex items-start gap-3 rounded-pm-lg border border-pm-pink/40 bg-missing-surface p-4">
-        <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pm-pink text-sm font-black text-white">
-          !
-        </span>
-        <div>
-          <div className="font-bold">השוואה הוגנת, בלי להמציא</div>
-          <div className="text-sm text-muted">סניף חסר לא מקבל תג זוכה, גם אם הסכום נמוך.</div>
-        </div>
       </div>
 
       {storesInRadius === 0 && (
@@ -77,21 +67,24 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       )}
 
       {bestSplit && (
-        <Link href="/split" className="block rounded-pm-lg border border-info/40 bg-info-surface p-4 text-sm text-info shadow-card">
+        <div className="rounded-[18px] bg-info-surface p-4 text-sm text-info">
           <div className="font-bold">
             {bestSplit.saving != null ? (
               <>
-                פיצול לשני סניפים חוסך <Price value={bestSplit.saving} />
+                שני סניפים, חיסכון של <Price value={bestSplit.saving} />
               </>
             ) : (
-              "בפיצול לשני סניפים נמצאים יותר פריטים"
+              "בשני סניפים נמצאים יותר פריטים"
             )}
           </div>
-          <div className="mt-0.5">
-            {bestSplit.a.chainName} · {bestSplit.a.name} + {bestSplit.b.chainName} · {bestSplit.b.name} –{" "}
-            <Price value={bestSplit.total} /> ←
-          </div>
-        </Link>
+          <p className="mt-1">
+            {bestSplit.a.chainName} · {bestSplit.a.name} + {bestSplit.b.chainName} · {bestSplit.b.name} · סך הכול{" "}
+            <Price value={bestSplit.total} />
+          </p>
+          <Link href="/split" className="mt-3 flex min-h-11 items-center justify-center rounded-[13px] bg-card font-bold">
+            בדיקת הצעת הפיצול ←
+          </Link>
+        </div>
       )}
 
       <ol className="space-y-3">
@@ -104,6 +97,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
             )}
             <StoreCard
               row={row}
+              rank={row.basket.complete ? i + 1 : null}
               now={now}
               winner={rows.indexOf(row) === winner}
               diff={row.basket.complete && cheapestComplete != null ? row.basket.total - cheapestComplete : null}
@@ -115,7 +109,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       {hidden > 0 && (
         <Link
           href="/compare?all=1"
-          className="block rounded-pm border border-line bg-card px-5 py-3 text-center font-bold text-link"
+          className="flex min-h-[46px] items-center justify-center rounded-[13px] bg-subtle px-5 text-sm font-bold"
         >
           הצגת עוד {hidden} סניפים
         </Link>
@@ -129,68 +123,100 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   );
 }
 
-function StoreCard({ row: s, now, winner, diff }: { row: Row; now: Date; winner: boolean; diff: number | null }) {
+const BADGE = "inline-flex rounded-lg px-2.5 py-1 text-xs font-bold leading-snug";
+
+function StoreCard({
+  row: s,
+  rank,
+  now,
+  winner,
+  diff,
+}: {
+  row: Row;
+  rank: number | null;
+  now: Date;
+  winner: boolean;
+  diff: number | null;
+}) {
   const b = s.basket;
   const missing = b.itemCount - b.foundCount;
   return (
     <Link
       href={`/store/${s.storePk}`}
-      className={`relative block overflow-hidden rounded-pm-xl bg-card shadow-card ${
-        winner ? "border-2 border-fresh" : "border border-line"
+      className={`block rounded-pm-lg bg-card p-[18px] ${
+        winner ? "border-2 border-fresh shadow-[5px_0_0_var(--pm-turquoise)]" : "border border-line shadow-card"
       }`}
     >
-      {winner && (
-        <div className="absolute start-0 top-0 rounded-ee-pm bg-fresh px-4 py-1 text-sm font-bold text-card">
-          הכי משתלם
-        </div>
-      )}
-      <div className={`flex items-start justify-between gap-3 px-4 pb-3 ${winner ? "pt-10" : "pt-4"}`}>
-        <div className="min-w-0 space-y-1">
-          <div className="text-lg font-bold leading-snug">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-bold leading-normal">
+            {rank != null && (
+              <span
+                className={`me-1.5 inline-grid size-[26px] place-items-center rounded-[9px] text-xs font-extrabold ${
+                  winner ? "bg-fresh text-card" : "bg-subtle"
+                }`}
+              >
+                <span className="sr-only">מקום </span>
+                {rank}
+              </span>
+            )}
             {s.chainName} · {s.name}
-          </div>
-          <div className="text-xs text-muted">
+          </h3>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
             {[s.address, s.city].filter(Boolean).join(", ")}
             {s.distanceKm != null && ` · ${formatDistance(s.distanceKm)}`}
             {s.approximate && " (מיקום משוער)"}
-          </div>
-          <FreshnessLine status={s.freshness} observedAt={s.observedAt} now={now} className="block" />
-          {b.complete ? (
-            <div className="text-sm font-medium text-fresh">כל {b.itemCount} הפריטים זמינים</div>
-          ) : (
-            <div className="text-sm font-medium text-missing">
-              {missing === 1 ? "חסר מחיר לפריט אחד" : `חסרים מחירים ל-${missing} פריטים`}. הסכום המוצג חלקי.
-            </div>
-          )}
-          {b.savings > 0 && (
-            <div className="text-sm font-medium text-fresh">
-              חיסכון במבצעים <Price value={b.savings} />
-            </div>
-          )}
-          {b.clubSavings > 0 && (
-            <div className="text-xs text-club">
-              לחברי מועדון: עוד <Price value={b.clubSavings} />
-            </div>
-          )}
+          </p>
         </div>
-        <div className="shrink-0 text-end">
-          <Price value={b.total} className={`block text-3xl font-extrabold ${b.complete ? "text-ink" : "text-muted"}`} />
-          <div className="text-xs text-muted">
-            {b.complete ? `סל מלא · ${b.foundCount} מתוך ${b.itemCount}` : `לפי ${b.foundCount} מתוך ${b.itemCount} פריטים`}
+        <div className="max-w-[46%] shrink-0 text-left">
+          <Price
+            value={b.total}
+            className={`block text-[25px] font-extrabold leading-tight tracking-tight ${b.complete ? "text-ink" : "text-muted"}`}
+          />
+          <div className="text-[11px] leading-normal text-muted">
+            {winner ? (
+              <span className="font-bold text-fresh">הכי משתלם</span>
+            ) : diff != null && diff > 0 ? (
+              <>
+                + <Price value={diff} /> מהזול ביותר
+              </>
+            ) : b.complete ? (
+              "סל מלא"
+            ) : (
+              "סכום חלקי"
+            )}
           </div>
-          {diff != null && diff > 0 && (
-            <div className="text-xs font-medium text-missing">
-              <Price value={diff} /> יותר מהזול
-            </div>
-          )}
         </div>
       </div>
-      <div className="mx-4 flex items-center justify-between border-t border-line py-3 text-sm font-bold">
-        <span>לצפייה בפירוט הסל</span>
-        <span aria-hidden className="text-lg text-pm-pink">
-          ←
-        </span>
+
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {b.complete ? (
+          <span className={`${BADGE} bg-fresh-surface text-fresh`}>
+            סל מלא · {b.foundCount} מתוך {b.itemCount}
+          </span>
+        ) : (
+          <span className={`${BADGE} bg-aging-surface text-aging`}>
+            {missing === 1 ? "חסר מחיר לפריט אחד" : `חסרים מחירים ל-${missing} פריטים`} · {b.foundCount} מתוך {b.itemCount}
+          </span>
+        )}
+        {b.savings > 0 && (
+          <span className={`${BADGE} bg-fresh-surface text-fresh`}>
+            חיסכון במבצעים&nbsp;
+            <Price value={b.savings} />
+          </span>
+        )}
+        {b.clubSavings > 0 && (
+          <span className={`${BADGE} bg-club-surface text-club`}>
+            לחברי מועדון: חיסכון אפשרי&nbsp;
+            <Price value={b.clubSavings} />
+          </span>
+        )}
       </div>
+      <FreshnessLine status={s.freshness} observedAt={s.observedAt} now={now} className="mt-2 block" />
+
+      <span className="mt-3 flex min-h-[46px] items-center justify-center rounded-[13px] bg-subtle text-sm font-bold">
+        פירוט הסל בסניף ←
+      </span>
     </Link>
   );
 }

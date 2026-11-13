@@ -37,7 +37,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-4">
       <div className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
-        <h1 className="text-lg font-bold leading-snug">{product.name}</h1>
+        <h1 className="pm-h1-compact text-xl font-extrabold leading-snug">{product.name}</h1>
         <p className="mt-0.5 text-xs text-muted">
           {product.manufacturer && `${product.manufacturer} · `}
           <span dir="ltr">{product.barcode}</span>

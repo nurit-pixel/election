@@ -69,7 +69,7 @@ export function BarcodeScanner({ itemId }: { itemId?: number }) {
           setError("");
           setOpen(true);
         }}
-        className="rounded-pm border border-line bg-card px-4 py-3 font-medium"
+        className="rounded-pm bg-primary px-4 py-3 text-on-primary"
       >
         סריקה
       </button>

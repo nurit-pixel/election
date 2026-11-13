@@ -131,11 +131,11 @@ export function ReceiptImport() {
         העלאת חשבונית אחרת
       </button>
 
-      <div className="fixed inset-x-0 bottom-14 z-30 mb-[env(safe-area-inset-bottom)] border-t border-line bg-card/95 p-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-[78px] z-30 mb-[env(safe-area-inset-bottom)] bg-gradient-to-t from-canvas from-80% to-transparent px-4 pb-3 pt-4">
         <button
           disabled={picked.length === 0 || saving}
           onClick={() => startSaving(() => addReceiptItems(picked))}
-          className="mx-auto block w-full max-w-2xl rounded-pm bg-primary px-5 py-3 text-center font-bold text-on-primary disabled:opacity-50"
+          className="mx-auto block w-full max-w-2xl rounded-pm bg-primary pm-cta px-5 py-3 text-center font-bold text-on-primary disabled:opacity-50"
         >
           {saving ? "מוסיפים…" : picked.length === 0 ? "לא נבחרו מוצרים" : `הוספת ${picked.length} מוצרים לרשימה`}
         </button>
@@ -210,7 +210,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
               name={`line-${line.key}`}
               checked={line.chosen === candidate.id}
               onChange={() => update({ chosen: candidate.id, typed: null })}
-              className="size-5 shrink-0 accent-[var(--pm-primary)]"
+              className="size-5 shrink-0"
             />
             <span className="min-w-0 flex-1">
               <span className="block leading-snug">{candidate.name}</span>
@@ -232,7 +232,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
             name={`line-${line.key}`}
             checked={line.chosen == null}
             onChange={() => update({ chosen: null })}
-            className="size-5 shrink-0 accent-[var(--pm-primary)]"
+            className="size-5 shrink-0"
           />
           דילוג, לא להוסיף
         </label>

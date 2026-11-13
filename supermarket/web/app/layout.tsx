@@ -7,15 +7,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "פראיירמטר",
-  description: "משווים את הסל. רואים מה חסר. בוחרים חכם.",
+  description: "הסל המשפחתי, במחיר הנכון.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#30003f" },
-    { media: "(prefers-color-scheme: dark)", color: "#17081f" },
+    { media: "(prefers-color-scheme: light)", color: "#fffcf7" },
+    { media: "(prefers-color-scheme: dark)", color: "#200729" },
   ],
 };
 

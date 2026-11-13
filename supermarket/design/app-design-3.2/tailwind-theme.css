@@ -1,0 +1,25 @@
+/* Tailwind v4: load tokens.css, app-visual.css, brand-colors.css in this order. */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand-turquoise: var(--brand-turquoise);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-purple: var(--brand-purple);
+  --color-action: var(--action);
+  --color-on-action: var(--on-action);
+  --color-success: var(--green);
+  --color-success-soft: var(--green-bg);
+  --color-warning: var(--amber);
+  --color-warning-soft: var(--amber-bg);
+  --color-danger: var(--red);
+  --color-club: var(--purple);
+  --color-split: var(--blue);
+  --radius-card: 1.375rem;
+  --radius-field: .8125rem;
+  --radius-button: .9375rem;
+  --font-sans: Arial, sans-serif;
+}

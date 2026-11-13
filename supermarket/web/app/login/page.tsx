@@ -23,35 +23,33 @@ async function login(formData: FormData) {
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   return (
-    <div className="min-h-dvh bg-pm-cream text-pm-purple">
-      <div className="relative bg-pm-purple pb-16 pt-12 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/logo-mark.svg" alt="" aria-hidden width={224} height={168} className="mx-auto" />
-        <div className="mt-3 font-display text-5xl font-black">
-          <span className="text-pm-orange">פראייר</span>
-          <span className="text-pm-turquoise">מטר</span>
-        </div>
-        <svg aria-hidden viewBox="0 0 390 40" preserveAspectRatio="none" className="absolute inset-x-0 -bottom-px h-10 w-full">
-          <path d="M0 14C70 44 150 36 205 18S330 -6 390 12V40H0Z" fill="#fff9f4" />
-        </svg>
-      </div>
+    <div className="mx-auto min-h-dvh max-w-[440px] px-5 pb-10 pt-4">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/logo.png" alt="פראיירמטר" width={720} height={233} className="mx-auto my-8 h-auto w-full max-w-[330px]" />
+      <h1 className="mx-auto max-w-[310px] text-center underline decoration-pm-pink decoration-[5px] underline-offset-[7px]">
+        הסל המשפחתי, במחיר הנכון.
+      </h1>
+      <p className="mx-auto mb-7 mt-6 max-w-[290px] text-center text-sm leading-relaxed text-muted">
+        נכנסים עם הסיסמה המשותפת ומתחילים להשוות.
+      </p>
 
-      <form action={login} className="mx-auto max-w-sm space-y-4 px-6 pb-10 pt-4">
-        <div className="text-center">
-          <h1 className="text-3xl font-black">לא יוצאים פראיירים.</h1>
-          <p className="mt-1 text-[#655a6b]">משווים את הסל. רואים מה חסר. בוחרים חכם.</p>
-          <p className="mt-2 text-xs text-[#8d1b42]">גיל עוד צוחק; נורית בנתה אפליקציה.</p>
-        </div>
-
+      <form
+        action={login}
+        className="relative space-y-4 overflow-hidden rounded-3xl border-2 border-[var(--pm-button-edge)] bg-card px-5 pb-6 pt-8 shadow-[5px_5px_0_var(--pm-turquoise)] dark:shadow-[5px_5px_0_var(--pm-hot-pink)]"
+      >
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-[7px] bg-[linear-gradient(90deg,var(--pm-turquoise)_0_34%,var(--pm-orange)_34%_67%,var(--pm-hot-pink)_67%)]"
+        />
         {!familyPassword() && (
-          <p className="rounded-pm bg-[#fff7d6] p-3 text-sm text-[#725000]">
+          <p className="rounded-pm bg-aging-surface p-3 text-sm text-aging">
             לא הוגדרה סיסמה. מגדירים FAMILY_PASSWORD בקובץ ‎.env.
           </p>
         )}
 
         <div>
           <label htmlFor="password" className="mb-1.5 block text-sm font-bold">
-            הסיסמה המשפחתית
+            סיסמה משפחתית
           </label>
           <input
             id="password"
@@ -62,19 +60,18 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             autoComplete="current-password"
             aria-describedby={error ? "login-error" : undefined}
             aria-invalid={error ? true : undefined}
-            className="w-full rounded-pm border-2 border-[#d7cdd9] bg-white px-4 py-3.5 text-base text-pm-purple"
+            className={`min-h-[52px] w-full rounded-[13px] border bg-card px-4 text-base text-ink ${error ? "border-missing" : "border-line"}`}
           />
           {error && (
-            <p id="login-error" role="alert" className="mt-1.5 text-sm font-medium text-[#8d1b42]">
+            <p id="login-error" role="alert" className="mt-1.5 text-sm font-medium text-missing">
               הסיסמה לא נכונה. מנסים שוב?
             </p>
           )}
         </div>
 
-        <button className="min-h-12 w-full rounded-pm bg-pm-purple px-5 py-3.5 text-lg font-bold text-white">
-          כניסה
-        </button>
+        <button className="min-h-[52px] w-full rounded-pm bg-primary px-5 text-base text-on-primary">כניסה לרשימה שלי</button>
       </form>
+      <p className="mt-6 text-center text-xs text-muted">נורית בנתה. גילי כבר חוסכת.</p>
     </div>
   );
 }

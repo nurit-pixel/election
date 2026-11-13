@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getList, listSummaries, type ListItem } from "@/lib/lists";
 import { cookies } from "next/headers";
 import { SearchBar } from "@/components/SearchBar";
-import { Mascot } from "@/components/ui";
 import { QuantityControl } from "@/components/QuantityControl";
 import {
   createList,
@@ -28,7 +27,7 @@ export default async function ListPage() {
   const all = await listSummaries();
   const showTip = list.items.length > 0 && !(await cookies()).get(TIP_COOKIE);
   return (
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4 pb-24">
       <h1 className="text-2xl font-extrabold">{list.name}</h1>
       <details className="rounded-pm-lg border border-line bg-card p-3 text-sm shadow-card">
         <summary className="cursor-pointer select-none text-link">
@@ -101,8 +100,10 @@ export default async function ListPage() {
       )}
 
       {list.items.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-pm-lg bg-card p-6 text-center shadow-card">
-          <Mascot />
+        <div className="flex flex-col items-center gap-2 rounded-pm-lg border border-dashed border-line bg-card px-5 py-10 text-center">
+          <span aria-hidden className="mb-2 grid size-[76px] place-items-center rounded-[20px] bg-pm-turquoise text-4xl font-black text-pm-purple shadow-[4px_4px_0_var(--pm-hot-pink)]">
+            +
+          </span>
           <p className="font-bold">הרשימה ריקה</p>
           <p className="text-sm text-muted">מחפשים מוצר לפי שם, סורקים ברקוד או מעלים חשבונית, והמוצרים נכנסים לרשימה.</p>
         </div>
@@ -115,10 +116,10 @@ export default async function ListPage() {
       )}
 
       {list.items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-14 z-30 mb-[env(safe-area-inset-bottom)] border-t border-line bg-card/95 p-3 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-[78px] z-30 mb-[env(safe-area-inset-bottom)] bg-gradient-to-t from-canvas from-80% to-transparent px-4 pb-3 pt-4">
           <Link
             href="/compare"
-            className="mx-auto block max-w-2xl rounded-pm bg-primary px-5 py-3 text-center font-bold text-on-primary"
+            className="mx-auto block max-w-2xl rounded-pm bg-primary pm-cta px-5 py-3 text-center font-bold text-on-primary"
           >
             השוואת סניפים ({list.items.length} פריטים)
           </Link>
