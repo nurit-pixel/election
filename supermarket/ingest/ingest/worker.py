@@ -20,6 +20,8 @@ GEOCODE_BATCH = 15
 # בקשת כתובת: טוענים רק סניפים שהמחירים שלהם חסרים או ישנים מזה, ועם מגבלת זמן קצרה לרשת
 ADDRESS_MISSING_HOURS = 24
 ADDRESS_CHAIN_TIMEOUT_SECONDS = 15 * 60
+# טעינת מחירים בין הריצות הליליות: רק סניפים שהמחירים שלהם ישנים מזה. הריצה הלילית מרעננת הכול
+PRICES_MISSING_HOURS = 20
 IDLE_WAIT_SECONDS = 30
 PRICES_DURING_GEOCODE_SECONDS = 20 * 60
 GEOCODE_BACKOFF_SECONDS = (300, 900, 1800, 3600)   # המתנה אחרי כשל (למשל 429 משירות ה-geocoding)
@@ -81,8 +83,13 @@ def _handle(cfg: Config, conn, kind: str, address_id: int | None, chains, progre
         return f"מחירים נטענו ל-{len(statuses)} רשתות ליד הכתובת"
     if kind == "prices":
         geocode.geocode_addresses(cfg, conn)
-        statuses = pipeline.refresh_prices(cfg, conn, chains, all_stores=cfg.ingest_all_stores,
-                                           progress=progress)
+        # סניף שנטען בשעות האחרונות לא יורד שוב: אחרת כל הקבצים שלו מורדים רק כדי להיזרק
+        statuses = pipeline.refresh_prices(
+            cfg, conn, chains, all_stores=cfg.ingest_all_stores,
+            missing_hours=None if cfg.ingest_all_stores else PRICES_MISSING_HOURS,
+            progress=progress)
+        if not statuses:
+            return "לכל הסניפים שברדיוס כבר יש מחירים עדכניים"
         ok = sum(s in ("ok", "partial") for s in statuses.values())
         _, created = tracking.update(conn, cfg)
         return f"מחירים: {ok} מתוך {len(statuses)} רשתות, {created} התראות חדשות"
