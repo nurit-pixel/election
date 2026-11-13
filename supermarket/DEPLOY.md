@@ -108,10 +108,16 @@ docker compose exec ingest python -m ingest nightly
 docker compose logs -f --tail 100 ingest
 ```
 
-עדכון גרסה:
+עדכון גרסה (גיבוי, משיכת הקוד החדש, בנייה והפעלה מחדש; הנתונים נשמרים):
 
 ```bash
-git pull && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+cd /opt/supermarket && ./scripts/update.sh
+```
+
+לעדכון אוטומטי כל לילה ב-04:00, שורה ב-`crontab -e` של השרת:
+
+```
+0 4 * * * cd /opt/supermarket && ./scripts/update.sh >> backups/update.log 2>&1
 ```
 
 גיבוי המסד (נשמר ב-`backups/`, 14 אחרונים):
