@@ -110,8 +110,12 @@ def run(cfg: Config) -> None:
     with db.connect(cfg.database_url) as conn:
         db.apply_schema(conn, cfg.schema_dir)
         db.close_stale_runs(conn)
-        if conn.execute("SELECT count(*) FROM stores").fetchone()[0] == 0:
-            enqueue(conn, "stores")      # הפעלה ראשונה: רשימת סניפים ארצית
+        nightly_pending = schedule.nightly_due(
+            schedule.now_in_israel(), schedule.last_run(conn), schedule.parse_time(cfg.nightly_time))
+        if conn.execute("SELECT count(*) FROM stores").fetchone()[0] == 0 and not nightly_pending:
+            # הפעלה ראשונה לפני שעת הריצה הלילית: רשימת סניפים ארצית.
+            # אם הריצה הלילית עומדת להתחיל ממילא, היא כוללת את רשימות הסניפים.
+            enqueue(conn, "stores")
         conn.execute("LISTEN ingest")
         log.info("ה-worker פעיל")
         geocoding_active = False
