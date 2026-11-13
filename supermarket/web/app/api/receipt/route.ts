@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logEvent } from "@/lib/log";
+import { currentUserId } from "@/lib/session";
 import { isSupportedType, matchLines, readReceipt, ReceiptError, RECEIPT_MAX_BYTES } from "@/lib/receipt";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +18,13 @@ export async function POST(req: NextRequest) {
     const lines = await readReceipt(Buffer.from(await file.arrayBuffer()), file.type);
     return NextResponse.json({ lines: await matchLines(lines) });
   } catch (error) {
-    if (error instanceof ReceiptError) return fail(error.message, error.status);
+    const userId = await currentUserId();
+    if (error instanceof ReceiptError) {
+      await logEvent("error", "receipt_failed", `${file.type}, ${Math.round(file.size / 1024)}KB: ${error.message}`, { userId });
+      return fail(error.message, error.status);
+    }
     console.error("receipt: unexpected error", error);
+    await logEvent("error", "receipt_failed", `${file.type}: ${error instanceof Error ? error.message : String(error)}`, { userId });
     return fail("קריאת החשבונית נכשלה. מנסים שוב בעוד רגע.", 500);
   }
 }

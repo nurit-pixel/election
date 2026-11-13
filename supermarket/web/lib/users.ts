@@ -8,6 +8,8 @@ const FAMILY_SUB = "family";
 
 export const signInFamilyUser = () => signInGoogleUser({ sub: FAMILY_SUB, email: "", name: "החשבון המשפחתי" });
 
+export type SignIn = { id: number; /** החשבון נוצר בכניסה הזו */ isNew: boolean };
+
 /** כתובות מייל שמורשות להיכנס (ALLOWED_EMAILS, מופרדות בפסיק). ריק = כל חשבון Google. */
 export function emailAllowed(email: string): boolean {
   const allowed = (process.env.ALLOWED_EMAILS ?? "")
@@ -19,7 +21,7 @@ export function emailAllowed(email: string): boolean {
 
 /** כניסה של חשבון Google: יוצר את המשתמש בפעם הראשונה ומחזיר את המזהה שלו.
  * המשתמש הראשון במערכת מקבל את כל הנתונים שנוצרו לפני הכניסה עם Google. */
-export async function signInGoogleUser(profile: { sub: string; email: string; name: string | null }): Promise<number> {
+export async function signInGoogleUser(profile: { sub: string; email: string; name: string | null }): Promise<SignIn> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -30,7 +32,7 @@ export async function signInGoogleUser(profile: { sub: string; email: string; na
     );
     if (existing.rows.length > 0) {
       await client.query("COMMIT");
-      return existing.rows[0].id;
+      return { id: existing.rows[0].id, isNew: false };
     }
     // החשבון הזמני של הכניסה בסיסמה עובר, עם כל הנתונים שלו, לחשבון ה-Google הראשון שנכנס
     const adopted = await client.query(
@@ -40,7 +42,7 @@ export async function signInGoogleUser(profile: { sub: string; email: string; na
     );
     if (adopted.rows.length > 0) {
       await client.query("COMMIT");
-      return adopted.rows[0].id;
+      return { id: adopted.rows[0].id, isNew: false };
     }
     const first = (await client.query(`SELECT 1 FROM users LIMIT 1`)).rows.length === 0;
     const { rows } = await client.query(
@@ -69,7 +71,7 @@ export async function signInGoogleUser(profile: { sub: string; email: string; na
       );
     }
     await client.query("COMMIT");
-    return id;
+    return { id, isNew: true };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

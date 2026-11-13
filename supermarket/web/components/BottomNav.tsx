@@ -7,7 +7,7 @@ const ITEMS = [
   { href: "/", label: "רשימה", match: ["/", "/search", "/product", "/receipt"], icon: "M5 6h14M5 12h14M5 18h9" },
   { href: "/compare", label: "השוואה", match: ["/compare", "/store", "/split"], icon: "M4 20h16M7 20V11M12 20V5M17 20v-7" },
   { href: "/alerts", label: "התראות", match: ["/alerts"], icon: "M6 16V11a6 6 0 1 1 12 0v5l2 2H4l2-2zM10 20h4" },
-  { href: "/settings", label: "הגדרות", match: ["/settings", "/help"], icon: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6" },
+  { href: "/settings", label: "הגדרות", match: ["/settings", "/help", "/admin"], icon: "M4 7h10M18 7h2M4 17h2M10 17h10M16 4v6M8 14v6" },
 ];
 
 /** ניווט ראשי בתחתית המסך, קרוב לאגודל: ארבעה יעדים עם אייקון ושם */

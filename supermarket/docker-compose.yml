@@ -80,6 +80,7 @@ services:
       APP_URL: ${APP_URL:-}
       SESSION_SECRET: ${SESSION_SECRET:-}
       ALLOWED_EMAILS: ${ALLOWED_EMAILS:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       MAX_ADDRESSES_PER_USER: ${MAX_ADDRESSES_PER_USER:-3}
       TZ: ${TZ:-Asia/Jerusalem}
     ports:

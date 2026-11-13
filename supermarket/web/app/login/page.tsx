@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE, SESSION_DAYS, familyPassword, googleConfigured, safeEqual, sessionToken } from "@/lib/auth";
 import { currentUserId } from "@/lib/session";
+import { logEvent } from "@/lib/log";
 import { signInFamilyUser } from "@/lib/users";
 
 /** כניסה זמנית בסיסמה המשפחתית, לחשבון משותף אחד. פעילה רק עד שמוגדרת כניסה עם Google. */
@@ -10,10 +11,13 @@ async function passwordLogin(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   if (!familyPassword() || !safeEqual(password, familyPassword())) {
     await new Promise((resolve) => setTimeout(resolve, 1000)); // האטה של ניחושים
+    await logEvent("error", "login_failed", "סיסמה משפחתית שגויה");
     redirect("/login?error=password");
   }
   const https = (await headers()).get("x-forwarded-proto") === "https";
-  (await cookies()).set(SESSION_COOKIE, await sessionToken(await signInFamilyUser()), {
+  const { id } = await signInFamilyUser();
+  await logEvent("info", "login", "כניסה בסיסמה המשפחתית", { userId: id });
+  (await cookies()).set(SESSION_COOKIE, await sessionToken(id), {
     httpOnly: true,
     sameSite: "lax",
     secure: https,

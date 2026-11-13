@@ -14,6 +14,7 @@ import { formatUpdated } from "@/lib/format";
 import { THEME_COOKIE } from "@/lib/theme";
 import { uid } from "@/lib/session";
 import { getUser } from "@/lib/users";
+import { isAdmin } from "@/lib/admin";
 import { geocodePendingAddresses } from "@/lib/geocode";
 import {
   addAddress,
@@ -55,6 +56,7 @@ export default async function SettingsPage({
     splitMinSaving(),
     uid().then(getUser),
   ]);
+  const admin = await isAdmin();
   const saved = (await cookies()).get(THEME_COOKIE)?.value;
   const theme = saved === "light" || saved === "dark" ? saved : "system";
 
@@ -72,6 +74,17 @@ export default async function SettingsPage({
           <button className="min-h-11 shrink-0 rounded-[13px] bg-subtle px-4 text-sm font-bold">יציאה</button>
         </form>
       </div>
+      {admin && (
+        <Link
+          href="/admin"
+          className="flex min-h-12 items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 font-bold shadow-card"
+        >
+          ניהול: משתמשים ושגיאות
+          <span aria-hidden className="text-pm-pink">
+            ←
+          </span>
+        </Link>
+      )}
       <Link
         href="/help"
         className="flex min-h-12 items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 font-bold shadow-card"
