@@ -172,6 +172,12 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
   const [searching, setSearching] = useState(false);
   const [empty, setEmpty] = useState(false);
   const badge = BADGE[line.confidence];
+  // מוצר שזוהה לפי קוד מוצג בשמו במאגר: בצילום, השם שנקרא מהחשבונית לרוב משובש
+  const title =
+    (line.confidence === "barcode" && line.candidates[0]?.name) ||
+    line.printed ||
+    line.name ||
+    (line.barcode ? `קוד ${line.barcode}` : "שורה מהחשבונית");
 
   const search = async () => {
     if (query.trim().length < 2) return;
@@ -203,7 +209,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
     <li className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-semibold leading-snug">{line.printed || line.name}</h2>
+          <h2 className="font-semibold leading-snug">{title}</h2>
           <p className="mt-0.5 text-xs text-muted">
             בחשבונית:{" "}
             {line.total != null && <Price value={line.total} />}
@@ -220,7 +226,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
       </div>
 
       <fieldset className="mt-3 space-y-1 text-sm">
-        <legend className="sr-only">בחירת מוצר עבור {line.printed || line.name}</legend>
+        <legend className="sr-only">בחירת מוצר עבור {title}</legend>
         {line.candidates.map((candidate) => (
           <label key={candidate.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-pm px-2 py-1 has-[:checked]:bg-subtle">
             <input
@@ -273,7 +279,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
             type="search"
             enterKeyHint="search"
             placeholder="שם מוצר או ברקוד"
-            aria-label={`חיפוש מוצר עבור ${line.printed || line.name}`}
+            aria-label={`חיפוש מוצר עבור ${title}`}
             className="min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-1.5"
           />
           <button disabled={searching} className="rounded-lg border border-line px-3 py-1.5 font-medium">

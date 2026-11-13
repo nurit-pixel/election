@@ -205,3 +205,96 @@ export function mergeDigitPass(text: string, digits: string): string {
   }
   return lines.join("\n");
 }
+
+/** ספרת הביקורת של ברקוד (EAN-13, UPC-A, EAN-8, GTIN-14) תקינה. מספר טלפון או מספר חשבונית כמעט אף פעם לא עוברים. */
+export function validBarcode(code: string): boolean {
+  if (!/^\d+$/.test(code) || ![8, 12, 13, 14].includes(code.length)) return false;
+  const digits = [...code].map(Number);
+  const check = digits.pop()!;
+  // מהספרה שלפני ספרת הביקורת ואחורה: משקל 3, 1, 3, 1...
+  const sum = digits.reverse().reduce((total, digit, index) => total + digit * (index % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === check;
+}
+
+/** ברקודים תקינים שנבדלים מהקוד בספרה אחת. משמש לתיקון ספרה ש-OCR קרא לא נכון. */
+export function barcodeVariants(code: string): string[] {
+  const variants: string[] = [];
+  for (let i = 0; i < code.length; i++) {
+    for (let d = 0; d <= 9; d++) {
+      if (String(d) === code[i]) continue;
+      const candidate = code.slice(0, i) + d + code.slice(i + 1);
+      if (validBarcode(candidate)) variants.push(candidate);
+    }
+  }
+  return variants;
+}
+
+const PRICE_TOKEN = /\d{1,4}[.,]\d{2}(?!\d)/g;
+
+/** שורות המוצרים מתוך שתי קריאות OCR של צילום: רשימת המוצרים נבנית מהברקודים שבקריאת הספרות,
+ * כי בצילום אמיתי השמות בעברית יוצאים משובשים והברקודים כמעט תמיד נכונים. השם (אם נמצא) נלקח
+ * מהקריאה העברית לפי המחיר שבאותה שורה, ומשמש רק לתצוגה ולחיפוש כשהברקוד לא במאגר.
+ * מחזיר null כשאין בצילום לפחות שני ברקודים תקינים; אז מפענחים את הטקסט בדרך הרגילה. */
+export function linesFromPasses(text: string, digits: string): ReceiptLine[] | null {
+  const split = (value: string) =>
+    value
+      .split(/\r?\n/)
+      .map((line) => line.replace(BIDI_MARKS, " ").replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+  const digitLines = split(digits);
+  const longCodes = (line: string) => (line.match(/(?<![\d.,])\d{12,14}(?![\d.,])/g) ?? []) as string[];
+  const hasValid = digitLines.map((line) => longCodes(line).some(validBarcode));
+  if (hasValid.filter(Boolean).length < 2) return null;
+  // אזור המוצרים: מהברקוד התקין הראשון עד האחרון. מה שמעליו ומתחתיו הוא כותרת, טלפון ותשלום
+  const first = hasValid.indexOf(true);
+  const last = hasValid.lastIndexOf(true);
+
+  // שמות מהקריאה העברית, לפי מחיר: לכל מחיר, השורות שמכילות אותו, בסדר הופעתן
+  const named = split(text)
+    .filter((line) => !SKIP.test(line))
+    .map((line) => ({
+      prices: ((line.match(PRICE_TOKEN) ?? []) as string[]).map(number),
+      name: line
+        .replace(PRICE_TOKEN, " ")
+        .replace(/\d{5,}/g, " ")
+        .replace(NOISE, " ")
+        .replace(/[^א-ת0-9%&'"״׳ -]/g, " ")
+        .replace(/(^|\s)\d{1,2}(?=\s|$)/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+      used: false,
+    }))
+    .filter((line) => hebrewLetters(line.name) >= 3);
+  const nameFor = (prices: number[]): string => {
+    const found = named.find((line) => !line.used && prices.some((p) => line.prices.includes(p)));
+    if (!found) return "";
+    found.used = true;
+    return found.name.slice(0, 120);
+  };
+
+  const lines: ReceiptLine[] = [];
+  const seen = new Set<string>();
+  for (let i = first; i <= last; i++) {
+    const line = digitLines[i];
+    const prices = ((line.match(PRICE_TOKEN) ?? []) as string[]).map(number);
+    let codes = longCodes(line);
+    if (codes.length === 0) {
+      // קוד פנימי קצר של הרשת (למשל לירקות): מספר בודד של 5–7 ספרות בשורה, שאינו חלק ממחיר
+      const short = (line.match(/(?<![\d.,])\d{5,7}(?![\d.,])/g) ?? []) as string[];
+      if (short.length === 1) codes = short;
+    }
+    for (const code of codes) {
+      if (seen.has(code)) continue;
+      seen.add(code);
+      lines.push({
+        printed: nameFor(prices),
+        name: "",
+        barcode: code,
+        unit: "unit",
+        quantity: 1,
+        total: prices.length > 0 ? Math.max(...prices) : null,
+      });
+    }
+  }
+  return lines.map((line) => ({ ...line, name: line.printed })).slice(0, 150);
+}

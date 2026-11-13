@@ -185,3 +185,45 @@ describe("שילוב קריאת הספרות עם הקריאה העברית", ()
     expect(mergeDigitPass("במבה 4.90", "")).toBe("במבה 4.90");
   });
 });
+
+import { readFileSync } from "node:fs";
+import { barcodeVariants, linesFromPasses, validBarcode } from "../lib/receipt-parse";
+
+describe("ספרת ביקורת של ברקוד", () => {
+  it("ברקודים אמיתיים תקינים; מספר טלפון ומספר חשבונית לא", () => {
+    for (const code of ["7290000042411", "8006540968499", "835811007760", "7290020396839"]) expect(validBarcode(code)).toBe(true);
+    for (const code of ["7290020396899", "0100000000017", "5550101", "abc"]) expect(validBarcode(code)).toBe(false);
+  });
+  it("תיקון ספרה אחת שנקראה לא נכון מחזיר גם את הברקוד האמיתי", () => {
+    expect(barcodeVariants("7290020396899")).toContain("7290020396839");
+    expect(barcodeVariants("7290011725196")).toContain("7290011725136");
+    expect(barcodeVariants("7290020396899").every(validBarcode)).toBe(true);
+  });
+});
+
+describe("צילום אמיתי של חשבונית (פלט OCR שמור)", () => {
+  const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
+  const lines = linesFromPasses(fixture("receipt-photo.hebrew.txt"), fixture("receipt-photo.digits.txt"))!;
+  const codes = lines.map((l) => l.barcode);
+
+  it("כל 14 הברקודים שבחשבונית נמצאים, 12 מהם בדיוק ושניים בהפרש של ספרה אחת", () => {
+    const printed = [
+      "8006540968499", "7290020396839", "7290117387351", "7290107971720", "7297070015581", "7290011725136", "7290116932033",
+      "7290105362339", "7290018886991", "8700216236751", "7290017088402", "7290101868958", "7290112001641", "835811007760",
+    ];
+    const long = codes.filter((c) => c!.length >= 12) as string[];
+    expect(long).toHaveLength(14);
+    expect(printed.filter((code) => long.includes(code))).toHaveLength(12);
+    for (const code of printed) expect(long.some((c) => c === code || barcodeVariants(c).includes(code))).toBe(true);
+  });
+  it("מספרי הטלפון, החשבונית וההזמנה שבראש הדף אינם מוצרים", () => {
+    for (const number of ["5550101", "5550102", "0100000000017", "50000001", "0000001"]) expect(codes).not.toContain(number);
+  });
+  it("ברקוד שמופיע פעמיים נספר פעם אחת, ושורות מבצע וסיכום לא נכנסות", () => {
+    expect(codes.filter((c) => c === "7290105362339")).toHaveLength(1);
+    expect(lines.length).toBeLessThanOrEqual(18);
+  });
+  it("בלי שני ברקודים תקינים חוזרים לפענוח הטקסט הרגיל", () => {
+    expect(linesFromPasses("במבה 4.90", "4.90 nana")).toBeNull();
+  });
+});

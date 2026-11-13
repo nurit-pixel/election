@@ -4,7 +4,8 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { searchProducts } from "./search";
-import { mergeDigitPass, parseReceiptText } from "./receipt-parse";
+import { barcodeVariants, linesFromPasses, mergeDigitPass, parseReceiptText } from "./receipt-parse";
+import { pool } from "./db";
 import {
   normalizeBarcode,
   normalizeShortCode,
@@ -54,40 +55,42 @@ const TESSDATA = process.env.RECEIPT_TESSDATA || join(process.cwd(), "ocr");
 
 /** זיהוי טקסט בתמונה, כגוש טקסט אחיד (מתאים לחשבונית). שתי קריאות, זו אחר זו: המודל העברי
  * לשמות, ומודל הספרות לברקודים, שהמודל העברי משבש. */
-async function ocr(imagePath: string): Promise<string> {
+async function ocr(imagePath: string): Promise<{ text: string; digits: string }> {
   const pass = (model: string) => run("tesseract", [imagePath, "stdout", "--tessdata-dir", TESSDATA, "-l", model, "--psm", "6"]);
   const text = await pass("Hebrew");
   const digits = await pass("eng").catch(() => "");
-  return digits ? mergeDigitPass(text, digits) : text;
+  return { text, digits };
 }
 
-/** הטקסט של החשבונית. הקובץ מעובד בשרת בלבד ונמחק בסיום. */
-async function receiptText(data: Buffer, mediaType: string): Promise<string> {
+/** שורות המוצרים מצילום: קודם לפי הברקודים שבקריאת הספרות; אם אין מספיק ברקודים, מהטקסט המשולב. */
+function linesFromImage({ text, digits }: { text: string; digits: string }): ReceiptLine[] {
+  return linesFromPasses(text, digits) ?? parseReceiptText(digits ? mergeDigitPass(text, digits) : text);
+}
+
+/** קריאת החשבונית: מחזיר את שורות המוצרים שבה. הקובץ מעובד בשרת בלבד ונמחק בסיום. */
+export async function readReceipt(data: Buffer, mediaType: string): Promise<ReceiptLine[]> {
   const dir = await mkdtemp(join(tmpdir(), "receipt-"));
   try {
     if (mediaType !== "application/pdf") {
       const path = join(dir, "receipt");
       await writeFile(path, data);
-      return await ocr(path);
+      return linesFromImage(await ocr(path));
     }
     const pdf = join(dir, "receipt.pdf");
     await writeFile(pdf, data);
     // PDF דיגיטלי מכיל טקסט אמיתי; PDF סרוק עובר OCR עמוד-עמוד
     const text = await run("pdftotext", ["-layout", "-l", String(PDF_PAGES), pdf, "-"]);
-    if ((text.match(/[א-ת]/g) ?? []).length >= 20) return text;
+    if ((text.match(/[א-ת]/g) ?? []).length >= 20) return parseReceiptText(text);
     await run("pdftoppm", ["-r", "200", "-png", "-l", String(PDF_PAGES), pdf, join(dir, "page")]);
     const pages = (await readdir(dir)).filter((f) => f.startsWith("page") && f.endsWith(".png")).sort();
-    const texts: string[] = [];
-    for (const page of pages) texts.push(await ocr(join(dir, page)));
-    return texts.join("\n");
+    const lines: ReceiptLine[] = [];
+    for (const page of pages) lines.push(...linesFromImage(await ocr(join(dir, page))));
+    // אותו ברקוד בשני עמודים: פעם אחת
+    const seen = new Set<string>();
+    return lines.filter((line) => !line.barcode || (!seen.has(line.barcode) && seen.add(line.barcode)));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
-}
-
-/** קריאת החשבונית: מחזיר את שורות המוצרים שבה. */
-export async function readReceipt(data: Buffer, mediaType: string): Promise<ReceiptLine[]> {
-  return parseReceiptText(await receiptText(data, mediaType));
 }
 
 const CANDIDATES = 5;
@@ -113,6 +116,17 @@ async function matchLine(line: ReceiptLine): Promise<MatchedLine> {
   if (barcode) {
     const found = toCandidates(await searchProducts(barcode, CANDIDATES), true);
     if (found.length) return { ...line, confidence: "barcode", candidates: found };
+    // הברקוד לא במאגר: אולי ספרה אחת נקראה לא נכון. מחפשים ברקוד תקין שנבדל בספרה אחת וקיים במאגר
+    if (barcode.length >= 12) {
+      const { rows } = await pool.query(
+        `SELECT DISTINCT barcode FROM products WHERE barcode = ANY($1::text[]) AND internal_chain = '' LIMIT 2`,
+        [barcodeVariants(barcode)],
+      );
+      if (rows.length === 1) {
+        const corrected = toCandidates(await searchProducts(rows[0].barcode, CANDIDATES), false);
+        if (corrected.length) return { ...line, barcode: rows[0].barcode, confidence: "barcode", candidates: corrected };
+      }
+    }
   }
   const shortCode = barcode ? null : normalizeShortCode(line.barcode);
   if (shortCode) {
