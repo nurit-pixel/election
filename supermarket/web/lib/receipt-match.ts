@@ -41,7 +41,7 @@ const words = (text: string) =>
     .split(/\s+/)
     .filter((w) => w.length > 1 || /\d/.test(w));
 
-/** שאילתות חיפוש לשורה, מהמדויקת לרחבה. exact מסמן שכל מילות השם (מלבד גדלים ומספרים) נדרשות. */
+/** שאילתות חיפוש לשורה, מהמדויקת לרחבה. exact מסמן שכל מילות השם, כולל גדלים ואחוזים, נדרשות. */
 export function queryVariants(line: Pick<ReceiptLine, "name" | "printed">): { query: string; exact: boolean }[] {
   const variants: { query: string; exact: boolean }[] = [];
   const push = (tokens: string[], exact: boolean) => {
@@ -52,7 +52,8 @@ export function queryVariants(line: Pick<ReceiptLine, "name" | "printed">): { qu
     const all = words(source);
     const core = all.filter((w) => !/\d/.test(w) && !w.includes("%"));
     push(all, true);
-    if (core.length >= 2) push(core, true);
+    // בלי גדלים ואחוזים ההתאמה כבר לא חד-משמעית (3% מול 1%, 200 גרם מול 500)
+    if (core.length >= 2) push(core, core.length === all.length);
     if (core.length > 2) push(core.slice(0, 2), false);
     if (core.length > 1 && core[0].length >= 3) push(core.slice(0, 1), false);
   }

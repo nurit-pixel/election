@@ -73,8 +73,6 @@ services:
       NIGHTLY_TIME: ${NIGHTLY_TIME:-06:00}
       FAMILY_PASSWORD: ${FAMILY_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      RECEIPT_MODEL: ${RECEIPT_MODEL:-}
       TZ: ${TZ:-Asia/Jerusalem}
     ports:
       - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-3000}:3000"
