@@ -13,6 +13,7 @@ import { formatUpdated } from "@/lib/format";
 import { THEME_COOKIE } from "@/lib/theme";
 import { uid } from "@/lib/session";
 import { getUser } from "@/lib/users";
+import { geocodePendingAddresses } from "@/lib/geocode";
 import {
   addAddress,
   deleteAddress,
@@ -38,6 +39,7 @@ const REQUEST_LABELS: Record<string, string> = {
 };
 
 export default async function SettingsPage() {
+  await geocodePendingAddresses();
   const [addresses, chains, info, clubs, threshold, user] = await Promise.all([
     listAddresses(),
     chainStatuses(),

@@ -1,6 +1,7 @@
 import "server-only";
 import { pool } from "./db";
 import { inIsrael, tidyAddress } from "./address";
+import { uid } from "./session";
 
 const GEOCODER_URL = process.env.GEOCODER_URL || "https://nominatim.openstreetmap.org/search";
 const USER_AGENT = process.env.GEOCODER_USER_AGENT || "supermarket-basket-compare/0.2";
@@ -53,4 +54,13 @@ export async function geocodeAddressNow(addressId: number, address: string): Pro
      WHERE id = $1 AND geocoded_at IS NULL`,
     [addressId, found?.lat ?? null, found?.lng ?? null, found ? null : "הכתובת לא נמצאה"],
   );
+}
+
+/** כתובות של המשתמש שעדיין ממתינות לאיתור (למשל כי ה-worker עסוק): מאתרים אותן עכשיו. */
+export async function geocodePendingAddresses(): Promise<void> {
+  const { rows } = await pool.query(
+    `SELECT id, address FROM addresses WHERE user_id = $1 AND geocoded_at IS NULL ORDER BY id LIMIT 3`,
+    [await uid()],
+  );
+  for (const row of rows) await geocodeAddressNow(row.id, row.address);
 }
