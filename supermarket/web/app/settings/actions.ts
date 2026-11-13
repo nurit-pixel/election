@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { THEME_COOKIE } from "@/lib/theme";
+import { geocodeAddressNow } from "@/lib/geocode";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE } from "@/lib/auth";
 import {
@@ -23,8 +24,12 @@ export async function addAddress(formData: FormData) {
   const radius = Math.min(50, Math.max(0.5, Number(formData.get("radius")) || DEFAULT_RADIUS));
   if (!address) return;
   const id = await addUserAddress(label || address, address, radius);
-  // טעינה מיידית של הסניפים שליד הכתובת החדשה
-  if (id != null) await enqueue("address", id);
+  if (id != null) {
+    // מאתרים את הכתובת כבר עכשיו, כך שהסניפים שבסביבה (ומחירים שכבר נטענו) מופיעים מיד;
+    // ה-worker משלים ברקע מחירים לסניפים שעוד לא נטענו
+    await geocodeAddressNow(id, address);
+    await enqueue("address", id);
+  }
   revalidatePath("/settings");
 }
 

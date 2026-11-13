@@ -70,6 +70,8 @@ services:
       DEFAULT_RADIUS_KM: ${DEFAULT_RADIUS_KM:-5}
       SPLIT_MIN_SAVING: ${SPLIT_MIN_SAVING:-20}
       NIGHTLY_TIME: ${NIGHTLY_TIME:-06:00}
+      GEOCODER_URL: ${GEOCODER_URL:-https://nominatim.openstreetmap.org/search}
+      GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-supermarket-basket-compare/0.2}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       # כניסה זמנית בסיסמה, רק כל עוד GOOGLE_CLIENT_ID לא הוגדר
       FAMILY_PASSWORD: ${FAMILY_PASSWORD:-}
