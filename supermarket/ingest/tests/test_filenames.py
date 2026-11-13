@@ -40,3 +40,16 @@ def test_latest_per_store():
     assert len(filenames.latest_per_store(names, "PRICE_FULL_FILE")) == 2
     assert [f.name for f in filenames.latest_per_store(names, "STORE_FILE")] == \
         ["Stores729-000-202611120500.xml"]
+
+
+def test_missing_stores_are_not_retried_on_every_address_request():
+    from ingest import pipeline
+    pipeline._recent_attempts.clear()
+    assert pipeline.not_recently_attempted("X", ["1", "2"], 1000.0) == ["1", "2"]
+    # בקשת כתובת נוספת זמן קצר אחר כך: רק סניף שעוד לא נוסה
+    assert pipeline.not_recently_attempted("X", ["1", "2", "3"], 1600.0) == ["3"]
+    # רשת אחרת עם אותו מספר סניף אינה מושפעת
+    assert pipeline.not_recently_attempted("Y", ["1"], 1600.0) == ["1"]
+    # אחרי שש שעות מנסים שוב
+    later = 1000.0 + pipeline.RETRY_MISSING_AFTER_SECONDS
+    assert pipeline.not_recently_attempted("X", ["1"], later) == ["1"]

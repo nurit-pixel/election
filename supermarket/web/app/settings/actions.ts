@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { THEME_COOKIE } from "@/lib/theme";
-import { geocodeAddressNow } from "@/lib/geocode";
+import { locateAddress } from "@/lib/geocode";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE } from "@/lib/auth";
 import {
@@ -14,23 +14,42 @@ import {
   setChainHidden,
   setClubMember,
   setSplitMinSaving,
+  updateUserAddress,
 } from "@/lib/settings";
 
 const DEFAULT_RADIUS = Number(process.env.DEFAULT_RADIUS_KM ?? 5);
+
+/** חזרה למסך ההגדרות עם הודעת "לא נמצאה" והטקסט שהוקלד, כדי שאפשר יהיה לתקן אותו */
+function addressNotFound(target: string, address: string, label = ""): never {
+  const params = new URLSearchParams({ notfound: target, address, label });
+  redirect(`/settings?${params}#addresses`);
+}
 
 export async function addAddress(formData: FormData) {
   const label = String(formData.get("label") ?? "").trim().slice(0, 40);
   const address = String(formData.get("address") ?? "").trim().slice(0, 200);
   const radius = Math.min(50, Math.max(0.5, Number(formData.get("radius")) || DEFAULT_RADIUS));
   if (!address) return;
-  const id = await addUserAddress(label || address, address, radius);
-  if (id != null) {
-    // מאתרים את הכתובת כבר עכשיו, כך שהסניפים שבסביבה (ומחירים שכבר נטענו) מופיעים מיד;
-    // ה-worker משלים ברקע מחירים לסניפים שעוד לא נטענו
-    await geocodeAddressNow(id, address);
-    await enqueue("address", id);
-  }
+  // מאתרים את הכתובת לפני השמירה: כתובת שלא נמצאה לא נשמרת, והמשתמש מתקן אותה במקום
+  const location = await locateAddress(address);
+  if (location.status === "notfound") addressNotFound("new", address, label);
+  const id = await addUserAddress(label || address, address, radius, location.status === "found" ? location : null);
+  // ה-worker משלים ברקע מחירים לסניפים שעוד לא נטענו (ומאתר את הכתובת, אם שירות האיתור לא ענה)
+  if (id != null) await enqueue("address", id);
   revalidatePath("/settings");
+  redirect("/settings#addresses");
+}
+
+/** תיקון כתובת שמורה (שגיאת הקלדה, או מקום שזוהה לא נכון). */
+export async function fixAddress(formData: FormData) {
+  const id = Number(formData.get("id"));
+  const address = String(formData.get("address") ?? "").trim().slice(0, 200);
+  if (!address) return;
+  const location = await locateAddress(address);
+  if (location.status !== "found") addressNotFound(String(id), address);
+  if (await updateUserAddress(id, address, location)) await enqueue("address", id);
+  revalidatePath("/settings");
+  redirect("/settings#addresses");
 }
 
 export async function deleteAddress(formData: FormData) {

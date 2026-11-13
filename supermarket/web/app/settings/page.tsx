@@ -17,6 +17,7 @@ import { geocodePendingAddresses } from "@/lib/geocode";
 import {
   addAddress,
   deleteAddress,
+  fixAddress,
   logout,
   requestPrices,
   requestStores,
@@ -38,7 +39,12 @@ const REQUEST_LABELS: Record<string, string> = {
   nightly: "הריצה הלילית",
 };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ notfound?: string; address?: string; label?: string }>;
+}) {
+  const retry = await searchParams;
   await geocodePendingAddresses();
   const [addresses, chains, info, clubs, threshold, user] = await Promise.all([
     listAddresses(),
@@ -65,7 +71,7 @@ export default async function SettingsPage() {
           <button className="min-h-11 shrink-0 rounded-[13px] bg-subtle px-4 text-sm font-bold">יציאה</button>
         </form>
       </div>
-      <details open className="group space-y-3">
+      <details open id="addresses" className="group scroll-mt-4 space-y-3">
         <summary className="flex min-h-12 cursor-pointer select-none items-center justify-between gap-3 rounded-pm-lg border border-line bg-card px-4 py-3 shadow-card">
           <h2 className="text-lg font-bold">כתובות ורדיוס</h2>
           <span aria-hidden className="text-pm-pink transition-transform group-open:rotate-180">▾</span>
@@ -89,18 +95,45 @@ export default async function SettingsPage() {
                   <button className="text-sm text-missing">מחיקה</button>
                 </form>
               </div>
-              <div className="mt-2 text-sm">
+              <div className="mt-2 space-y-1 text-sm">
                 {a.state === "pending" && <span className="text-muted">מאתר את הכתובת…</span>}
-                {a.state === "failed" && (
-                  <span className="text-missing">הכתובת לא נמצאה. נסו לכתוב רחוב, מספר ועיר.</span>
+                {a.state === "failed" && retry.notfound !== String(a.id) && (
+                  <span className="text-missing">הכתובת לא נמצאה. מתקנים אותה כאן למטה.</span>
+                )}
+                {a.state === "ok" && a.locatedName && (
+                  <div className={a.approximate ? "text-aging" : "text-muted"}>
+                    {a.approximate ? "מיקום משוער, מספר הבית או הרחוב לא זוהו: " : "זוהה: "}
+                    {a.locatedName}
+                  </div>
                 )}
                 {a.state === "ok" && (
-                  <span className="text-muted">
+                  <div className="text-muted">
                     {a.storesInRadius} סניפים ברדיוס · {a.storesWithPrices} עם מחירים
                     {a.storesApproximate > 0 && ` · ${a.storesApproximate} במיקום משוער (לפי עיר)`}
-                  </span>
+                  </div>
                 )}
               </div>
+              <details className="mt-2 text-sm" open={a.state === "failed" || retry.notfound === String(a.id)}>
+                <summary className="cursor-pointer select-none text-link">תיקון הכתובת</summary>
+                <form action={fixAddress} className="mt-2 space-y-2">
+                  <input type="hidden" name="id" value={a.id} />
+                  {retry.notfound === String(a.id) && (
+                    <p role="alert" className="rounded-pm bg-missing-surface p-2.5 text-missing">
+                      לא מצאנו את ״{retry.address}״. בודקים את האיות, וכותבים רחוב, מספר ועיר.
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      name="address"
+                      required
+                      defaultValue={retry.notfound === String(a.id) ? retry.address : a.address}
+                      aria-label={`הכתובת של ${a.label}`}
+                      className="min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-1.5"
+                    />
+                    <button className="rounded-lg border border-line px-3 py-1.5 font-medium">שמירה</button>
+                  </div>
+                </form>
+              </details>
               <form action={updateRadius} className="mt-3 flex items-center gap-2 text-sm">
                 <input type="hidden" name="id" value={a.id} />
                 <label htmlFor={`radius-${a.id}`} className="text-muted">
@@ -133,14 +166,21 @@ export default async function SettingsPage() {
           className={`space-y-2 rounded-pm-lg border border-dashed border-line bg-card p-4 ${addresses.length >= MAX_ADDRESSES ? "hidden" : ""}`}
         >
           <div className="font-semibold">כתובת חדשה</div>
+          {retry.notfound === "new" && (
+            <p role="alert" className="rounded-pm bg-missing-surface p-2.5 text-sm text-missing">
+              לא מצאנו את ״{retry.address}״, ולכן היא לא נשמרה. בודקים את האיות, וכותבים רחוב, מספר ועיר.
+            </p>
+          )}
           <input
             name="label"
+            defaultValue={retry.notfound === "new" ? retry.label : undefined}
             placeholder="שם (בית, עבודה…)"
             className="w-full rounded-pm border border-line px-3 py-2.5"
           />
           <input
             name="address"
             required
+            defaultValue={retry.notfound === "new" ? retry.address : undefined}
             placeholder="רחוב ומספר, עיר"
             className="w-full rounded-pm border border-line px-3 py-2.5"
           />

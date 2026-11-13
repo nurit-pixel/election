@@ -46,3 +46,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
     value   text NOT NULL,
     PRIMARY KEY (user_id, key)
 );
+
+-- המקום שזוהה לכתובת (להצגה למשתמש), והאם הזיהוי משוער (רק הרחוב או רק העיר)
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS located_name text;
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS approximate boolean NOT NULL DEFAULT false;

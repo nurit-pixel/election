@@ -15,16 +15,20 @@ export type Address = {
   storesWithPrices: number;
   /** סניפים שמוקמו רק לפי העיר ולא לפי הכתובת */
   storesApproximate: number;
+  /** המקום שזוהה לכתובת */
+  locatedName: string | null;
+  /** זוהו רק הרחוב או רק העיר, לא הכתובת המדויקת */
+  approximate: boolean;
 };
 
 export async function listAddresses(): Promise<Address[]> {
   const { rows } = await pool.query(
-    `SELECT a.id, a.label, a.address, a.radius_km,
+    `SELECT a.id, a.label, a.address, a.radius_km, a.located_name, a.approximate,
             CASE WHEN a.geocoded_at IS NULL THEN 'pending'
                  WHEN a.lat IS NULL THEN 'failed' ELSE 'ok' END AS state,
             count(s.id) AS in_radius,
             count(s.id) FILTER (WHERE s.prices_file_time IS NOT NULL) AS with_prices,
-            count(s.id) FILTER (WHERE s.geocode_precision = 'city') AS approximate
+            count(s.id) FILTER (WHERE s.geocode_precision = 'city') AS stores_approximate
      FROM addresses a
      LEFT JOIN stores s
        ON a.lat IS NOT NULL AND s.lat IS NOT NULL
@@ -41,7 +45,9 @@ export async function listAddresses(): Promise<Address[]> {
     state: r.state,
     storesInRadius: Number(r.in_radius),
     storesWithPrices: Number(r.with_prices),
-    storesApproximate: Number(r.approximate),
+    storesApproximate: Number(r.stores_approximate),
+    locatedName: r.located_name,
+    approximate: r.approximate === true,
   }));
 }
 
@@ -243,16 +249,37 @@ export async function setClubMember(chainKey: string, clubId: number, member: bo
 
 export const MAX_ADDRESSES = Number(process.env.MAX_ADDRESSES_PER_USER ?? 3);
 
-/** כתובת חדשה למשתמש. מחזיר את המזהה, או null אם הגיע למספר הכתובות המרבי. */
-export async function addUserAddress(label: string, address: string, radiusKm: number): Promise<number | null> {
+type Place = { lat: number; lng: number; name: string; approximate: boolean };
+
+/** כתובת חדשה למשתמש. place = המקום שכבר אותר; null = ממתינה לאיתור על ידי ה-worker.
+ * מחזיר את המזהה, או null אם הגיע למספר הכתובות המרבי. */
+export async function addUserAddress(
+  label: string,
+  address: string,
+  radiusKm: number,
+  place: Place | null,
+): Promise<number | null> {
   const { rows } = await pool.query(
-    `INSERT INTO addresses (label, address, radius_km, user_id)
-     SELECT $1, $2, $3, $4
+    `INSERT INTO addresses (label, address, radius_km, user_id, lat, lng, located_name, approximate, geocoded_at)
+     SELECT $1, $2, $3, $4, $6, $7, $8, $9, CASE WHEN $6::float8 IS NULL THEN NULL ELSE now() END
      WHERE (SELECT count(*) FROM addresses WHERE user_id = $4) < $5
      RETURNING id`,
-    [label, address, radiusKm, await uid(), MAX_ADDRESSES],
+    [label, address, radiusKm, await uid(), MAX_ADDRESSES, place?.lat ?? null, place?.lng ?? null,
+     place?.name ?? null, place?.approximate ?? false],
   );
   return rows[0]?.id ?? null;
+}
+
+/** תיקון הטקסט של כתובת קיימת, עם המקום החדש שאותר. מחזיר האם הכתובת שייכת למשתמש. */
+export async function updateUserAddress(id: number, address: string, place: Place): Promise<boolean> {
+  const { rowCount } = await pool.query(
+    `UPDATE addresses
+     SET label = CASE WHEN label = address THEN $2 ELSE label END, address = $2,
+         lat = $4, lng = $5, located_name = $6, approximate = $7, geocoded_at = now(), geocode_error = NULL
+     WHERE id = $1 AND user_id = $3`,
+    [id, address, await uid(), place.lat, place.lng, place.name, place.approximate],
+  );
+  return (rowCount ?? 0) > 0;
 }
 
 export async function deleteUserAddress(id: number): Promise<void> {

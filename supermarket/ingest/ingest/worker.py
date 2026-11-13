@@ -17,6 +17,9 @@ from .config import Config
 
 log = logging.getLogger("ingest.worker")
 GEOCODE_BATCH = 15
+# בקשת כתובת: טוענים רק סניפים שהמחירים שלהם חסרים או ישנים מזה, ועם מגבלת זמן קצרה לרשת
+ADDRESS_MISSING_HOURS = 24
+ADDRESS_CHAIN_TIMEOUT_SECONDS = 15 * 60
 IDLE_WAIT_SECONDS = 30
 PRICES_DURING_GEOCODE_SECONDS = 20 * 60
 GEOCODE_BACKOFF_SECONDS = (300, 900, 1800, 3600)   # המתנה אחרי כשל (למשל 429 משירות ה-geocoding)
@@ -48,8 +51,14 @@ def handle(cfg: Config, conn, kind: str, address_id: int | None) -> str:
             return "הכתובת נמחקה"
         if row[0] is None:
             return "הכתובת לא נמצאה ב-geocoding"
+        # רק סניפים שעוד אין להם מחירים עדכניים: באזור שכבר נטען (למשל בשביל משתמש אחר)
+        # אין מה להוריד והבקשה מסתיימת מיד. רשת שנתקעת לא מעכבת את התור יותר מרבע שעה.
         statuses = pipeline.refresh_prices(cfg, conn, chains, address_id=address_id,
-                                           all_stores=False)
+                                           all_stores=False,
+                                           missing_hours=ADDRESS_MISSING_HOURS,
+                                           timeout=ADDRESS_CHAIN_TIMEOUT_SECONDS)
+        if not statuses:
+            return "לכל הסניפים שליד הכתובת כבר יש מחירים עדכניים"
         tracking.update(conn, cfg)
         return f"מחירים נטענו ל-{len(statuses)} רשתות ליד הכתובת"
     if kind == "prices":

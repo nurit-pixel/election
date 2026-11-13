@@ -127,15 +127,19 @@ def load_stores(conn, chain: Chain, file_name: str, file_time: datetime, fallbac
     return len(rows)
 
 
-def store_ids_in_radius(conn, chain: Chain, address_id: Optional[int] = None) -> list[str]:
-    """מספרי הסניפים של הרשת שנמצאים ברדיוס של כתובת שמורה כלשהי (או של כתובת מסוימת)."""
+def store_ids_in_radius(conn, chain: Chain, address_id: Optional[int] = None,
+                        missing_hours: Optional[int] = None) -> list[str]:
+    """מספרי הסניפים של הרשת שנמצאים ברדיוס של כתובת שמורה כלשהי (או של כתובת מסוימת).
+    missing_hours: רק סניפים שאין להם מחירים, או שהמחירים שלהם ישנים ממספר השעות הזה."""
     rows = conn.execute(
         """SELECT DISTINCT s.store_id
            FROM stores s JOIN addresses a
              ON a.lat IS NOT NULL AND s.lat IS NOT NULL
             AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km
-           WHERE s.chain_key = %s AND (%s::int IS NULL OR a.id = %s)""",
-        (chain.key, address_id, address_id),
+           WHERE s.chain_key = %s AND (%s::int IS NULL OR a.id = %s)
+             AND (%s::int IS NULL OR s.prices_file_time IS NULL
+                  OR s.prices_file_time < now() - make_interval(hours => %s))""",
+        (chain.key, address_id, address_id, missing_hours, missing_hours),
     ).fetchall()
     return sorted((r[0] for r in rows), key=lambda x: (len(x), x))
 
