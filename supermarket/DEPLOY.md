@@ -10,6 +10,21 @@
 - **משאבים:** 2 ליבות, 2GB זיכרון ו-20GB דיסק מספיקים לטעינה לפי רדיוס. טעינה ארצית מלאה (`INGEST_ALL_STORES=true`) דורשת הרבה יותר דיסק וזמן.
 - פורטים 80 ו-443 פתוחים לעולם. שום פורט אחר לא צריך להיות פתוח.
 
+## פתיחת שרת ב-Vultr
+
+1. נרשמים ב-vultr.com ומוסיפים אמצעי תשלום.
+2. **Deploy New Server**: סוג **Cloud Compute** (Shared CPU), מיקום **Tel Aviv**, מערכת **Ubuntu 24.04 LTS**, תוכנית עם 2GB זיכרון לפחות.
+3. מומלץ להוסיף **SSH Key** (במקום סיסמה) ולתת לשרת שם.
+4. אחרי כדקה השרת עולה. מעתיקים את כתובת ה-IP שלו ממסך השרת.
+5. אצל ספק הדומיין יוצרים רשומת **A** מהדומיין (או תת-דומיין) אל כתובת ה-IP.
+6. מתחברים: `ssh root@<כתובת ה-IP>`, וממשיכים ל"התקנה".
+
+חומת אש (מומלץ): ב-Vultr תחת **Firewall** יוצרים קבוצה שמתירה כניסה רק בפורטים 22, 80 ו-443, ומשייכים אותה לשרת.
+
+לניסוי בלי דומיין (רק כדי לבדוק אילו רשתות נטענות מהשרת): מדלגים על שלב 5, משאירים `WEB_BIND=0.0.0.0`,
+מריצים בלי `docker-compose.prod.yml`, ונכנסים ל-`http://<כתובת ה-IP>:3000`. סריקת ברקוד לא תעבוד כך, והחיבור אינו מוצפן,
+אז זה לניסוי קצר בלבד.
+
 ## התקנה
 
 ```bash
@@ -17,8 +32,10 @@ curl -fsSL https://get.docker.com | sh
 ```
 
 ```bash
-git clone https://github.com/nurit-pixel/election.git /opt/election
+git clone -b claude/relaxed-lovelace-gmjmzb https://github.com/nurit-pixel/election.git /opt/election
 ```
+
+(הקוד נמצא כרגע בענף `claude/relaxed-lovelace-gmjmzb`. אחרי מיזוג לענף הראשי אפשר להשמיט את `-b ...`.)
 
 ```bash
 ln -s /opt/election/supermarket /opt/supermarket && cd /opt/supermarket
