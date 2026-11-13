@@ -29,6 +29,12 @@ export type AdminUser = {
   items: number;
   addresses: number;
   tracked: number;
+  /** שגיאות של המשתמש בשבוע האחרון */
+  errors7d: number;
+  lastError: { kind: string; message: string; at: string } | null;
+  /** כתובות שלא נמצאו, וכתובות שממתינות לאיתור יותר מעשר דקות */
+  addressesNotFound: number;
+  addressesStuck: number;
 };
 
 export type LogRow = {
@@ -45,7 +51,7 @@ export type IngestFailure = { chainName: string; kind: string; status: string; s
 export type QueueRow = { id: number; kind: string; status: string; requestedAt: string; startedAt: string | null; message: string | null };
 
 export type AdminData = {
-  totals: { users: number; active7d: number; newToday: number; loginsToday: number; errors24h: number; ingestFailures24h: number };
+  totals: { users: number; active7d: number; newToday: number; loginsToday: number; errors24h: number; ingestFailures24h: number; usersWithIssues: number };
   users: AdminUser[];
   logins: LogRow[];
   errors: LogRow[];
@@ -91,8 +97,25 @@ export async function adminData(): Promise<AdminData> {
               (SELECT count(*) FROM lists l WHERE l.user_id = u.id) AS lists,
               (SELECT count(*) FROM list_items i JOIN lists l ON l.id = i.list_id WHERE l.user_id = u.id) AS items,
               (SELECT count(*) FROM addresses a WHERE a.user_id = u.id) AS addresses,
-              (SELECT count(*) FROM tracked_products t WHERE t.user_id = u.id) AS tracked
-       FROM users u ORDER BY u.last_login DESC LIMIT 200`,
+              (SELECT count(*) FROM tracked_products t WHERE t.user_id = u.id) AS tracked,
+              (SELECT count(*) FROM app_log l WHERE l.user_id = u.id AND l.level = 'error'
+                 AND l.at > now() - interval '7 days') AS errors7d,
+              (SELECT row_to_json(e) FROM (
+                 SELECT l.kind, l.message, l.at FROM app_log l
+                 WHERE l.user_id = u.id AND l.level = 'error' AND l.at > now() - interval '7 days'
+                 ORDER BY l.at DESC LIMIT 1) e) AS last_error,
+              (SELECT count(*) FROM addresses a WHERE a.user_id = u.id AND a.geocoded_at IS NOT NULL
+                 AND a.lat IS NULL) AS addresses_not_found,
+              (SELECT count(*) FROM addresses a WHERE a.user_id = u.id AND a.geocoded_at IS NULL
+                 AND a.created_at < now() - interval '10 minutes') AS addresses_stuck
+       FROM users u
+       -- משתמשים עם בעיה קודם, ואחריהם לפי הכניסה האחרונה
+       ORDER BY (EXISTS (SELECT 1 FROM app_log l WHERE l.user_id = u.id AND l.level = 'error'
+                           AND l.at > now() - interval '7 days')
+                 OR EXISTS (SELECT 1 FROM addresses a WHERE a.user_id = u.id AND a.lat IS NULL
+                              AND (a.geocoded_at IS NOT NULL OR a.created_at < now() - interval '10 minutes'))) DESC,
+                u.last_login DESC
+       LIMIT 200`,
     ),
     pool.query(`${LOG} WHERE l.kind IN ('login', 'login_failed') ORDER BY l.at DESC LIMIT 40`),
     pool.query(`${LOG} WHERE l.level = 'error' AND l.kind <> 'login_failed' ORDER BY l.at DESC LIMIT 40`),
@@ -115,8 +138,12 @@ export async function adminData(): Promise<AdminData> {
     ),
   ]);
   const t = totals.rows[0];
+  const userRows = users.rows;
   return {
     totals: {
+      usersWithIssues: userRows.filter(
+        (r) => Number(r.errors7d) > 0 || Number(r.addresses_not_found) > 0 || Number(r.addresses_stuck) > 0,
+      ).length,
       users: Number(t.users),
       active7d: Number(t.active7d),
       newToday: Number(t.new_today),
@@ -134,6 +161,10 @@ export async function adminData(): Promise<AdminData> {
       items: Number(r.items),
       addresses: Number(r.addresses),
       tracked: Number(r.tracked),
+      errors7d: Number(r.errors7d),
+      lastError: r.last_error ? { kind: r.last_error.kind, message: r.last_error.message, at: r.last_error.at } : null,
+      addressesNotFound: Number(r.addresses_not_found),
+      addressesStuck: Number(r.addresses_stuck),
     })),
     logins: logins.rows.map(logRow),
     errors: errors.rows.map(logRow),

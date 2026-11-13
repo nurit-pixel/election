@@ -17,7 +17,7 @@ export default async function ReceiptPage() {
         <p className="mt-1 text-sm text-muted">
           מצלמים או מעלים חשבונית מהסופר. מזהים את המוצרים, מאשרים, והם נכנסים לרשימה ״{list.name}״.
         </p>
-        <Quip place="receipt" className="mt-2" />
+        <Quip place="receipt" className="mt-3" />
       </div>
       <ReceiptImport />
     </div>

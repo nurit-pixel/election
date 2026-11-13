@@ -95,7 +95,7 @@ export default async function ListPage() {
             ברוכים הבאים לפראיירמטר
           </h2>
           <p className="mt-1 text-sm text-muted">שלושה צעדים, ורואים איפה הסל שלך הכי משתלם.</p>
-          <Quip place="welcome" className="mt-1" />
+          <Quip place="welcome" className="mt-3" />
           <ol className="mt-3 space-y-2">
             {[
               { done: !needsAddress, title: "מוסיפים כתובת ורדיוס", note: "כדי לדעת אילו סניפים קרובים אליך", href: "/settings#addresses", action: "להגדרות" },
@@ -155,6 +155,8 @@ export default async function ListPage() {
         הוספה מחשבונית
       </Link>
 
+      {list.items.length > 0 && !showWelcome && <Quip place="list" />}
+
       {showTip && (
         <form action={dismissTip} className="rounded-pm-lg border border-info/40 bg-info-surface p-4 text-sm text-info">
           <div className="font-bold">טיפ: פריט יכול להיות כמה מוצרים</div>
@@ -172,7 +174,7 @@ export default async function ListPage() {
             +
           </span>
           <p className="font-bold">הרשימה ריקה</p>
-          <Quip place="emptyList" className="justify-center" />
+          <Quip place="emptyList" className="mt-2 w-full" />
           <p className="text-sm text-muted">מחפשים מוצר לפי שם, סורקים ברקוד או מעלים חשבונית, והמוצרים נכנסים לרשימה.</p>
         </div>
       ) : (
@@ -182,7 +184,6 @@ export default async function ListPage() {
               <ItemCard key={item.id} item={item} />
             ))}
           </ul>
-          <Quip place="list" className="px-1" />
         </>
       )}
 

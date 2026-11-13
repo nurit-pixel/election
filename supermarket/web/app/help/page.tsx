@@ -61,7 +61,7 @@ export default function HelpPage() {
       <div>
         <h1>איך זה עובד</h1>
         <p className="mt-1 text-sm text-muted">שלושה צעדים, ואז רואים איפה הסל שלך הכי משתלם.</p>
-        <Quip place="help" className="mt-2" />
+        <Quip place="help" className="mt-3" />
       </div>
 
       <ol className="space-y-3">

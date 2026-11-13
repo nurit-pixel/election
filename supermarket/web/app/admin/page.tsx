@@ -96,13 +96,13 @@ export default async function AdminPage() {
         </Link>
         <h1 className="mt-1">ניהול</h1>
         <p className="mt-1 text-sm text-muted">מי מתחבר, ומה נכשל. המסך גלוי רק לך.</p>
-        <Quip place="admin" className="mt-2" />
+        <Quip place="admin" className="mt-3" />
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         <Tile label="משתמשים" value={data.totals.users} />
+        <Tile label="משתמשים עם בעיה" value={data.totals.usersWithIssues} tone="bad" />
         <Tile label="פעילים בשבוע" value={data.totals.active7d} />
-        <Tile label="חדשים היום" value={data.totals.newToday} />
         <Tile label="כניסות היום" value={data.totals.loginsToday} />
         <Tile label="שגיאות ב-24 שעות" value={data.totals.errors24h} tone="bad" />
         <Tile label="כשלי טעינה ב-24 שעות" value={data.totals.ingestFailures24h} tone="bad" />
@@ -111,10 +111,17 @@ export default async function AdminPage() {
       <section className="space-y-2">
         <h2 className="text-lg font-bold">משתמשים ({data.totals.users})</h2>
         <ul className={`${CARD} divide-y divide-subtle`}>
-          {data.users.map((user) => (
-            <li key={user.id} className="px-4 py-3 text-sm">
+          {data.users.map((user) => {
+            const hasIssue = user.errors7d > 0 || user.addressesNotFound > 0 || user.addressesStuck > 0;
+            return (
+            <li key={user.id} className={`px-4 py-3 text-sm ${hasIssue ? "bg-missing-surface" : ""}`}>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="min-w-0 truncate font-bold">{user.name || "ללא שם"}</span>
+                <span className="min-w-0 truncate font-bold">
+                  {hasIssue && (
+                    <span className="me-1.5 rounded-full bg-missing px-2 py-0.5 text-xs font-bold text-card">יש בעיה</span>
+                  )}
+                  {user.name || "ללא שם"}
+                </span>
                 <span className="shrink-0 text-xs text-muted">כניסה אחרונה: {formatUpdated(user.lastLogin)}</span>
               </div>
               <div className="truncate text-muted" dir="ltr">
@@ -124,8 +131,32 @@ export default async function AdminPage() {
                 הצטרף/ה {formatUpdated(user.createdAt)} · {user.lists} רשימות · {user.items} פריטים · {user.addresses} כתובות ·{" "}
                 {user.tracked} במעקב
               </div>
+              {hasIssue && (
+                <ul className="mt-2 space-y-1 text-missing">
+                  {user.lastError && (
+                    <li dir="auto" className="break-words">
+                      <b>
+                        {EVENT[user.lastError.kind] ?? user.lastError.kind}
+                        {user.errors7d > 1 && ` (${user.errors7d} שגיאות בשבוע האחרון, זו האחרונה)`}:
+                      </b>{" "}
+                      {user.lastError.message.slice(0, 200)} · {formatUpdated(user.lastError.at)}
+                    </li>
+                  )}
+                  {user.addressesNotFound > 0 && (
+                    <li>
+                      <b>כתובת שלא נמצאה:</b> {user.addressesNotFound} כתובות שמורות בלי מיקום, ולכן אין להן סניפים להשוואה.
+                    </li>
+                  )}
+                  {user.addressesStuck > 0 && (
+                    <li>
+                      <b>כתובת ממתינה לאיתור:</b> {user.addressesStuck} כתובות מחכות יותר מעשר דקות.
+                    </li>
+                  )}
+                </ul>
+              )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       </section>
 

@@ -1,13 +1,15 @@
 import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { pageId } from "@/lib/ids";
 import { storeBasket } from "@/lib/compare";
 import { formatDistance, formatPrice, formatQuantity, formatUpdated } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function StorePage({ params }: { params: Promise<{ id: string }> }) {
-  const store = await storeBasket(Number((await params).id));
+  const id = pageId((await params).id);
+  const store = id == null ? null : await storeBasket(id);
   if (!store) notFound();
   const b = store.basket;
   const missing = b.lines.filter((l) => !l.found);
@@ -114,7 +116,7 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
           </ul>
         </section>
       )}
-      <Quip place="store" className="px-1" />
+      <Quip place="store" />
     </div>
   );
 }

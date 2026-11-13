@@ -99,7 +99,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </p>
         )}
       </div>
-      <Quip place="login" className="mt-6 justify-center text-center" />
+      <Quip place="login" className="mt-7" />
       <p className="mt-3 text-center text-xs text-muted">נורית בנתה. גילי כבר חוסכת.</p>
     </div>
   );

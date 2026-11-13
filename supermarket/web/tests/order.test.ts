@@ -33,3 +33,15 @@ describe("הערות ציניות", () => {
     expect(QUIPS.login).toContain(quip("login"));
   });
 });
+
+import { pageId } from "../lib/ids";
+
+describe("מזהה מתוך כתובת הדף", () => {
+  it("מספר שלם חיובי בטווח", () => {
+    expect(pageId("763")).toBe(763);
+    expect(pageId("2147483647")).toBe(2147483647);
+  });
+  it("ערך לא תקין או מחוץ לטווח: דף לא נמצא במקום שגיאת שרת", () => {
+    for (const bad of ["99999999999999", "2147483648", "0", "-5", "abc", "12.5", ""]) expect(pageId(bad)).toBeNull();
+  });
+});
