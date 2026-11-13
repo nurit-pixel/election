@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -70,6 +71,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
       <section className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
         <h2 className="font-semibold">מעקב מחיר</h2>
+        <Quip place="product" className="mt-1" />
         <p className="mt-0.5 text-xs text-muted">
           התראה תישלח כשהמחיר משתנה ב-10% ומעלה, או כשהוא יורד אל מחיר היעד.
         </p>

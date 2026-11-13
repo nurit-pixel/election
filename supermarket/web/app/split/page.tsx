@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { compareSplits, type StoreInfo } from "@/lib/compare";
 import type { StoreBasket } from "@/lib/basket";
@@ -39,6 +40,8 @@ export default async function SplitPage() {
         </div>
       )}
 
+      {offers.length > 0 && <Quip place="split" />}
+      {offers.length === 0 && list.items.length > 0 && <Quip place="splitNone" />}
       {offers.length === 0 ? (
         <p className="rounded-pm-lg bg-card p-4 text-muted">
           {list.items.length === 0

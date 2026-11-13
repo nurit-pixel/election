@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { storeBasket } from "@/lib/compare";
@@ -113,6 +114,7 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
           </ul>
         </section>
       )}
+      <Quip place="store" className="px-1" />
     </div>
   );
 }

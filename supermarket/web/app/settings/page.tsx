@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import {
   chainStatuses,
@@ -102,6 +103,7 @@ export default async function SettingsPage({
         <p className="text-sm text-muted">
           מחירים נטענים רק לסניפים שברדיוס מהכתובות השמורות. הוספת כתובת מפעילה טעינה מיידית.
         </p>
+        <Quip place="radius" />
 
         <ul className="space-y-2">
           {addresses.map((a) => (
@@ -237,6 +239,7 @@ export default async function SettingsPage({
         <p className="text-sm text-muted">
           מבצע מועדון נכלל בחישוב רק אם סימנתם שאתם חברים. אחרת הוא מוצג כחיסכון אפשרי.
         </p>
+        <Quip place="clubs" />
         {clubs.length === 0 ? (
           <p className="rounded-pm-lg bg-card p-4 text-sm text-muted">עוד לא נטענו מבצעי מועדון.</p>
         ) : (

@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE, SESSION_DAYS, familyPassword, googleConfigured, safeEqual, sessionToken } from "@/lib/auth";
@@ -98,7 +99,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </p>
         )}
       </div>
-      <p className="mt-6 text-center text-xs text-muted">נורית בנתה. גילי כבר חוסכת.</p>
+      <Quip place="login" className="mt-6 justify-center text-center" />
+      <p className="mt-3 text-center text-xs text-muted">נורית בנתה. גילי כבר חוסכת.</p>
     </div>
   );
 }

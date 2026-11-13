@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { adminData, isAdmin, type LogRow, type QueueRow } from "@/lib/admin";
@@ -95,6 +96,7 @@ export default async function AdminPage() {
         </Link>
         <h1 className="mt-1">ניהול</h1>
         <p className="mt-1 text-sm text-muted">מי מתחבר, ומה נכשל. המסך גלוי רק לך.</p>
+        <Quip place="admin" className="mt-2" />
       </div>
 
       <div className="grid grid-cols-3 gap-2">

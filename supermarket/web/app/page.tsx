@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { getList, listSummaries, type ListItem } from "@/lib/lists";
 import { hasAddress } from "@/lib/settings";
@@ -94,6 +95,7 @@ export default async function ListPage() {
             ברוכים הבאים לפראיירמטר
           </h2>
           <p className="mt-1 text-sm text-muted">שלושה צעדים, ורואים איפה הסל שלך הכי משתלם.</p>
+          <Quip place="welcome" className="mt-1" />
           <ol className="mt-3 space-y-2">
             {[
               { done: !needsAddress, title: "מוסיפים כתובת ורדיוס", note: "כדי לדעת אילו סניפים קרובים אליך", href: "/settings#addresses", action: "להגדרות" },
@@ -170,14 +172,18 @@ export default async function ListPage() {
             +
           </span>
           <p className="font-bold">הרשימה ריקה</p>
+          <Quip place="emptyList" className="justify-center" />
           <p className="text-sm text-muted">מחפשים מוצר לפי שם, סורקים ברקוד או מעלים חשבונית, והמוצרים נכנסים לרשימה.</p>
         </div>
       ) : (
-        <ul className="space-y-3">
-          {list.items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-3">
+            {list.items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </ul>
+          <Quip place="list" className="px-1" />
+        </>
       )}
 
       {list.items.length > 0 && (

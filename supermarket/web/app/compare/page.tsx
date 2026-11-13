@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { compareStores, type RankedStore } from "@/lib/compare";
 import { formatDistance } from "@/lib/format";
@@ -40,6 +41,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       <div className="flex flex-col items-center gap-3 rounded-pm-lg border border-dashed border-line bg-card px-5 py-10 text-center">
         <p className="font-bold">הרשימה ריקה</p>
         <p className="text-sm text-muted">מוסיפים מוצרים, ואז רואים איפה הסל הכי משתלם.</p>
+        <Quip place="compareEmpty" className="justify-center" />
         <Link href="/" className="rounded-pm bg-primary px-5 py-3 text-on-primary">
           לרשימה
         </Link>
@@ -54,6 +56,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         <p className="mt-1 text-sm text-muted">
           {list.name} · {list.items.length} פריטים · {storesInRadius} סניפים ברדיוס · כולל מבצעים
         </p>
+        <Quip place="compare" className="mt-2" />
       </div>
 
       {storesInRadius === 0 && (

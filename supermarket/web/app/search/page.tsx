@@ -1,3 +1,5 @@
+import { Quip } from "@/components/Quip";
+import { cheapestFirst } from "@/lib/order";
 import Link from "next/link";
 import { searchProducts, type ProductResult } from "@/lib/search";
 import { getItem, type ListItem } from "@/lib/lists";
@@ -11,7 +13,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const item = params.item ? await getItem(Number(params.item)) : null;
-  const results = q ? await searchProducts(q) : [];
+  // ההצעה הזולה ביותר למעלה
+  const results = q ? cheapestFirst(await searchProducts(q)) : [];
 
   return (
     <div className="space-y-4">
@@ -29,7 +32,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <SearchBar query={q} itemId={item?.id} autoFocus={!q} />
 
       {q && results.length === 0 && (
-        <p className="rounded-pm bg-card p-4 text-muted">לא נמצאו מוצרים עבור ״{q}״.</p>
+        <div className="space-y-2 rounded-pm bg-card p-4 text-muted">
+          <p>לא נמצאו מוצרים עבור ״{q}״.</p>
+          <Quip place="searchEmpty" />
+        </div>
+      )}
+      {results.length > 1 && (
+        <div className="space-y-1">
+          <p className="text-sm font-bold">{results.length} תוצאות, מהזול ליקר</p>
+          <Quip place="search" />
+        </div>
       )}
       <ul className="space-y-3">
         {results.map((p) => (

@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { getList } from "@/lib/lists";
 import { ReceiptImport } from "@/components/ReceiptImport";
@@ -16,6 +17,7 @@ export default async function ReceiptPage() {
         <p className="mt-1 text-sm text-muted">
           מצלמים או מעלים חשבונית מהסופר. מזהים את המוצרים, מאשרים, והם נכנסים לרשימה ״{list.name}״.
         </p>
+        <Quip place="receipt" className="mt-2" />
       </div>
       <ReceiptImport />
     </div>

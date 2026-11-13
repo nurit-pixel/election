@@ -1,3 +1,4 @@
+import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { listAlerts, listTracked, markAlertsRead, type AlertRow } from "@/lib/tracking";
@@ -34,7 +35,14 @@ export default async function AlertsPage() {
         <p className="text-sm text-muted">
           שינוי של 10% ומעלה במחיר הזול של מוצר ברשת, או ירידה אל מחיר היעד. רק למוצרים במעקב וברשימות שמורות.
         </p>
-        {alerts.length === 0 && <p className="rounded-pm-lg bg-card p-4 text-muted">אין התראות עדיין.</p>}
+        {alerts.length === 0 ? (
+          <div className="space-y-2 rounded-pm-lg bg-card p-4 text-muted">
+            <p>אין התראות עדיין.</p>
+            <Quip place="alertsEmpty" />
+          </div>
+        ) : (
+          <Quip place="alerts" />
+        )}
         {days.map((day) => (
           <div key={day} className="space-y-2">
             <h2 className="text-sm font-semibold text-muted">{dayLabel(day)}</h2>
