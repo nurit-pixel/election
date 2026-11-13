@@ -5,16 +5,13 @@ import { redirect } from "next/navigation";
 import * as lists from "@/lib/lists";
 import { enqueue } from "@/lib/settings";
 
-/** הוספת המוצרים שאושרו במסך האישור לרשימה הפעילה. */
-export async function addReceiptItems(items: { productId: number; quantity: number }[]) {
-  const valid = items
-    .filter((i) => Number.isInteger(i.productId) && Number.isFinite(i.quantity) && i.quantity > 0 && i.quantity <= 999)
-    .slice(0, 150);
+/** הוספת המוצרים שאושרו במסך האישור לרשימה הפעילה. כל מוצר נכנס בכמות 1;
+ * מוצר שכבר ברשימה נשאר כמו שהוא. */
+export async function addReceiptItems(productIds: number[]) {
+  const valid = [...new Set(productIds.filter((id) => Number.isInteger(id) && id > 0))].slice(0, 150);
   if (valid.length > 0) {
     const listId = (await lists.getList()).id;
-    for (const item of valid) {
-      await lists.addProductToList(listId, item.productId, Math.round(item.quantity * 1000) / 1000);
-    }
+    for (const productId of valid) await lists.addProductToList(listId, productId, 1, false);
     await enqueue("track");
     revalidatePath("/");
   }

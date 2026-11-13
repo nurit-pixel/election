@@ -78,13 +78,6 @@ export function queryVariants(line: Pick<ReceiptLine, "name" | "printed">): { qu
   return variants;
 }
 
-/** הכמות שתיכנס לרשימה: ק״ג למוצר שקיל, יחידות שלמות לכל השאר. */
-export function listQuantity(line: Pick<ReceiptLine, "unit" | "quantity">, isWeighted: boolean): number {
-  const quantity = Number.isFinite(line.quantity) && line.quantity > 0 ? line.quantity : 1;
-  if (isWeighted) return line.unit === "kg" ? Math.min(Math.round(quantity * 1000) / 1000, 999) : 1;
-  return line.unit === "unit" ? Math.min(Math.max(1, Math.round(quantity)), 999) : 1;
-}
-
 /** המוצר שמסומן מראש במסך האישור: רק כשההתאמה בטוחה. התאמה חלקית נשארת לבחירת המשתמש. */
 export function preselected(line: Pick<MatchedLine, "confidence" | "candidates">): number | null {
   if (line.candidates.length === 0) return null;

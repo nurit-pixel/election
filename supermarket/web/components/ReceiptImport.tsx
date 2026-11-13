@@ -2,15 +2,13 @@
 
 import { useRef, useState, useTransition } from "react";
 import { addReceiptItems } from "@/app/receipt/actions";
-import { listQuantity, preselected, type Candidate, type MatchedLine } from "@/lib/receipt-match";
+import { preselected, type Candidate, type MatchedLine } from "@/lib/receipt-match";
 import { Price } from "./ui";
 
 type Line = MatchedLine & {
   key: number;
   /** המוצר שנבחר, או null לדילוג */
   chosen: number | null;
-  /** כמות שהמשתמש הקליד; אחרת נגזרת מהחשבונית */
-  typed: string | null;
 };
 
 const MAX_SIDE = 2200;
@@ -31,9 +29,6 @@ async function shrink(file: File): Promise<Blob> {
     return file;
   }
 }
-
-const quantityOf = (line: Line, product: Candidate) =>
-  line.typed != null ? Number(line.typed.replace(",", ".")) : listQuantity(line, product.isWeighted);
 
 export function ReceiptImport() {
   const input = useRef<HTMLInputElement>(null);
@@ -57,7 +52,7 @@ export function ReceiptImport() {
         setError("לא זיהינו מוצרים בקובץ. מנסים צילום חד יותר, שכל החשבונית נראית בו.");
       } else {
         setLines(
-          (data.lines as MatchedLine[]).map((line, key) => ({ ...line, key, chosen: preselected(line), typed: null })),
+          (data.lines as MatchedLine[]).map((line, key) => ({ ...line, key, chosen: preselected(line) })),
         );
       }
     } catch {
@@ -111,22 +106,43 @@ export function ReceiptImport() {
 
   const picked = lines.flatMap((line) => {
     const product = line.candidates.find((c) => c.id === line.chosen);
-    if (!product) return [];
-    const quantity = quantityOf(line, product);
-    return Number.isFinite(quantity) && quantity > 0 ? [{ productId: product.id, quantity }] : [];
+    return product ? [product.id] : [];
   });
+  // שורות שלא נמצא להן מוצר במאגר מוצגות בנפרד, מקופלות: לרוב הן טקסט שאינו מוצר
+  const found = lines.filter((line) => line.confidence !== "none");
+  const unknown = lines.filter((line) => line.confidence === "none");
   const unsure = lines.filter((line) => line.chosen == null).length;
 
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted" role="status">
-        זוהו {lines.length} שורות. {unsure > 0 ? `${unsure} מהן מחכות לבחירה שלך; שורה בלי בחירה לא תתווסף.` : "בודקים ומאשרים."}
+        זוהו {found.length} מוצרים.{" "}
+        {found.some((line) => line.chosen == null) ? "מוצר בלי בחירה לא יתווסף." : "בודקים ומאשרים."} כל מוצר נכנס לרשימה
+        בכמות 1.
       </p>
       <ul className="space-y-3">
-        {lines.map((line) => (
+        {found.map((line) => (
           <LineCard key={line.key} line={line} update={(patch) => update(line.key, patch)} />
         ))}
       </ul>
+      {found.length === 0 && (
+        <p className="rounded-pm-lg border border-line bg-card p-4 text-sm text-muted">
+          אף שורה בחשבונית לא תואמת מוצר במאגר. אפשר לחפש ידנית בשורות שלמטה, או לנסות צילום חד יותר.
+        </p>
+      )}
+      {unknown.length > 0 && (
+        <details className="rounded-pm-lg border border-line bg-card p-3 text-sm">
+          <summary className="cursor-pointer select-none font-bold text-link">
+            {unknown.length} שורות שלא זוהו כמוצר במאגר
+          </summary>
+          <p className="mt-1 text-muted">לרוב זה טקסט אחר מהחשבונית. אם זה בכל זאת מוצר, אפשר לחפש אותו כאן.</p>
+          <ul className="mt-3 space-y-3">
+            {unknown.map((line) => (
+              <LineCard key={line.key} line={line} update={(patch) => update(line.key, patch)} />
+            ))}
+          </ul>
+        </details>
+      )}
       <button className="text-sm text-link" onClick={() => setLines(null)}>
         העלאת חשבונית אחרת
       </button>
@@ -155,7 +171,6 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [empty, setEmpty] = useState(false);
-  const product = line.candidates.find((c) => c.id === line.chosen);
   const badge = BADGE[line.confidence];
 
   const search = async () => {
@@ -176,7 +191,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
           minPrice: p.prices.length ? Math.min(...p.prices.map((x: { price: number }) => Number(x.price))) : null,
         }));
       if (candidates.length === 0) setEmpty(true);
-      else update({ candidates, chosen: null, confidence: "loose", typed: null });
+      else update({ candidates, chosen: null, confidence: "loose" });
     } catch {
       setEmpty(true);
     } finally {
@@ -190,19 +205,15 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
         <div className="min-w-0">
           <h2 className="font-semibold leading-snug">{line.printed || line.name}</h2>
           <p className="mt-0.5 text-xs text-muted">
-            בחשבונית: {line.unit === "kg" ? `${line.quantity} ק״ג` : `${line.quantity} יח׳`}
-            {line.total != null && (
-              <>
-                {" · "}
-                <Price value={line.total} />
-              </>
-            )}
+            בחשבונית:{" "}
+            {line.total != null && <Price value={line.total} />}
+            {line.total != null && line.barcode && " · "}
             {line.barcode && (
               <>
-                {" · קוד "}
-                <span dir="ltr">{line.barcode}</span>
+                קוד <span dir="ltr">{line.barcode}</span>
               </>
             )}
+            {line.total == null && !line.barcode && "בלי קוד ובלי מחיר"}
           </p>
         </div>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${badge.className}`}>{badge.text}</span>
@@ -216,7 +227,7 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
               type="radio"
               name={`line-${line.key}`}
               checked={line.chosen === candidate.id}
-              onChange={() => update({ chosen: candidate.id, typed: null })}
+              onChange={() => update({ chosen: candidate.id })}
               className="size-5 shrink-0"
             />
             <span className="min-w-0 flex-1">
@@ -246,18 +257,6 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
         </label>
       </fieldset>
 
-      {product && (
-        <label className="mt-2 flex items-center gap-2 text-sm">
-          כמות{product.isWeighted ? " (ק״ג)" : ""}
-          <input
-            inputMode="decimal"
-            dir="ltr"
-            value={line.typed ?? String(listQuantity(line, product.isWeighted))}
-            onChange={(event) => update({ typed: event.target.value })}
-            className="w-20 rounded-lg border border-line bg-card px-3 py-1.5 text-center"
-          />
-        </label>
-      )}
 
       <details className="mt-2 text-sm" open={line.confidence === "none"}>
         <summary className="cursor-pointer select-none text-link">חיפוש מוצר אחר</summary>

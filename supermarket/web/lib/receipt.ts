@@ -4,7 +4,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { searchProducts } from "./search";
-import { parseReceiptText } from "./receipt-parse";
+import { mergeDigitPass, parseReceiptText } from "./receipt-parse";
 import {
   normalizeBarcode,
   normalizeShortCode,
@@ -35,7 +35,9 @@ export class ReceiptError extends Error {
 /** הרצת כלי שורת פקודה; מחזיר את הפלט. הכלים (tesseract, poppler) מותקנים בתמונת ה-Docker. */
 function run(command: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(command, args, { timeout: 90_000, maxBuffer: 8 * 1024 * 1024 }, (error, stdout) => {
+    // OMP_THREAD_LIMIT=1: בלי זה כל קריאת tesseract תופסת את כל הליבות, ושתי קריאות יחד כמעט נעצרות
+    const env = { ...process.env, OMP_THREAD_LIMIT: "1" };
+    execFile(command, args, { timeout: 90_000, maxBuffer: 8 * 1024 * 1024, env }, (error, stdout) => {
       if (!error) return resolve(stdout);
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         console.error(`receipt: ${command} is not installed`);
@@ -50,9 +52,14 @@ function run(command: string, args: string[]): Promise<string> {
 // מודל הכתב העברי (עברית + ספרות) שנמצא ב-web/ocr
 const TESSDATA = process.env.RECEIPT_TESSDATA || join(process.cwd(), "ocr");
 
-/** זיהוי טקסט בתמונה, כגוש טקסט אחיד (מתאים לחשבונית). */
-const ocr = (imagePath: string) =>
-  run("tesseract", [imagePath, "stdout", "--tessdata-dir", TESSDATA, "-l", "Hebrew", "--psm", "6"]);
+/** זיהוי טקסט בתמונה, כגוש טקסט אחיד (מתאים לחשבונית). שתי קריאות, זו אחר זו: המודל העברי
+ * לשמות, ומודל הספרות לברקודים, שהמודל העברי משבש. */
+async function ocr(imagePath: string): Promise<string> {
+  const pass = (model: string) => run("tesseract", [imagePath, "stdout", "--tessdata-dir", TESSDATA, "-l", model, "--psm", "6"]);
+  const text = await pass("Hebrew");
+  const digits = await pass("eng").catch(() => "");
+  return digits ? mergeDigitPass(text, digits) : text;
+}
 
 /** הטקסט של החשבונית. הקובץ מעובד בשרת בלבד ונמחק בסיום. */
 async function receiptText(data: Buffer, mediaType: string): Promise<string> {

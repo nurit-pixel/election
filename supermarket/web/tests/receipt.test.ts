@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listQuantity, normalizeBarcode, preselected, queryVariants, type Candidate } from "../lib/receipt-match";
+import { normalizeBarcode, preselected, queryVariants, type Candidate } from "../lib/receipt-match";
 
 const candidate = (id: number): Candidate => ({ id, name: `מוצר ${id}`, manufacturer: null, isWeighted: false, chainName: null, minPrice: 5 });
 
@@ -33,20 +33,6 @@ describe("שאילתות חיפוש לשורה", () => {
   });
 });
 
-describe("כמות לרשימה", () => {
-  it("מוצר שקיל מקבל את המשקל בק״ג", () => {
-    expect(listQuantity({ unit: "kg", quantity: 0.7524 }, true)).toBe(0.752);
-  });
-  it("מוצר רגיל מקבל יחידות שלמות", () => {
-    expect(listQuantity({ unit: "unit", quantity: 3 }, false)).toBe(3);
-  });
-  it("אי התאמה בין החשבונית למוצר: ברירת מחדל 1", () => {
-    expect(listQuantity({ unit: "kg", quantity: 0.75 }, false)).toBe(1);
-    expect(listQuantity({ unit: "unit", quantity: 2 }, true)).toBe(1);
-    expect(listQuantity({ unit: "unit", quantity: Number.NaN }, false)).toBe(1);
-  });
-});
-
 describe("סימון מראש במסך האישור", () => {
   it("ברקוד או שם מלא: המוצר הראשון מסומן", () => {
     expect(preselected({ confidence: "barcode", candidates: [candidate(7)] })).toBe(7);
@@ -58,48 +44,52 @@ describe("סימון מראש במסך האישור", () => {
   });
 });
 
-import { parseReceiptText } from "../lib/receipt-parse";
+import { looksLikeProduct, mergeDigitPass, parseReceiptText } from "../lib/receipt-parse";
 
-describe("פענוח טקסט של חשבונית", () => {
+describe("חשבונית שמדפיסה קודים", () => {
   const text = [
     "סופר הדוגמה בע\"מ   ח.פ 512345678",
     "סניף 12 פתח תקווה  טלפון 03-1234567",
     "7290000042411 חלב בקבוק 3% יטבתה 1 ל 15.80",
     "2 X 7.90",
-    "במבה אסם 80 גרם 4.90",
-    "מלפפון 4.44",
+    "40112 מלפפון 4.44",
     "0.752 ק\"ג X 5.90",
     "הנחת מבצע 2.00-",
     "קוטג 5% 250 גרם 6.10",
     "7290004127329",
+    "חבר יקר, צברת היום 12.00",
+    "ברוכים הבאים לסופר 1.00",
     "פיקדון בקבוק 0.30",
     "סה\"כ לתשלום 31.24",
     "אשראי ויזה 31.24",
+    "מספר אישור 0012345678",
   ].join("\n");
   const lines = parseReceiptText(text);
 
-  it("מוציא רק שורות מוצרים", () => {
-    expect(lines.map((l) => l.printed)).toEqual([
-      "חלב בקבוק 3% יטבתה 1 ל",
-      "במבה אסם 80 גרם",
-      "מלפפון",
-      "קוטג 5% 250 גרם",
-    ]);
+  it("רק שורות עם קוד הן מוצרים; טקסט אחר עם מחיר אינו מוצר", () => {
+    expect(lines.map((l) => l.printed)).toEqual(["חלב בקבוק 3% יטבתה 1 ל", "מלפפון", "קוטג 5% 250 גרם"]);
   });
-  it("ברקוד באותה שורה או בשורה שמתחת", () => {
-    expect(lines[0].barcode).toBe("7290000042411");
-    expect(lines[3].barcode).toBe("7290004127329");
-    expect(lines[1].barcode).toBeNull();
+  it("ברקוד באותה שורה, קוד קצר של הרשת, או ברקוד בשורה שמתחת", () => {
+    expect(lines.map((l) => l.barcode)).toEqual(["7290000042411", "40112", "7290004127329"]);
   });
-  it("כמות ומשקל משורת ההמשך", () => {
-    expect(lines[0]).toMatchObject({ unit: "unit", quantity: 2, total: 15.8 });
-    expect(lines[1]).toMatchObject({ unit: "unit", quantity: 1, total: 4.9 });
-    expect(lines[2]).toMatchObject({ unit: "kg", quantity: 0.752, total: 4.44 });
+  it("אותו מוצר פעמיים: שורה אחת", () => {
+    const twice = parseReceiptText("7290000066295 במבה אסם 80 גרם 4.90\n7290000066295 במבה אסם 80 גרם 4.90\n7290000042411 חלב 6.90");
+    expect(twice.map((l) => l.barcode)).toEqual(["7290000066295", "7290000042411"]);
   });
-  it("אותו מוצר פעמיים: שורה אחת עם כמות מצטברת", () => {
-    const twice = parseReceiptText("במבה אסם 80 גרם 4.90\nבמבה אסם 80 גרם 4.90");
-    expect(twice).toHaveLength(1);
-    expect(twice[0]).toMatchObject({ quantity: 2, total: 9.8 });
+});
+
+describe("חשבונית בלי קודים", () => {
+  it("מוצר הוא שורה עם שם בעברית ומחיר", () => {
+    const lines = parseReceiptText("במבה אסם 80 גרם 4.90\nמלפפון 4.44\nקוטג 5% 250 גרם 6.10");
+    expect(lines.map((l) => l.printed)).toEqual(["במבה אסם 80 גרם", "מלפפון", "קוטג 5% 250 גרם"]);
+  });
+  it("שורות שאינן נראות כמו מוצר נזרקות", () => {
+    expect(looksLikeProduct({ printed: "במבה אסם 80 גרם", total: 4.9 })).toBe(true);
+    expect(looksLikeProduct({ printed: "במבה אסם 80 גרם", total: null })).toBe(false); // בלי מחיר
+    expect(looksLikeProduct({ printed: "אב 12 34 56 78", total: 5 })).toBe(false); // בעיקר ספרות
+    expect(looksLikeProduct({ printed: "גב צ", total: 5 })).toBe(false); // קצר מדי
+    expect(looksLikeProduct({ printed: "במבה", total: 25000 })).toBe(false); // סכום לא סביר למוצר
+    expect(looksLikeProduct({ printed: "א".repeat(70), total: 5 })).toBe(false); // ארוך מדי לשם מוצר
   });
   it("טקסט שאינו חשבונית: אין שורות", () => {
     expect(parseReceiptText("שלום עולם\nזה סתם מסמך")).toEqual([]);
@@ -107,10 +97,12 @@ describe("פענוח טקסט של חשבונית", () => {
 });
 
 describe("פענוח פלט OCR אמיתי", () => {
-  it("כמות שהודבקה למחיר ותווי כיווניות", () => {
-    const lines = parseReceiptText("7290000042411 חלב בקבוק 3% יטבתה 1 ל 15.80\n\u200eX7.902\u200f\n\u200fבמבה אסם 80 גרם 4.90");
-    expect(lines[0]).toMatchObject({ barcode: "7290000042411", quantity: 2, total: 15.8 });
-    expect(lines[1]).toMatchObject({ printed: "במבה אסם 80 גרם", quantity: 1 });
+  it("תווי כיווניות וכמות שהודבקה למחיר לא מפריעים לזיהוי הקוד", () => {
+    const lines = parseReceiptText(
+      "7290000042411 חלב בקבוק 3% יטבתה 1 ל 15.80\n\u200eX7.902\u200f\n\u200f7290000066295 במבה אסם 80 גרם 4.90",
+    );
+    expect(lines.map((l) => l.barcode)).toEqual(["7290000042411", "7290000066295"]);
+    expect(lines[1].printed).toBe("במבה אסם 80 גרם");
   });
 });
 
@@ -131,9 +123,11 @@ import { normalizeShortCode, shortCodeIsCertain } from "../lib/receipt-match";
 
 describe("קוד פנימי קצר של הרשת", () => {
   it("נלקח מתחילת שורת המוצר ולא מגודל האריזה", () => {
-    const lines = parseReceiptText("40112 עגבניה שרי 6.90\nקמח לבן 1000 גרם 4.50");
-    expect(lines[0]).toMatchObject({ barcode: "40112", printed: "עגבניה שרי" });
-    expect(lines[1]).toMatchObject({ barcode: null, printed: "קמח לבן 1000 גרם" });
+    const lines = parseReceiptText("40112 עגבניה שרי 6.90\nקמח לבן 1000 גרם 4.50\n40227 בצל יבש 3.20");
+    expect(lines.map((l) => [l.barcode, l.printed])).toEqual([
+      ["40112", "עגבניה שרי"],
+      ["40227", "בצל יבש"],
+    ]);
   });
   it("ברקוד מלא בשורה שמתחת גובר על קוד קצר", () => {
     const lines = parseReceiptText("40112 עגבניה שרי 6.90\n7290000042411");
@@ -148,5 +142,46 @@ describe("קוד פנימי קצר של הרשת", () => {
     expect(shortCodeIsCertain("עגבניה שרי", [{ name: "עגבניה שרי אשכולות" }])).toBe(true);
     expect(shortCodeIsCertain("עגבניה שרי", [{ name: "מלפפון" }])).toBe(false);
     expect(shortCodeIsCertain("עגבניה שרי", [{ name: "עגבניה שרי" }, { name: "עגבניה תמר" }])).toBe(false);
+  });
+});
+
+describe("שילוב קריאת הספרות עם הקריאה העברית", () => {
+  // פלט אמיתי של שתי הקריאות על אותה חשבונית
+  const hebrew = [
+    'סופר הדוגמה בע"מ',
+    "7290000042411 חלב בקבוק 3% יטבתה 1 ל 15.80",
+    "95 במבה מתוקה 30 גרם 7.80",
+    "כמות 3",
+    "84 ביצים 12 יח גדול 13.90",
+    "חבר יקר צברת היום 12.00",
+  ].join("\n");
+  const digits = [
+    'n"yr ANITA 910',
+    "15.80 7 1 anlv' 3% piaja ayn 7290000042411",
+    "7.80 072 30 Ay7INN AANA 7290000066295",
+    "3 nim>",
+    "13.90 7172 n':12 oN 7290015710084",
+    "12.00 DNN NAY 47! Nan",
+  ].join("\n");
+
+  it("ברקוד שהמודל העברי שיבש מוחלף בברקוד המלא, לפי מספר השורה", () => {
+    const merged = mergeDigitPass(hebrew, digits).split("\n");
+    expect(merged[2]).toBe("7290000066295 במבה מתוקה 30 גרם 7.80");
+    expect(merged[4]).toBe("7290015710084 ביצים 12 יח גדול 13.90");
+    expect(merged[1]).toBe("7290000042411 חלב בקבוק 3% יטבתה 1 ל 15.80"); // כבר היה תקין
+    expect(merged[5]).toBe("חבר יקר צברת היום 12.00"); // שורה בלי ברקוד לא משתנה
+  });
+  it("אחרי השילוב כל המוצרים מזוהים לפי ברקוד, והטקסט האחר נזרק", () => {
+    const lines = parseReceiptText(mergeDigitPass(hebrew, digits));
+    expect(lines.map((l) => l.barcode)).toEqual(["7290000042411", "7290000066295", "7290015710084"]);
+  });
+  it("כשמספר השורות שונה, הברקוד מוצמד לפי המחיר שבשורה", () => {
+    const shorter = digits.split("\n").slice(1).join("\n"); // קריאת הספרות פספסה את שורת הכותרת
+    const merged = mergeDigitPass(hebrew, shorter).split("\n");
+    expect(merged[2]).toBe("7290000066295 במבה מתוקה 30 גרם 7.80");
+    expect(merged[4]).toBe("7290015710084 ביצים 12 יח גדול 13.90");
+  });
+  it("בלי קריאת ספרות הטקסט נשאר כמו שהוא", () => {
+    expect(mergeDigitPass("במבה 4.90", "")).toBe("במבה 4.90");
   });
 });

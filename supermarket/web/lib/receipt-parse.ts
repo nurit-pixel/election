@@ -3,8 +3,21 @@ import type { ReceiptLine } from "./receipt-match";
 /** פענוח טקסט של חשבונית (פלט OCR או PDF דיגיטלי) לשורות מוצרים. לוגיקה טהורה. */
 
 // שורות שאינן מוצר: סיכומים, הנחות, תשלום, פרטי החנות
-const SKIP =
-  /סה["״']?כ|סהכ|סיכום|מע["״']?מ|הנח[הת]|מבצע|זיכוי|פי?קדון|שקית|שקיות|אשראי|מזומן|עודף|לתשלום|שולם|תשלום|קופה|קופאי|חשבונית|קבלה|טלפון|טל[.:]|תאריך|ח\s*\.\s*פ|ח\.?פ\s*\d|עוסק|כרטיס|מועדון|חסכת|חיסכון|נקודות|שובר|קופון|סניף|תודה|משלוח|עיגול|פריטים|www|@/i;
+const SKIP = new RegExp(
+  [
+    // סיכומים, הנחות ותשלום
+    'סה["״\']?כ', "סהכ", "סיכום", "סך", 'מע["״\']?מ', "הנח[הת]", "מבצע", "זיכוי", "החזר", "הטבה", "פי?קדון",
+    "שקית", "שקיות", "אשראי", "מזומן", "עודף", "לתשלום", "שולם", "תשלום", "תשלומים", "יתרה", "עיגול",
+    "ויזה", "מאסטרקארד", "מסטרקארד", "ישראכרט", "אמריקן", "דיינרס", "ביט", "תו קנייה", "שובר", "קופון",
+    // מועדון ונקודות
+    "מועדון", "חסכת", "חיסכון", "נקודות", "צבירה", "נצברו", "צברת", "חבר יקר",
+    // פרטי החנות והעסקה
+    "קופה", "קופאי", "חשבונית", "קבלה", "טלפון", "טל[.:]", "פקס", "תאריך", "שעה", "ח\\s*\\.\\s*פ", "ח\\.?פ\\s*\\d",
+    "ע\\s*\\.\\s*מ", "עוסק", "כרטיס", "סניף", "כתובת", "רחוב", "רח['׳]", 'בע["״\']?מ', "תודה", "להתראות", "משלוח",
+    "פריטים", "אישור", "מסוף", "עסקה", "מספר", "מס['׳]", "לקוח", "ת\\.?ז", "מקור", "העתק", "נאמן למקור", "www", "@",
+  ].join("|"),
+  "i",
+);
 
 const PRICE = /-?\d{1,4}[.,]\d{2}(?!\d)-?/g;
 const BARCODE = /(?<!\d)\d{7,14}(?!\d)/;
@@ -126,5 +139,69 @@ export function parseReceiptText(text: string): ReceiptLine[] {
       merged.set(existing ? `${key}:${merged.size}` : key, line);
     }
   }
-  return [...merged.values()].slice(0, 150);
+  return productLines([...merged.values()]).slice(0, 150);
+}
+
+/** שורה בלי קוד נחשבת מוצר רק אם היא נראית כמו שם של מוצר עם מחיר, ולא כמו טקסט אחר שבחשבונית. */
+export function looksLikeProduct(line: Pick<ReceiptLine, "printed" | "total">): boolean {
+  const name = line.printed;
+  const letters = hebrewLetters(name);
+  const visible = name.replace(/\s/g, "").length;
+  return (
+    line.total != null &&
+    line.total > 0 &&
+    line.total < 2000 &&
+    name.length <= 60 &&
+    letters >= 4 &&
+    letters / visible >= 0.5 &&
+    /[א-ת]{3}/.test(name)
+  );
+}
+
+/** בחירת שורות המוצרים. חשבונית שמדפיסה ברקודים מזוהה לפי הברקודים בלבד: שורה בלי ברקוד היא
+ * טקסט אחר (כותרת, מבצע, פרטי תשלום). רק בחשבונית בלי קודים בכלל מסתמכים על שם ומחיר. */
+export function productLines(lines: ReceiptLine[]): ReceiptLine[] {
+  // קוד = ברקוד מלא, או קוד פנימי קצר של הרשת (למשל לפירות וירקות)
+  const coded = lines.filter((l) => l.barcode != null);
+  if (coded.length >= 2 || (coded.length === 1 && lines.length <= 2)) return coded;
+  return lines.filter(looksLikeProduct);
+}
+
+const LONG_CODE = /(?<!\d)\d{7,14}(?!\d)/;
+const BIDI_MARKS = /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;
+
+/** שילוב שתי קריאות OCR של אותה תמונה. המודל העברי קורא היטב שמות אבל משבש רצפי ספרות ארוכים
+ * (ברקוד), ומודל הספרות קורא היטב ברקודים ומחירים אבל לא עברית. הברקוד שנקרא בקריאת הספרות
+ * מוצמד לשורה המתאימה בקריאה העברית: לפי מספר השורה כששתי הקריאות חילקו את הדף לאותן שורות,
+ * אחרת לפי המחירים שמופיעים בשורה. */
+export function mergeDigitPass(text: string, digits: string): string {
+  const split = (value: string) =>
+    value
+      .split(/\r?\n/)
+      .map((line) => line.replace(BIDI_MARKS, " ").replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+  const lines = split(text);
+  const digitLines = split(digits);
+  const pricesOf = (line: string): string[] => line.match(/\d{1,4}\.\d{2}(?!\d)/g) ?? [];
+  // הספרות הבודדות שנשארו מהברקוד המשובש בתחילת השורה מוחלפות בברקוד המלא
+  const withCode = (line: string, code: string) => `${code} ${line.replace(/^\d{1,6}(?=\s)/, "").trim()}`;
+
+  if (lines.length === digitLines.length) {
+    return lines
+      .map((line, index) => {
+        const code = digitLines[index].match(LONG_CODE)?.[0];
+        return code && !LONG_CODE.test(line) ? withCode(line, code) : line;
+      })
+      .join("\n");
+  }
+  for (const digitLine of digitLines) {
+    const code = digitLine.match(LONG_CODE)?.[0];
+    const prices = pricesOf(digitLine);
+    if (!code || prices.length === 0 || lines.some((line) => line.includes(code))) continue;
+    const matches = lines
+      .map((line, index) => ({ line, index }))
+      .filter(({ line }) => !LONG_CODE.test(line) && prices.every((p) => pricesOf(line).includes(p)));
+    if (matches.length === 1) lines[matches[0].index] = withCode(matches[0].line, code);
+  }
+  return lines.join("\n");
 }

@@ -99,8 +99,14 @@ export async function getItem(itemId: number): Promise<ListItem | null> {
   return (await getList()).items.find((i) => i.id === itemId) ?? null;
 }
 
-/** פריט חדש ברשימה מתוך מוצר, בכמות נתונה. אם המוצר כבר ברשימה – מגדיל את הכמות. */
-export async function addProductToList(listId: number, productId: number, quantity = 1): Promise<void> {
+/** פריט חדש ברשימה מתוך מוצר, בכמות נתונה. */
+export async function addProductToList(
+  listId: number,
+  productId: number,
+  quantity = 1,
+  /** מוצר שכבר ברשימה: להגדיל את הכמות (ברירת מחדל), או להשאיר כמו שהוא */
+  increaseExisting = true,
+): Promise<void> {
   const owned = await pool.query(`SELECT 1 FROM lists WHERE id = $1 AND user_id = $2`, [listId, await uid()]);
   if (owned.rows.length === 0) return;
   const existing = await pool.query(
@@ -109,6 +115,7 @@ export async function addProductToList(listId: number, productId: number, quanti
     [listId, productId],
   );
   if (existing.rows.length > 0) {
+    if (!increaseExisting) return;
     await pool.query(`UPDATE list_items SET quantity = quantity + $2 WHERE id = $1`, [existing.rows[0].id, quantity]);
     return;
   }
