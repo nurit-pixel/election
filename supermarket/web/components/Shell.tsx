@@ -19,10 +19,7 @@ export function Shell({ unread, children }: { unread: number; children: React.Re
           <span className="max-w-24 text-left text-xs leading-normal text-muted">הקניות של המשפחה</span>
         </div>
       </header>
-      <main className="mx-auto max-w-2xl px-4 pb-28 pt-6 has-[.pm-sticky-cta]:pb-48">
-        {children}
-        <footer className="mt-10 border-t border-line pt-4 text-center text-xs text-muted">נבנה ע״י נורית תמם</footer>
-      </main>
+      <main className="mx-auto max-w-2xl px-4 pb-28 pt-6">{children}</main>
       <BottomNav unread={unread} />
     </>
   );

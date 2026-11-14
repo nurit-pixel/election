@@ -39,7 +39,7 @@ export default async function ListPage() {
   const showWelcome = (needsAddress || list.items.length === 0) && !jar.get(WELCOME_COOKIE);
   const showTip = list.items.length > 0 && !showWelcome && !jar.get(TIP_COOKIE);
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24">
       <h1 className="text-2xl font-extrabold">{list.name}</h1>
       <details className="rounded-pm-lg border border-line bg-card p-3 text-sm shadow-card">
         <summary className="cursor-pointer select-none text-link">
@@ -188,7 +188,7 @@ export default async function ListPage() {
       )}
 
       {list.items.length > 0 && (
-        <div className="pm-sticky-cta fixed inset-x-0 bottom-[78px] z-30 mb-[env(safe-area-inset-bottom)] bg-gradient-to-t from-canvas from-80% to-transparent px-4 pb-3 pt-4">
+        <div className="fixed inset-x-0 bottom-[78px] z-30 mb-[env(safe-area-inset-bottom)] bg-gradient-to-t from-canvas from-80% to-transparent px-4 pb-3 pt-4">
           <Link
             href="/compare"
             className="mx-auto block max-w-2xl rounded-pm bg-primary pm-cta px-5 py-3 text-center font-bold text-on-primary"
