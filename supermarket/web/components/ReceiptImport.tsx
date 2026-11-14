@@ -147,7 +147,7 @@ export function ReceiptImport() {
         העלאת חשבונית אחרת
       </button>
 
-      <div className="fixed inset-x-0 bottom-[78px] z-30 mb-[env(safe-area-inset-bottom)] bg-gradient-to-t from-canvas from-80% to-transparent px-4 pb-3 pt-4">
+      <div className="pm-sticky-cta fixed inset-x-0 bottom-[78px] z-30 mb-[env(safe-area-inset-bottom)] bg-gradient-to-t from-canvas from-80% to-transparent px-4 pb-3 pt-4">
         <button
           disabled={picked.length === 0 || saving}
           onClick={() => startSaving(() => addReceiptItems(picked))}
