@@ -80,6 +80,21 @@ export async function signInGoogleUser(profile: { sub: string; email: string; na
   }
 }
 
+/** הזמנות לרשימות שנשלחו למייל של המשתמש הופכות לחברות ברשימה. */
+export async function claimInvites(userId: number, email: string): Promise<number> {
+  const { rowCount } = await pool.query(
+    `WITH claimed AS (
+       DELETE FROM list_invites WHERE lower(email) = lower($2) RETURNING list_id
+     )
+     INSERT INTO list_members (list_id, user_id)
+     SELECT c.list_id, $1 FROM claimed c JOIN lists l ON l.id = c.list_id
+     WHERE l.user_id <> $1
+     ON CONFLICT DO NOTHING`,
+    [userId, email],
+  );
+  return rowCount ?? 0;
+}
+
 export async function getUser(id: number): Promise<User | null> {
   const { rows } = await pool.query(`SELECT id, email, name FROM users WHERE id = $1`, [id]);
   return rows[0] ?? null;

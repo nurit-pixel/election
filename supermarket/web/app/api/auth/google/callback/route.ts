@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, SESSION_DAYS, safeEqual, sessionToken } from "@/lib/auth";
 import { appOrigin, exchangeCode, STATE_COOKIE } from "@/lib/google";
 import { logEvent } from "@/lib/log";
-import { emailAllowed, signInGoogleUser } from "@/lib/users";
+import { claimInvites, emailAllowed, signInGoogleUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
   if (!emailAllowed(profile.email)) return fail("denied", profile.email);
 
   const { id: userId, isNew } = await signInGoogleUser(profile);
+  await claimInvites(userId, profile.email);
   await logEvent("info", "login", isNew ? `משתמש חדש: ${profile.email}` : profile.email, { userId });
   const response = NextResponse.redirect(`${origin}/`);
   response.cookies.delete(STATE_COOKIE);

@@ -1,6 +1,6 @@
 import { Quip } from "@/components/Quip";
 import Link from "next/link";
-import { getList, listSummaries, type ListItem } from "@/lib/lists";
+import { getList, listPeople, listSummaries, type ListItem } from "@/lib/lists";
 import { hasAddress } from "@/lib/settings";
 import { cookies } from "next/headers";
 import { SearchBar } from "@/components/SearchBar";
@@ -8,6 +8,9 @@ import { QuantityControl } from "@/components/QuantityControl";
 import {
   createList,
   deleteList,
+  leaveList,
+  removeFromList,
+  shareList,
   removeAlternative,
   removeItem,
   renameItem,
@@ -30,9 +33,22 @@ async function dismissTip() {
   (await cookies()).set(TIP_COOKIE, "1", { sameSite: "lax", maxAge: 60 * 60 * 24 * 365 * 5, path: "/" });
 }
 
-export default async function ListPage() {
+const SHARE_MESSAGES: Record<string, { text: string; ok: boolean }> = {
+  added: { text: "הרשימה שותפה. מעכשיו שניכם רואים ועורכים אותה.", ok: true },
+  invited: { text: "נשלחה הזמנה. ברגע שהמייל הזה ייכנס לאפליקציה עם Google, הרשימה תופיע אצלו.", ok: true },
+  already: { text: "הרשימה כבר משותפת עם המייל הזה.", ok: true },
+  self: { text: "זה המייל שלך. כותבים את המייל של מי שרוצים לשתף.", ok: false },
+  invalid: { text: "כתובת המייל לא תקינה.", ok: false },
+  forbidden: { text: "רק מי שיצר/ה את הרשימה יכול/ה לשתף אותה.", ok: false },
+};
+
+export default async function ListPage({ searchParams }: { searchParams: Promise<{ shared?: string }> }) {
+  const { shared } = await searchParams;
   const list = await getList();
   const all = await listSummaries();
+  const people = await listPeople(list.id);
+  const isOwner = people?.isOwner ?? true;
+  const shareMessage = shared ? SHARE_MESSAGES[shared] : undefined;
   const needsAddress = !(await hasAddress());
   const jar = await cookies();
   // מדריך הצעדים הראשונים: עד שיש כתובת ורשימה, או עד שהמשתמש סוגר אותו
@@ -40,7 +56,16 @@ export default async function ListPage() {
   const showTip = list.items.length > 0 && !showWelcome && !jar.get(TIP_COOKIE);
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold">{list.name}</h1>
+      <div>
+        <h1 className="text-2xl font-extrabold">{list.name}</h1>
+        {people && (people.members.length > 0 || !isOwner) && (
+          <p className="mt-1 text-sm text-muted">
+            {isOwner
+              ? `משותפת עם ${people.members.map((m) => m.name?.split(" ")[0] || m.email).join(", ")}`
+              : `רשימה משותפת של ${people.owner.name || people.owner.email}`}
+          </p>
+        )}
+      </div>
       <details className="rounded-pm-lg border border-line bg-card p-3 text-sm shadow-card">
         <summary className="cursor-pointer select-none text-link">
           רשימות שמורות ({all.length})
@@ -50,6 +75,8 @@ export default async function ListPage() {
             <li key={l.id} className="flex items-center justify-between gap-3 py-2">
               <span className={l.id === list.id ? "font-semibold" : ""}>
                 {l.name} <span className="text-xs font-normal text-muted">({l.itemCount} פריטים)</span>
+                {!l.isOwner && <span className="ms-1 text-xs font-normal text-info">· משותפת, של {l.ownerName}</span>}
+                {l.isOwner && l.members > 0 && <span className="ms-1 text-xs font-normal text-info">· משותפת</span>}
               </span>
               {l.id === list.id ? (
                 <span className="text-xs text-muted">פעילה</span>
@@ -72,6 +99,7 @@ export default async function ListPage() {
           />
           <button className="rounded-lg bg-primary px-3 py-1.5 font-medium text-on-primary">יצירה</button>
         </form>
+        {isOwner && (
         <form action={renameList} className="mt-2 flex gap-2">
           <input type="hidden" name="list" value={list.id} />
           <input
@@ -82,10 +110,103 @@ export default async function ListPage() {
           />
           <button className="rounded-lg border border-line px-3 py-1.5 font-medium">שינוי שם</button>
         </form>
-        {all.length > 1 && (
+        )}
+        {isOwner && all.filter((l) => l.isOwner).length > 1 && (
           <form action={deleteList} className="mt-2">
             <input type="hidden" name="list" value={list.id} />
             <button className="text-missing">מחיקת הרשימה ״{list.name}״</button>
+          </form>
+        )}
+        {!isOwner && (
+          <form action={leaveList} className="mt-2">
+            <input type="hidden" name="list" value={list.id} />
+            <button className="text-missing">יציאה מהרשימה המשותפת ״{list.name}״</button>
+          </form>
+        )}
+      </details>
+
+      <details
+        id="sharing"
+        open={Boolean(shareMessage)}
+        className="scroll-mt-4 rounded-pm-lg border border-line bg-card p-3 text-sm shadow-card"
+      >
+        <summary className="cursor-pointer select-none text-link">
+          שיתוף הרשימה{people && people.members.length + people.invites.length > 0 ? ` (${people.members.length + people.invites.length})` : ""}
+        </summary>
+        <p className="mt-2 text-muted">
+          {isOwner
+            ? "משתפים את הרשימה עם בן או בת משפחה לפי כתובת ה-Gmail שלהם. כל השותפים רואים ועורכים את אותה רשימה."
+            : "את הרשימה הזו שיתפו איתך. כל השותפים רואים ועורכים אותה."}
+        </p>
+        {shareMessage && (
+          <p role="status" className={`mt-2 rounded-pm p-2.5 ${shareMessage.ok ? "bg-fresh-surface text-fresh" : "bg-missing-surface text-missing"}`}>
+            {shareMessage.text}
+          </p>
+        )}
+        {people && (
+          <ul className="mt-2 divide-y divide-subtle">
+            <li className="flex items-center justify-between gap-3 py-2">
+              <span className="min-w-0 truncate">
+                {people.owner.name || people.owner.email}
+                {people.owner.isMe && " (את/ה)"}
+              </span>
+              <span className="shrink-0 text-xs text-muted">יצר/ה את הרשימה</span>
+            </li>
+            {people.members.map((member) => (
+              <li key={member.userId} className="flex items-center justify-between gap-3 py-2">
+                <span className="min-w-0">
+                  <span className="block truncate">
+                    {member.name || member.email}
+                    {member.isMe && " (את/ה)"}
+                  </span>
+                  {isOwner && member.name && (
+                    <span className="block truncate text-xs text-muted" dir="ltr">
+                      {member.email}
+                    </span>
+                  )}
+                </span>
+                {isOwner && (
+                  <form action={removeFromList}>
+                    <input type="hidden" name="list" value={list.id} />
+                    <input type="hidden" name="user" value={member.userId} />
+                    <button className="shrink-0 text-xs text-missing">הסרה</button>
+                  </form>
+                )}
+              </li>
+            ))}
+            {isOwner &&
+              people.invites.map((email) => (
+                <li key={email} className="flex items-center justify-between gap-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block truncate" dir="ltr">
+                      {email}
+                    </span>
+                    <span className="block text-xs text-muted">ממתין/ה לכניסה ראשונה</span>
+                  </span>
+                  <form action={removeFromList}>
+                    <input type="hidden" name="list" value={list.id} />
+                    <input type="hidden" name="email" value={email} />
+                    <button className="shrink-0 text-xs text-missing">ביטול</button>
+                  </form>
+                </li>
+              ))}
+          </ul>
+        )}
+        {isOwner && (
+          <form action={shareList} className="mt-2 flex gap-2">
+            <input type="hidden" name="list" value={list.id} />
+            <input
+              name="email"
+              type="email"
+              required
+              dir="ltr"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="name@gmail.com"
+              aria-label="המייל של מי שמשתפים"
+              className="min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-1.5"
+            />
+            <button className="rounded-lg bg-primary px-3 py-1.5 font-medium text-on-primary">שיתוף</button>
           </form>
         )}
       </details>

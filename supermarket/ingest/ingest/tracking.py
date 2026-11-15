@@ -125,6 +125,7 @@ def _user_watched(user_id: int) -> str:
         SELECT ip.product_id FROM list_item_products ip
         JOIN list_items i ON i.id = ip.item_id JOIN lists l ON l.id = i.list_id
         WHERE l.user_id = {int(user_id)}
+           OR EXISTS (SELECT 1 FROM list_members m WHERE m.list_id = l.id AND m.user_id = {int(user_id)})
     """
 
 

@@ -3,8 +3,12 @@ import { cookies } from "next/headers";
 import { pool } from "./db";
 import { uid } from "./session";
 
-/** תנאי SQL: הפריט שייך לרשימה של המשתמש */
-const OWN_ITEM = (user: number) => `list_id IN (SELECT id FROM lists WHERE user_id = ${user})`;
+/** תנאי SQL: הרשימה (בכינוי l) שייכת למשתמש, או שותפה איתו */
+const CAN_ACCESS = (user: number) =>
+  `(l.user_id = ${user} OR EXISTS (SELECT 1 FROM list_members m WHERE m.list_id = l.id AND m.user_id = ${user}))`;
+
+/** תנאי SQL: הפריט ברשימה שהמשתמש רשאי לערוך (שלו או משותפת איתו) */
+const OWN_ITEM = (user: number) => `list_id IN (SELECT l.id FROM lists l WHERE ${CAN_ACCESS(user)})`;
 
 export const LIST_COOKIE = "active_list";
 
@@ -27,18 +31,38 @@ export type ListItem = {
 
 export type ShoppingList = { id: number; name: string; items: ListItem[] };
 
-export type ListSummary = { id: number; name: string; itemCount: number };
+export type ListSummary = {
+  id: number;
+  name: string;
+  itemCount: number;
+  /** הרשימה של המשתמש עצמו (ולא רשימה ששותפה איתו) */
+  isOwner: boolean;
+  /** שם בעל הרשימה, כשהיא משותפת עם המשתמש */
+  ownerName: string | null;
+  /** מספר המשתתפים מלבד הבעלים */
+  members: number;
+};
 
-/** כל הרשימות השמורות. */
+/** כל הרשימות של המשתמש, וגם רשימות ששותפו איתו. */
 export async function listSummaries(): Promise<ListSummary[]> {
+  const user = await uid();
   const { rows } = await pool.query(
-    `SELECT l.id, l.name, count(i.id) AS item_count
-     FROM lists l LEFT JOIN list_items i ON i.list_id = l.id
-     WHERE l.user_id = $1
-     GROUP BY l.id ORDER BY l.id`,
-    [await uid()],
+    `SELECT l.id, l.name, l.user_id = $1 AS is_owner, o.name AS owner_name, o.email AS owner_email,
+            (SELECT count(*) FROM list_items i WHERE i.list_id = l.id) AS item_count,
+            (SELECT count(*) FROM list_members m WHERE m.list_id = l.id) AS members
+     FROM lists l LEFT JOIN users o ON o.id = l.user_id
+     WHERE ${CAN_ACCESS(user)}
+     ORDER BY (l.user_id = $1) DESC, l.id`,
+    [user],
   );
-  return rows.map((r) => ({ id: r.id, name: r.name, itemCount: Number(r.item_count) }));
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    itemCount: Number(r.item_count),
+    isOwner: r.is_owner,
+    ownerName: r.is_owner ? null : r.owner_name || r.owner_email || "משתמש/ת אחר/ת",
+    members: Number(r.members),
+  }));
 }
 
 export async function createList(name: string): Promise<number> {
@@ -59,7 +83,8 @@ export async function getList(): Promise<ShoppingList> {
   const wanted = Number((await cookies()).get(LIST_COOKIE)?.value);
   const user = await uid();
   let { rows } = await pool.query(
-    `SELECT id, name FROM lists WHERE user_id = $2 ORDER BY (id = $1) DESC, id LIMIT 1`,
+    `SELECT l.id, l.name FROM lists l WHERE ${CAN_ACCESS(user)}
+     ORDER BY (l.id = $1) DESC, (l.user_id = $2) DESC, l.id LIMIT 1`,
     [Number.isInteger(wanted) ? wanted : 0, user],
   );
   if (rows.length === 0) {
@@ -107,7 +132,8 @@ export async function addProductToList(
   /** מוצר שכבר ברשימה: להגדיל את הכמות (ברירת מחדל), או להשאיר כמו שהוא */
   increaseExisting = true,
 ): Promise<void> {
-  const owned = await pool.query(`SELECT 1 FROM lists WHERE id = $1 AND user_id = $2`, [listId, await uid()]);
+  const user = await uid();
+  const owned = await pool.query(`SELECT 1 FROM lists l WHERE l.id = $1 AND ${CAN_ACCESS(user)}`, [listId]);
   if (owned.rows.length === 0) return;
   const existing = await pool.query(
     `SELECT i.id FROM list_items i JOIN list_item_products ip ON ip.item_id = i.id
@@ -179,4 +205,79 @@ export async function setQuantity(itemId: number, quantity: number): Promise<voi
 
 export async function renameItem(itemId: number, name: string): Promise<void> {
   await pool.query(`UPDATE list_items SET name = $2 WHERE id = $1 AND ${OWN_ITEM(await uid())}`, [itemId, name]);
+}
+
+// ---------- שיתוף ----------
+
+export type ListPeople = {
+  owner: { name: string | null; email: string; isMe: boolean };
+  members: { userId: number; name: string | null; email: string; isMe: boolean }[];
+  /** הזמנות למיילים שעוד לא נכנסו לאפליקציה */
+  invites: string[];
+  isOwner: boolean;
+};
+
+/** מי משתתף ברשימה. null אם המשתמש לא רשאי לראות אותה. */
+export async function listPeople(listId: number): Promise<ListPeople | null> {
+  const user = await uid();
+  const owner = await pool.query(
+    `SELECT u.id, u.name, u.email FROM lists l JOIN users u ON u.id = l.user_id
+     WHERE l.id = $1 AND ${CAN_ACCESS(user)}`,
+    [listId],
+  );
+  if (owner.rows.length === 0) return null;
+  const [members, invites] = await Promise.all([
+    pool.query(
+      `SELECT u.id, u.name, u.email FROM list_members m JOIN users u ON u.id = m.user_id
+       WHERE m.list_id = $1 ORDER BY m.added_at`,
+      [listId],
+    ),
+    pool.query(`SELECT email FROM list_invites WHERE list_id = $1 ORDER BY created_at`, [listId]),
+  ]);
+  const o = owner.rows[0];
+  return {
+    owner: { name: o.name, email: o.email, isMe: o.id === user },
+    members: members.rows.map((m) => ({ userId: m.id, name: m.name, email: m.email, isMe: m.id === user })),
+    invites: invites.rows.map((i) => i.email),
+    isOwner: o.id === user,
+  };
+}
+
+export type ShareResult = "added" | "invited" | "self" | "already" | "invalid" | "forbidden";
+
+/** שיתוף הרשימה עם מייל: משתמש קיים מצטרף מיד; מייל אחר מקבל הזמנה שתופעל בכניסה הראשונה שלו. */
+export async function shareList(listId: number, rawEmail: string): Promise<ShareResult> {
+  const user = await uid();
+  const email = rawEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 200) return "invalid";
+  const owned = await pool.query(`SELECT 1 FROM lists WHERE id = $1 AND user_id = $2`, [listId, user]);
+  if (owned.rows.length === 0) return "forbidden";
+  const target = await pool.query(`SELECT id FROM users WHERE lower(email) = $1 ORDER BY id LIMIT 1`, [email]);
+  if (target.rows.length > 0) {
+    if (target.rows[0].id === user) return "self";
+    const { rowCount } = await pool.query(
+      `INSERT INTO list_members (list_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [listId, target.rows[0].id],
+    );
+    return rowCount ? "added" : "already";
+  }
+  const { rowCount } = await pool.query(
+    `INSERT INTO list_invites (list_id, email, invited_by) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+    [listId, email, user],
+  );
+  return rowCount ? "invited" : "already";
+}
+
+/** הסרת משתתף או הזמנה (בעל הרשימה בלבד). */
+export async function removeFromList(listId: number, target: { userId?: number; email?: string }): Promise<void> {
+  const user = await uid();
+  const owned = await pool.query(`SELECT 1 FROM lists WHERE id = $1 AND user_id = $2`, [listId, user]);
+  if (owned.rows.length === 0) return;
+  if (target.userId) await pool.query(`DELETE FROM list_members WHERE list_id = $1 AND user_id = $2`, [listId, target.userId]);
+  if (target.email) await pool.query(`DELETE FROM list_invites WHERE list_id = $1 AND lower(email) = lower($2)`, [listId, target.email]);
+}
+
+/** יציאה מרשימה ששותפה עם המשתמש. */
+export async function leaveList(listId: number): Promise<void> {
+  await pool.query(`DELETE FROM list_members WHERE list_id = $1 AND user_id = $2`, [listId, await uid()]);
 }

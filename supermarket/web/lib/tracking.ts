@@ -47,7 +47,8 @@ export async function getProduct(id: number): Promise<ProductDetails | null> {
             t.product_id IS NOT NULL AS tracked, t.target_price,
             ARRAY(SELECT DISTINCT l.name FROM list_item_products ip
                   JOIN list_items i ON i.id = ip.item_id JOIN lists l ON l.id = i.list_id
-                  WHERE ip.product_id = p.id AND l.user_id = $2) AS in_lists
+                  WHERE ip.product_id = p.id AND (l.user_id = $2 OR EXISTS (
+                    SELECT 1 FROM list_members m WHERE m.list_id = l.id AND m.user_id = $2))) AS in_lists
      FROM products p LEFT JOIN tracked_products t ON t.product_id = p.id AND t.user_id = $2
      WHERE p.id = $1`,
     [id, user],

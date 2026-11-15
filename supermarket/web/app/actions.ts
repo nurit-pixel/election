@@ -76,3 +76,25 @@ export async function deleteList(formData: FormData) {
   await lists.deleteList(id(formData.get("list")));
   revalidatePath("/");
 }
+
+export async function shareList(formData: FormData) {
+  const listId = id(formData.get("list"));
+  const result = await lists.shareList(listId, String(formData.get("email") ?? ""));
+  if (result === "added" || result === "invited") await enqueue("track");
+  revalidatePath("/");
+  redirect(`/?shared=${result}#sharing`);
+}
+
+export async function removeFromList(formData: FormData) {
+  const listId = id(formData.get("list"));
+  const userId = formData.get("user") ? id(formData.get("user")) : undefined;
+  const email = formData.get("email") ? String(formData.get("email")) : undefined;
+  await lists.removeFromList(listId, { userId, email });
+  revalidatePath("/");
+}
+
+export async function leaveList(formData: FormData) {
+  await lists.leaveList(id(formData.get("list")));
+  (await cookies()).delete(lists.LIST_COOKIE);
+  revalidatePath("/");
+}
