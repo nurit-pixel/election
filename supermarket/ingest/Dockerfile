@@ -5,5 +5,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY ingest ./ingest
 COPY tests ./tests
-# תהליך רקע: בקשות מהאפליקציה ו-geocoding. הריצה הלילית תתווסף בשלב 7.
-CMD ["python", "-m", "ingest", "worker"]
+# תהליך רקע: בקשות מהאפליקציה, geocoding והריצה הלילית. בעדיפות נמוכה (nice), כדי שטעינת מחירים
+# כבדה לא תאט את האפליקציה עצמה
+CMD ["nice", "-n", "15", "python", "-m", "ingest", "worker"]

@@ -9,6 +9,18 @@ services:
     logging: *logging
     image: postgres:16-alpine
     restart: unless-stopped
+    # הגדרות זיכרון לשרת קטן (2GB): מטמון גדול יותר לטבלת המחירים, כדי שהאפליקציה לא תקרא מהדיסק בכל שאילתה.
+    # לשרת גדול יותר אפשר להגדיל: DB_SHARED_BUFFERS ו-DB_CACHE_SIZE ב-.env
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${DB_SHARED_BUFFERS:-256MB}
+      - -c
+      - effective_cache_size=${DB_CACHE_SIZE:-768MB}
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=64MB
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -41,7 +53,7 @@ services:
       REQUEST_DELAY_SECONDS: ${REQUEST_DELAY_SECONDS:-1}
       GEOCODER_URL: ${GEOCODER_URL:-https://nominatim.openstreetmap.org/search}
       GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-supermarket-basket-compare/0.2}
-      INGEST_PARALLEL_CHAINS: ${INGEST_PARALLEL_CHAINS:-4}
+      INGEST_PARALLEL_CHAINS: ${INGEST_PARALLEL_CHAINS:-2}
       GEOCODER_DELAY_SECONDS: ${GEOCODER_DELAY_SECONDS:-1.5}
       ALERT_CHANGE_PCT: ${ALERT_CHANGE_PCT:-10}
       SMTP_HOST: ${SMTP_HOST:-}
