@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageId } from "@/lib/ids";
 import { navigationLinks } from "@/lib/navigate";
+import { isOnlineOnly } from "@/lib/online";
+import { OnlineOrder } from "@/components/OnlineOrder";
 import { storeReviews } from "@/lib/reviews";
 import { StoreReviews } from "@/components/StoreReviews";
 import { Stars } from "@/components/Stars";
@@ -16,7 +18,8 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
   const store = id == null ? null : await storeBasket(id);
   if (!store) notFound();
   const reviews = await storeReviews(store.storePk);
-  const nav = navigationLinks(store);
+  // לסניף אונליין בלבד הכתובת היא מחסן ליקוט: במקום ניווט, קישור להזמנה
+  const nav = isOnlineOnly(store.storeType) ? null : navigationLinks(store);
   const b = store.basket;
   const missing = b.lines.filter((l) => !l.found);
 
@@ -39,6 +42,7 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
             <Stars value={reviews.average} count={reviews.count} />
           </a>
         )}
+        <OnlineOrder store={store} className="mt-3" />
         {nav && (
           <div className="mt-3 flex gap-2">
             <a

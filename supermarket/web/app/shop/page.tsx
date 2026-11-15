@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getList, listPeople } from "@/lib/lists";
 import { compareStores, storeBasket } from "@/lib/compare";
+import { OnlineOrder } from "@/components/OnlineOrder";
 import { pageId } from "@/lib/ids";
 import { ShoppingList, type ShopItem } from "@/components/ShoppingList";
 import { Price } from "@/components/ui";
@@ -71,6 +72,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
           המחירים לפי {store.chainName} · {store.name}. סך הכול לסל: <Price value={store.basket.total} className="font-bold text-ink" />
         </p>
       )}
+      {store && <OnlineOrder store={store} />}
 
       {items.length === 0 ? (
         <p className="rounded-pm-lg border border-line bg-card p-4 text-muted">הרשימה ריקה. אין מה לקנות, ואין על מה לצאת פראייר.</p>

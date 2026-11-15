@@ -26,11 +26,11 @@ const VARIANTS: RegExp[] = [
   /זירו|zero/i, /דיאט|diet/i, /לייט|light/i, /אומגה/, /אורגני/, /ללא סוכר|בלי סוכר/, /ללא גלוטן/, /ללא לקטוז|דל לקטוז/,
   /מופחת/, /דל שומן|דל נתרן/, /טבעוני/, /מלא|מלאה/, /שוקו|שוקולד/, /וניל/, /תות/, /בננה/, /לימון/, /מוגז/, /פרוס/,
   /מגורד/, /מעושן/, /חריף/, /(?:^|[\s\d])S(?=$|\s)/, /(?:^|[\s\d])M(?=$|\s)/, /(?:^|[\s\d])L(?=$|\s)/,
-  /(?:^|[\s\d])XL(?=$|\s)/, /בינוני/, /גדול/, /קטן/, /ענק/,
+  /(?:^|[\s\d])XL(?=$|\s)/, /בינוני/, /גדול/, /קטן/, /ענק/, /(?:^|\s)עם\s/, /זיתים/, /נטול/, /שמיר/, /פלפל/,
 ];
 
 /** מילות יחידה ומידה, שאינן חלק מזהות המוצר */
-const UNIT_WORDS = new Set(["גרם", "גר", "ג", "מל", "מ", "ליטר", "ל", "קג", "ק", "יח", "יחידות", "יחידה", "מארז", "שישייה", "אריזה"]);
+const UNIT_WORDS = new Set(["גרם", "גר", "ג", "מל", "מ", "ליטר", "ל", "קג", "ק", "יח", "יחידות", "יחידה", "מארז", "שישייה", "אריזה", "שומן"]);
 
 /** המילים בעברית בשם, בלי מספרים ומילות מידה ("זירו330מל" נותן "זירו") */
 export function nameWords(name: string): Set<string> {
@@ -86,4 +86,68 @@ export function suggestAlternative(reference: ProductOffer, candidates: ProductO
     if (!best || saving > best.saving) best = { product: candidate, saving: Math.round(saving * 100) / 100, savingPct: Math.round(savingPct) };
   }
   return best;
+}
+
+/** מוצר דומה לרשימת "מוצרים דומים ומותגים אחרים": אותם כללים כמו בחלופה הזולה, אבל הגודל יכול להיות שונה
+ * (עד פי 2 לכל כיוון), כי המחיר מוצג גם לפי גודל האריזה המקורית. */
+/** מספר היחידות באריזה מתוך השם ("12 יח", "6*1.5"), או null */
+function packCount(name: string): number | null {
+  const m = name.match(/(\d+)\s*(?:יח|יחידות)/) ?? name.match(/(\d+)\s*[*xX×]\s*\d/);
+  return m ? Number(m[1]) : null;
+}
+
+export function isRelated(candidate: ProductOffer, reference: ProductOffer): boolean {
+  if (candidate.id === reference.id || candidate.isWeighted !== reference.isWeighted) return false;
+  // מארז של 6 מול בקבוק בודד, 12 ביצים מול 30: לא אותו מוצר
+  if (packCount(candidate.name) !== packCount(reference.name)) return false;
+  const word = firstWord(reference.name);
+  if (word.length < 3 || firstWord(candidate.name) !== word) return false;
+  if (percents(candidate.name) !== percents(reference.name)) return false;
+  if (VARIANTS.some((variant) => variant.test(candidate.name) !== variant.test(reference.name))) return false;
+  // שם המותג לא תמיד בשדה היצרן (שם יש לפעמים את המפיץ): מותרת מילה אחת שונה בכל צד, זה בדרך כלל המותג
+  const candidateWords = nameWords(candidate.name);
+  const referenceWords = nameWords(reference.name);
+  const missing = definingWords(reference).filter((w) => !candidateWords.has(w)).length;
+  const extra = definingWords(candidate).filter((w) => !referenceWords.has(w)).length;
+  if (missing > 1 || extra > 1) return false;
+  if (reference.isWeighted || !reference.quantity || !candidate.quantity) return true;
+  if (candidate.unit !== reference.unit) {
+    // יחידה חסרה באחד מהם: רק אותה כמות בדיוק
+    return (!candidate.unit || !reference.unit) && candidate.quantity === reference.quantity;
+  }
+  const ratio = candidate.quantity / reference.quantity;
+  return ratio >= 0.5 && ratio <= 2;
+}
+
+export type Related = {
+  product: ProductOffer;
+  /** המחיר לאריזה בגודל של המוצר המקורי (כשהגדלים ידועים) */
+  comparablePrice: number;
+  /** הגודל שונה מהמקורי, והמחיר המושווה חושב לפי משקל/נפח */
+  resized: boolean;
+};
+
+/** מוצרים דומים למוצרי הפריט, מהזול ליקר לפי המחיר המושווה. מוצרים שכבר בפריט לא נכללים. */
+export function relatedProducts(
+  references: ProductOffer[],
+  candidates: ProductOffer[],
+  exclude: Set<number>,
+  limit = 12,
+): Related[] {
+  const best = new Map<number, Related>();
+  for (const reference of references) {
+    for (const candidate of candidates) {
+      if (exclude.has(candidate.id) || !isRelated(candidate, reference)) continue;
+      const price = Math.round(comparablePrice(candidate, reference) * 100) / 100;
+      const prev = best.get(candidate.id);
+      if (!prev || price < prev.comparablePrice) {
+        best.set(candidate.id, {
+          product: candidate,
+          comparablePrice: price,
+          resized: Boolean(candidate.quantity && reference.quantity && candidate.quantity !== reference.quantity),
+        });
+      }
+    }
+  }
+  return [...best.values()].sort((a, b) => a.comparablePrice - b.comparablePrice).slice(0, limit);
 }

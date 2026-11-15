@@ -1,4 +1,5 @@
 import { Quip } from "@/components/Quip";
+import { isOnlineStore } from "@/lib/online";
 import Link from "next/link";
 import { compareStores, type RankedStore } from "@/lib/compare";
 import { formatDistance } from "@/lib/format";
@@ -350,6 +351,9 @@ function StoreCard({
             {missing === 1 ? "חסר מחיר לפריט אחד" : `חסרים מחירים ל-${missing} פריטים`} · {b.foundCount} מתוך {b.itemCount}
           </span>
         )}
+        {isOnlineStore(s.storeType) && (
+          <span className={`${BADGE} bg-pm-orange text-white`}>{s.storeType === "3" ? "גם אונליין" : "אונליין · משלוח"}</span>
+        )}
         {b.savings > 0 && (
           <span className={`${BADGE} bg-fresh-surface text-fresh`}>
             חיסכון במבצעים&nbsp;
@@ -366,7 +370,7 @@ function StoreCard({
       <FreshnessLine status={s.freshness} observedAt={s.observedAt} now={now} className="mt-2 block" />
 
       <span className="mt-3 flex min-h-[46px] items-center justify-center rounded-[13px] bg-subtle text-sm font-bold">
-        פירוט הסל בסניף ←
+        {isOnlineStore(s.storeType) ? "פירוט הסל וקישור להזמנה ←" : "פירוט הסל בסניף ←"}
       </span>
     </Link>
   );

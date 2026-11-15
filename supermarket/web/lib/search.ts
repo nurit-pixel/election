@@ -61,6 +61,18 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
       })
       .join(" AND ");
   }
+  return runSearch(user, where, params, q, limit);
+}
+
+/** המוצרים האלה, באותו מבנה של תוצאות החיפוש ובאותו סדר */
+export async function productsByIds(ids: number[]): Promise<ProductResult[]> {
+  if (ids.length === 0) return [];
+  const results = await runSearch(await uid(), `p.id = ANY($1)`, [ids], "", ids.length);
+  const byId = new Map(results.map((r) => [r.id, r]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
+}
+
+async function runSearch(user: number, where: string, params: unknown[], q: string, limit: number): Promise<ProductResult[]> {
   params.push(STALE_HOURS, limit, q);
   const staleIdx = params.length - 2;
   const limitIdx = params.length - 1;

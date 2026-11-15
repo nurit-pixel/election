@@ -2,7 +2,7 @@ import "server-only";
 import { pool } from "./db";
 import { chainVisible, storeInRadius } from "./scope";
 import { uid } from "./session";
-import { suggestAlternative, type ProductOffer, type Suggestion } from "./alternatives-calc";
+import { relatedProducts, suggestAlternative, type ProductOffer, type Related, type Suggestion } from "./alternatives-calc";
 import type { ListItem } from "./lists";
 
 const toOffer = (r: Record<string, unknown>): ProductOffer => ({
@@ -63,9 +63,8 @@ export async function suggestionsFor(items: ListItem[]): Promise<Map<number, Sug
   return result;
 }
 
-/** חישוב ההצעות למוצרים, לפי המחירים בסניפים שברדיוס של המשתמש */
-async function compute(user: number, productIds: number[]): Promise<Map<number, Suggestion>> {
-  const result = new Map<number, Suggestion>();
+/** המוצרים (עם המחיר הזול באזור) והמועמדים: מוצרים שהמילה הראשונה שלהם זהה (אינדקס first_word) ויש להם מחיר באזור */
+async function loadOffers(user: number, productIds: number[]): Promise<{ references: ProductOffer[]; candidates: ProductOffer[] }> {
   // הסניפים שברדיוס, פעם אחת, והמחיר הזול בהם לכל מוצר
   const nearby = `nearby AS (
     SELECT s.id FROM stores s JOIN chains c ON c.key = s.chain_key
@@ -79,10 +78,9 @@ async function compute(user: number, productIds: number[]): Promise<Map<number, 
      GROUP BY p.id`,
     [productIds],
   );
-  if (references.rows.length === 0) return result;
+  if (references.rows.length === 0) return { references: [], candidates: [] };
   const words = [...new Set(references.rows.map((r) => String(r.name).trim().split(/\s+/)[0]).filter((w) => w.length >= 3))];
-  if (words.length === 0) return result;
-  // רק מוצרים שהמילה הראשונה שלהם זהה (אינדקס first_word), ושיש להם מחיר באזור
+  if (words.length === 0) return { references: references.rows.map(toOffer), candidates: [] };
   const candidates = await pool.query(
     `WITH ${nearby}
      SELECT p.id, p.name, p.manufacturer, p.is_weighted, p.quantity, p.unit_qty, min(pr.price) AS min_price
@@ -92,12 +90,26 @@ async function compute(user: number, productIds: number[]): Promise<Map<number, 
      LIMIT 3000`,
     [words],
   );
-  const offers = candidates.rows.map(toOffer);
-  for (const r of references.rows) {
-    const suggestion = suggestAlternative(toOffer(r), offers);
-    if (suggestion) result.set(r.id as number, suggestion);
+  return { references: references.rows.map(toOffer), candidates: candidates.rows.map(toOffer) };
+}
+
+/** חישוב ההצעות למוצרים, לפי המחירים בסניפים שברדיוס של המשתמש */
+async function compute(user: number, productIds: number[]): Promise<Map<number, Suggestion>> {
+  const result = new Map<number, Suggestion>();
+  const { references, candidates } = await loadOffers(user, productIds);
+  for (const reference of references) {
+    const suggestion = suggestAlternative(reference, candidates);
+    if (suggestion) result.set(reference.id, suggestion);
   }
   return result;
+}
+
+/** מוצרים דומים ומותגים אחרים לפריט ברשימה, מהזול ליקר (לפי גודל האריזה המקורית) */
+export async function similarProducts(item: ListItem, limit = 12): Promise<Related[]> {
+  const ids = item.products.map((p) => p.id);
+  if (ids.length === 0) return [];
+  const { references, candidates } = await loadOffers(await uid(), ids);
+  return relatedProducts(references, candidates, new Set(ids), limit);
 }
 
 /** שינוי בכתובות משנה את הסניפים שבאזור: ההצעות של המשתמש מחושבות מחדש */

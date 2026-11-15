@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSimilar, suggestAlternative, type ProductOffer } from "../lib/alternatives-calc";
+import { isRelated, isSimilar, relatedProducts, suggestAlternative, type ProductOffer } from "../lib/alternatives-calc";
 
 const offer = (id: number, name: string, minPrice: number, quantity: number | null = 250, extra: Partial<ProductOffer> = {}): ProductOffer => ({
   id,
@@ -61,5 +61,38 @@ describe("גרסאות שונות של אותו מוצר אינן חלופה", (
 describe("מילים מחוברות בסימנים", () => {
   it("פריכיות דקות+קינואה אינן פריכיות כוסמת", () => {
     expect(isSimilar(offer(2, "פריכיות כוסמת 100 גרם", 3.9, 100), offer(1, "פריכיות דקות+קינואה120גר", 9.9, 120, { manufacturer: "פרח" }))).toBe(false);
+  });
+});
+
+describe("מוצרים דומים ומותגים אחרים", () => {
+  const cottage = offer(1, "קוטג 5% 250 גרם תנובה", 6, 250, { manufacturer: "תנובה" });
+
+  it("כוללת מותגים אחרים וגדלים אחרים, מהזול ליקר לפי מחיר לגודל המקורי", () => {
+    const list = relatedProducts(
+      [cottage],
+      [offer(2, "קוטג 5% 250ג טרה", 5.5), offer(3, "קוטג 5% 500ג שטראוס", 9, 500), offer(4, "קוטג 5% 250ג בעלז", 6.4)],
+      new Set([1]),
+    );
+    expect(list.map((r) => r.product.id)).toEqual([3, 2, 4]);
+    expect(list[0].comparablePrice).toBe(4.5);
+    expect(list[0].resized).toBe(true);
+    expect(list[1].resized).toBe(false);
+  });
+  it("לא כוללת אחוז שומן אחר, גרסה אחרת, גודל רחוק או מוצרים שכבר בפריט", () => {
+    expect(isRelated(offer(2, "קוטג 9% 250ג", 4), cottage)).toBe(false);
+    expect(isRelated(offer(3, "קוטג 5% 1000ג", 15, 1000), cottage)).toBe(false);
+    expect(isRelated(offer(4, "קוטג 5% לייט 250ג", 5), cottage)).toBe(false);
+    expect(isRelated(offer(6, "קוטג 5% עם זיתים 250 גר", 5), cottage)).toBe(false);
+    const eggs = offer(10, "ביצים אומגה3 12יחידות L", 20, null);
+    expect(isRelated(offer(11, "ביצים אומגה L שופרסל 6יח", 9, null), eggs)).toBe(false);
+    expect(isRelated(offer(12, "ביצים L אומגה 3 12 יח", 18, null), eggs)).toBe(true);
+    const cola = offer(13, "קוקה קולה זירו 6*1.5 ל", 40, null);
+    expect(isRelated(offer(14, "קוקה קולה זירו משקה", 8, null), cola)).toBe(false);
+    expect(relatedProducts([cottage], [offer(5, "קוטג 5% 250ג טרה", 5)], new Set([1, 5]))).toEqual([]);
+  });
+  it("מותג שמופיע רק בשם (ולא בשדה היצרן) לא מונע התאמה", () => {
+    const belz = offer(7, "קוטג 5% 250 גרם בעלז", 6, 250, { manufacturer: "מחלבת אלון תבור" });
+    expect(isRelated(offer(8, "קוטג 5% שומן 250ג טרה", 5, 250, { manufacturer: "---" }), belz)).toBe(true);
+    expect(isRelated(offer(9, "קוטג 5% 250ג שטראוס", 5, 250, { manufacturer: "שטראוס בריאות" }), belz)).toBe(true);
   });
 });

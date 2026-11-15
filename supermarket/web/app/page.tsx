@@ -372,6 +372,12 @@ function ItemCard({ item, suggestion }: { item: ListItem; suggestion?: Suggestio
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <QuantityControl itemId={item.id} quantity={item.quantity} isWeighted={item.isWeighted} />
+        <Link
+          href={`/search?item=${item.id}&q=${encodeURIComponent(item.name)}`}
+          className="flex min-h-11 shrink-0 items-center rounded-[13px] bg-subtle px-3 text-sm font-bold"
+        >
+          מותגים אחרים
+        </Link>
       </div>
 
       <details className="mt-3 text-sm">

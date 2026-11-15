@@ -1,7 +1,10 @@
 import { Quip } from "@/components/Quip";
 import { cheapestFirst } from "@/lib/order";
 import Link from "next/link";
-import { searchProducts, type ProductResult } from "@/lib/search";
+import { productsByIds, searchProducts, type ProductResult } from "@/lib/search";
+import { similarProducts } from "@/lib/alternatives";
+import { Price } from "@/components/ui";
+import type { ReactNode } from "react";
 import { getItem, type ListItem } from "@/lib/lists";
 import { formatPrice, formatUpdated } from "@/lib/format";
 import { SearchBar } from "@/components/SearchBar";
@@ -15,6 +18,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const item = params.item ? await getItem(Number(params.item)) : null;
   // ההצעה הזולה ביותר למעלה
   const results = q ? cheapestFirst(await searchProducts(q)) : [];
+  // בבחירת חלופה לפריט: מוצרים דומים ממותגים אחרים, מהזול ליקר לפי גודל האריזה של הפריט
+  const related = item ? await similarProducts(item) : [];
+  const relatedProducts = await productsByIds(related.map((r) => r.product.id));
+  const relatedInfo = new Map(related.map((r) => [r.product.id, r]));
+  const shownIds = new Set(relatedProducts.map((p) => p.id));
 
   return (
     <div className="space-y-4">
@@ -29,7 +37,39 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       ) : (
         <h1 className="text-lg font-bold">הוספת מוצר</h1>
       )}
-      <SearchBar query={q} itemId={item?.id} autoFocus={!q} />
+      {item && relatedProducts.length > 0 && (
+        <section aria-labelledby="similar-title" className="space-y-2">
+          <h2 id="similar-title" className="text-base font-bold">
+            מוצרים דומים ומותגים אחרים
+          </h2>
+          <p className="text-sm text-muted">
+            אותו מוצר, יצרן אחר או אריזה אחרת. מהזול ליקר, לפי גודל האריזה שברשימה. מוסיפים כחלופה, ובכל סניף נבחר הזול.
+          </p>
+          <ul className="space-y-3">
+            {relatedProducts.map((p) => {
+              const info = relatedInfo.get(p.id);
+              return (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  item={item}
+                  note={
+                    info?.resized ? (
+                      <>
+                        אריזה בגודל אחר · לפי הגודל שברשימה: <Price value={info.comparablePrice} className="font-bold" />
+                      </>
+                    ) : null
+                  }
+                />
+              );
+            })}
+          </ul>
+        </section>
+      )}
+      {item && (
+        <h2 className="pt-2 text-base font-bold">{relatedProducts.length > 0 ? "או חיפוש חופשי" : "חיפוש חלופה"}</h2>
+      )}
+      <SearchBar query={q} itemId={item?.id} autoFocus={!q && relatedProducts.length === 0} />
 
       {q && results.length === 0 && (
         <div className="space-y-2 rounded-pm bg-card p-4 text-muted">
@@ -44,15 +84,26 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         </div>
       )}
       <ul className="space-y-3">
-        {results.map((p) => (
-          <ProductCard key={p.id} product={p} item={item} />
-        ))}
+        {results
+          .filter((p) => !shownIds.has(p.id))
+          .map((p) => (
+            <ProductCard key={p.id} product={p} item={item} />
+          ))}
       </ul>
     </div>
   );
 }
 
-function ProductCard({ product: p, item }: { product: ProductResult; item: ListItem | null }) {
+function ProductCard({
+  product: p,
+  item,
+  note,
+}: {
+  product: ProductResult;
+  item: ListItem | null;
+  /** שורה נוספת מתחת לשם (למשל מחיר לפי גודל האריזה שברשימה) */
+  note?: ReactNode;
+}) {
   const unit = p.isWeighted ? " לק״ג" : "";
   const cheapest = p.prices[0];
   const already = item?.products.some((x) => x.id === p.id);
@@ -73,6 +124,7 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
             {p.chainName && <span> · רק ב{p.chainName}</span>}
             {p.isWeighted && <span> · מוצר שקיל</span>}
           </p>
+          {note && <p className="mt-1 text-xs text-fresh">{note}</p>}
         </div>
         {cheapest && (
           <div className="shrink-0 text-left">
