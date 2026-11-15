@@ -11,7 +11,7 @@ import logging
 import time
 import traceback
 
-from . import db, geocode, schedule, tracking
+from . import db, geocode, retry, schedule, tracking
 from .chains import CHAINS
 from .config import Config
 
@@ -23,23 +23,29 @@ ADDRESS_CHAIN_TIMEOUT_SECONDS = 15 * 60
 # טעינת מחירים בין הריצות הליליות: רק סניפים שהמחירים שלהם ישנים מזה. הריצה הלילית מרעננת הכול
 PRICES_MISSING_HOURS = 20
 IDLE_WAIT_SECONDS = 30
+# כל כמה זמן בודקים אם יש רשת שהטעינה שלה נכשלה וצריך לנסות שוב
+RETRY_CHECK_SECONDS = 5 * 60
 PRICES_DURING_GEOCODE_SECONDS = 20 * 60
 GEOCODE_BACKOFF_SECONDS = (300, 900, 1800, 3600)   # המתנה אחרי כשל (למשל 429 משירות ה-geocoding)
 
 
-def enqueue(conn, kind: str, address_id: int | None = None) -> None:
-    conn.execute(
-        """INSERT INTO ingest_requests (kind, address_id)
-           SELECT %s, %s WHERE NOT EXISTS (
+def enqueue(conn, kind: str, address_id: int | None = None, chain_key: str | None = None) -> bool:
+    """בקשה לתור. בקשה זהה שכבר ממתינה (או, לניסיון חוזר, כבר רצה) לא נוצרת שוב. מחזיר האם נוספה."""
+    statuses = ["pending", "running"] if chain_key else ["pending"]
+    inserted = conn.execute(
+        """INSERT INTO ingest_requests (kind, address_id, chain_key)
+           SELECT %s, %s, %s WHERE NOT EXISTS (
                SELECT 1 FROM ingest_requests
-               WHERE kind = %s AND address_id IS NOT DISTINCT FROM %s AND status = 'pending')""",
-        (kind, address_id, kind, address_id),
-    )
+               WHERE kind = %s AND address_id IS NOT DISTINCT FROM %s
+                 AND chain_key IS NOT DISTINCT FROM %s AND status = ANY(%s))""",
+        (kind, address_id, chain_key, kind, address_id, chain_key, statuses),
+    ).rowcount
     conn.execute("NOTIFY ingest")
+    return inserted > 0
 
 
 def handle(cfg: Config, conn, kind: str, address_id: int | None,
-           request_id: int | None = None) -> str:
+           request_id: int | None = None, chain_key: str | None = None) -> str:
     chains = list(CHAINS.values())
     # ההתקדמות נכתבת לבקשה עצמה, ומוצגת במסך ההגדרות. חיבור נפרד, כי היא מדווחת מ-thread אחר
     progress_conn = db.connect(cfg.database_url) if request_id is not None else None
@@ -50,14 +56,32 @@ def handle(cfg: Config, conn, kind: str, address_id: int | None,
                                   (f"{done} מתוך {total} רשתות נטענו (אחרונה: {chain_name})", request_id))
 
     try:
-        return _handle(cfg, conn, kind, address_id, chains, progress)
+        return _handle(cfg, conn, kind, address_id, chains, progress, chain_key)
     finally:
         if progress_conn is not None:
             progress_conn.close()
 
 
-def _handle(cfg: Config, conn, kind: str, address_id: int | None, chains, progress) -> str:
+def _handle(cfg: Config, conn, kind: str, address_id: int | None, chains, progress,
+            chain_key: str | None = None) -> str:
     from . import pipeline  # pylint: disable=import-outside-toplevel
+
+    if kind in ("retry_prices", "retry_stores"):
+        chain = CHAINS.get(chain_key or "")
+        if chain is None:
+            return f"רשת לא מוכרת: {chain_key}"
+        if kind == "retry_stores":
+            status = pipeline.refresh_stores(cfg, conn, [chain])[chain.key]
+            return f"ניסיון חוזר, רשימת סניפים של {chain.name}: {status}"
+        # רק סניפים בלי מחירים עדכניים, וגם אם נוסו לאחרונה: זה כל הרעיון של ניסיון חוזר
+        statuses = pipeline.refresh_prices(
+            cfg, conn, [chain], all_stores=cfg.ingest_all_stores,
+            missing_hours=None if cfg.ingest_all_stores else PRICES_MISSING_HOURS,
+            skip_recent=False, progress=progress)
+        if not statuses:
+            return f"ניסיון חוזר ל{chain.name}: לכל הסניפים כבר יש מחירים עדכניים"
+        _, created = tracking.update(conn, cfg)
+        return f"ניסיון חוזר ל{chain.name}: {statuses[chain.key]}, {created} התראות חדשות"
 
     if kind == "stores":
         statuses = pipeline.refresh_stores(cfg, conn, chains)
@@ -158,19 +182,26 @@ def run(cfg: Config) -> None:
         geocode_failures = 0
         geocode_resume_at = 0.0
         next_prices_at = 0.0
+        next_retry_check = 0.0
         while True:
             _schedule_nightly(cfg, conn)
+            if time.monotonic() >= next_retry_check:
+                next_retry_check = time.monotonic() + RETRY_CHECK_SECONDS
+                try:
+                    retry.schedule_retries(conn, enqueue)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    log.error("תזמון ניסיונות חוזרים נכשל\n%s", traceback.format_exc())
             request = conn.execute(
                 """UPDATE ingest_requests SET status = 'running', started_at = now()
                    WHERE id = (SELECT id FROM ingest_requests WHERE status = 'pending'
                                ORDER BY (kind = 'address') DESC, id LIMIT 1)
-                   RETURNING id, kind, address_id"""
+                   RETURNING id, kind, address_id, chain_key"""
             ).fetchone()
             if request:
-                request_id, kind, address_id = request
+                request_id, kind, address_id, chain_key = request
                 log.info("בקשה %d: %s", request_id, kind)
                 try:
-                    status, message = "done", handle(cfg, conn, kind, address_id, request_id)
+                    status, message = "done", handle(cfg, conn, kind, address_id, request_id, chain_key)
                 except Exception as exc:  # pylint: disable=broad-exception-caught
                     status, message = "failed", f"{type(exc).__name__}: {exc}"
                     log.error("בקשה %d נכשלה\n%s", request_id, traceback.format_exc())

@@ -41,6 +41,8 @@ const REQUEST_LABELS: Record<string, string> = {
   prices: "טעינת מחירים",
   track: "עדכון היסטוריית מחירים",
   nightly: "הריצה הלילית",
+  retry_prices: "ניסיון חוזר לרשת שנכשלה",
+  retry_stores: "ניסיון חוזר לרשימת סניפים",
 };
 
 export default async function SettingsPage({

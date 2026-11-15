@@ -15,6 +15,8 @@ const REQUEST: Record<string, string> = {
   prices: "טעינת מחירים",
   track: "עדכון היסטוריה",
   nightly: "ריצה לילית",
+  retry_prices: "ניסיון חוזר לרשת",
+  retry_stores: "ניסיון חוזר לסניפים",
 };
 const EVENT: Record<string, string> = {
   login: "כניסה",

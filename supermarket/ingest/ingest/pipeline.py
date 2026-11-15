@@ -240,7 +240,7 @@ def refresh_prices(cfg: Config, conn, chains: list[Chain], address_id: Optional[
                    all_stores: bool = False, force: bool = False,
                    missing_hours: Optional[int] = None,
                    timeout: int = CHAIN_TIMEOUT_SECONDS,
-                   progress=None) -> dict[str, str]:
+                   progress=None, skip_recent: bool = True) -> dict[str, str]:
     """מחירים ומבצעים לסניפים ברדיוס הכתובות השמורות (או לכל הסניפים).
     רשת בלי סניפים ברדיוס מדולגת. המבצעים נטענים אחרי המחירים, כי הם מפנים למוצרים.
     missing_hours: רק סניפים בלי מחירים עדכניים, כך שאזור שכבר נטען לא יורד שוב.
@@ -252,7 +252,7 @@ def refresh_prices(cfg: Config, conn, chains: list[Chain], address_id: Optional[
     for chain in chains:
         store_ids = None if all_stores else db.store_ids_in_radius(
             conn, chain, address_id, missing_hours)
-        if store_ids and missing_hours is not None:
+        if store_ids and missing_hours is not None and skip_recent:
             store_ids = not_recently_attempted(chain.key, store_ids, time.monotonic())
         if store_ids is not None and not store_ids:
             continue
