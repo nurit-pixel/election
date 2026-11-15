@@ -310,12 +310,20 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
 
       {list.items.length > 0 && (
         <div className="pm-sticky-cta fixed inset-x-0 bottom-[78px] z-30 mb-[env(safe-area-inset-bottom)] bg-gradient-to-t from-canvas from-80% to-transparent px-4 pb-3 pt-4">
-          <Link
+          <div className="mx-auto flex max-w-2xl gap-2">
+            <Link
+              href="/shop"
+              className="block shrink-0 rounded-pm bg-primary px-4 py-3 text-center font-bold text-on-primary"
+            >
+              מצב קנייה
+            </Link>
+            <Link
             href="/compare"
-            className="mx-auto block max-w-2xl rounded-pm bg-primary pm-cta px-5 py-3 text-center font-bold text-on-primary"
+            className="block min-w-0 flex-1 rounded-pm bg-primary pm-cta px-5 py-3 text-center font-bold text-on-primary"
           >
             השוואת סניפים ({list.items.length} פריטים)
           </Link>
+          </div>
         </div>
       )}
     </div>

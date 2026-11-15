@@ -26,6 +26,8 @@ export type ListItem = {
   name: string;
   quantity: number;
   isWeighted: boolean;
+  /** סומן כ"בעגלה" במצב קנייה */
+  checked: boolean;
   products: ListProduct[];
 };
 
@@ -95,7 +97,7 @@ export async function getList(): Promise<ShoppingList> {
   }
   const list = rows[0];
   const items = await pool.query(
-    `SELECT i.id, i.name, i.quantity, i.is_weighted,
+    `SELECT i.id, i.name, i.quantity, i.is_weighted, i.checked_at IS NOT NULL AS checked,
             COALESCE(json_agg(json_build_object(
               'id', p.id, 'barcode', p.barcode, 'name', p.name, 'manufacturer', p.manufacturer,
               'chainName', c.name) ORDER BY p.name) FILTER (WHERE p.id IS NOT NULL), '[]') AS products
@@ -115,6 +117,7 @@ export async function getList(): Promise<ShoppingList> {
       name: r.name,
       quantity: Number(r.quantity),
       isWeighted: r.is_weighted,
+      checked: r.checked,
       products: r.products,
     })),
   };
@@ -280,4 +283,25 @@ export async function removeFromList(listId: number, target: { userId?: number; 
 /** יציאה מרשימה ששותפה עם המשתמש. */
 export async function leaveList(listId: number): Promise<void> {
   await pool.query(`DELETE FROM list_members WHERE list_id = $1 AND user_id = $2`, [listId, await uid()]);
+}
+
+// ---------- מצב קנייה ----------
+
+/** סימון פריט כ"בעגלה" (או ביטול הסימון). */
+export async function setChecked(itemId: number, checked: boolean): Promise<void> {
+  await pool.query(
+    `UPDATE list_items SET checked_at = CASE WHEN $2 THEN now() ELSE NULL END
+     WHERE id = $1 AND ${OWN_ITEM(await uid())}`,
+    [itemId, checked],
+  );
+}
+
+/** סיום קנייה: מנקה את כל הסימונים ברשימה. */
+export async function clearChecked(listId: number): Promise<void> {
+  const user = await uid();
+  await pool.query(
+    `UPDATE list_items SET checked_at = NULL
+     WHERE list_id = $1 AND list_id IN (SELECT l.id FROM lists l WHERE ${CAN_ACCESS(user)})`,
+    [listId],
+  );
 }
