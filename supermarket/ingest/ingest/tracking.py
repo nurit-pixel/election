@@ -216,6 +216,12 @@ def update(conn, cfg: Config) -> tuple[int, int]:
     """אחרי טעינת מחירים: היסטוריה ואז התראות. מחזיר (שורות היסטוריה, התראות חדשות)."""
     saved = snapshot(conn)
     created = create_alerts(conn, cfg.alert_change_pct)
+    if created:
+        from . import push  # pylint: disable=import-outside-toplevel
+        try:
+            push.send_pending(conn, cfg.app_url)
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            log.warning("התראות לטלפון: %s", str(exc)[:200])
     if saved or created:
         log.info("מעקב: %d נקודות היסטוריה, %d התראות חדשות", saved, created)
     return saved, created
