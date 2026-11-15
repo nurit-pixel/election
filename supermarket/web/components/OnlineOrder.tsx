@@ -15,7 +15,7 @@ export function OnlineOrder({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`flex min-h-11 items-center justify-center rounded-[13px] bg-pm-orange px-3 text-sm font-bold text-white ${className}`}
+      className={`flex min-h-11 items-center justify-center rounded-[13px] bg-pm-orange px-3 text-sm font-bold text-pm-purple ${className}`}
     >
       להזמנה אונליין ב{store.chainName} ↗
     </a>

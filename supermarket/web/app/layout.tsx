@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { unreadAlertCount } from "@/lib/tracking";
 import { THEME_COOKIE } from "@/lib/theme";
+import { A11Y_COOKIE, a11yAttributes, parseA11y } from "@/lib/a11y";
+import { currentUserId } from "@/lib/session";
 import { Shell } from "@/components/Shell";
 import "./globals.css";
 
@@ -23,17 +25,20 @@ export const viewport: Viewport = {
 const SYSTEM_THEME = `try{if(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [unread, store] = await Promise.all([unreadAlertCount(), cookies()]);
+  const [unread, store, user] = await Promise.all([unreadAlertCount(), cookies(), currentUserId().catch(() => null)]);
+  const a11y = a11yAttributes(parseA11y(store.get(A11Y_COOKIE)?.value));
   const chosen = store.get(THEME_COOKIE)?.value;
   const theme = chosen === "dark" || chosen === "light" ? chosen : undefined;
 
   return (
-    <html lang="he" dir="rtl" data-theme={theme} suppressHydrationWarning>
+    <html lang="he" dir="rtl" data-theme={theme} {...a11y} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME }} />
       </head>
       <body className="min-h-dvh bg-canvas text-ink antialiased">
-        <Shell unread={unread}>{children}</Shell>
+        <Shell unread={unread} signedIn={user != null}>
+          {children}
+        </Shell>
       </body>
     </html>
   );

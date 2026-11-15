@@ -370,7 +370,7 @@ function ItemCard({ item, suggestion }: { item: ListItem; suggestion?: Suggestio
         </form>
       )}
 
-      <div className="mt-3 flex items-center justify-between gap-3">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <QuantityControl itemId={item.id} quantity={item.quantity} isWeighted={item.isWeighted} />
         <Link
           href={`/search?item=${item.id}&q=${encodeURIComponent(item.name)}`}

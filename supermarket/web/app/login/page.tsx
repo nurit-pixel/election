@@ -44,7 +44,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { error } = await searchParams;
   const message = error ? (ERRORS[error] ?? ERRORS.google) : null;
   return (
-    <div className="mx-auto min-h-dvh max-w-[440px] px-5 pb-10 pt-4">
+    <main id="content" className="mx-auto min-h-dvh max-w-[440px] px-5 pb-10 pt-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand/logo.png" alt="פראיירמטר" width={720} height={233} className="mx-auto my-8 h-auto w-full max-w-[330px]" />
       <h1 className="mx-auto max-w-[310px] text-center underline decoration-pm-pink decoration-[5px] underline-offset-[7px]">
@@ -101,8 +101,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </div>
       <Quip place="login" className="mt-7" />
       <p className="mt-3 text-center text-xs text-muted">נורית בנתה. גילי כבר חוסכת.</p>
-      <footer className="mt-6 border-t border-line pt-4 text-center text-xs text-muted">נבנה ע״י נורית תמם</footer>
-    </div>
+      <footer className="mt-6 border-t border-line pt-4 text-center text-xs text-muted">
+        נבנה ע״י נורית תמם ·{" "}
+        <a href="/accessibility" className="underline">
+          נגישות
+        </a>
+      </footer>
+    </main>
   );
 }
 

@@ -352,7 +352,7 @@ function StoreCard({
           </span>
         )}
         {isOnlineStore(s.storeType) && (
-          <span className={`${BADGE} bg-pm-orange text-white`}>{s.storeType === "3" ? "גם אונליין" : "אונליין · משלוח"}</span>
+          <span className={`${BADGE} bg-pm-orange text-pm-purple`}>{s.storeType === "3" ? "גם אונליין" : "אונליין · משלוח"}</span>
         )}
         {b.savings > 0 && (
           <span className={`${BADGE} bg-fresh-surface text-fresh`}>

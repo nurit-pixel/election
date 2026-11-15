@@ -206,3 +206,82 @@ input[type="checkbox"] {
 .leaflet-container a.leaflet-popup-close-button {
   inset-inline-end: 4px;
 }
+
+/* קישור "דילוג לתוכן": מוסתר עד שמגיעים אליו במקלדת */
+.pm-skip {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 60;
+  padding: 12px 18px;
+  border: 2px solid var(--pm-button-edge);
+  border-radius: 13px;
+  background: var(--pm-card);
+  color: var(--pm-text);
+  font-weight: 700;
+  transform: translateY(-200%);
+}
+.pm-skip:focus {
+  transform: none;
+}
+
+/* ---------- העדפות נגישות (מסך "נגישות", נשמרות בעוגייה ומוחלות על <html>) ---------- */
+
+/* הגדלת טקסט: zoom מגדיל גם מידות שנקבעו בפיקסלים, כמו הגדלה בדפדפן, והפריסה נשארת ברוחב המסך */
+html[data-text="large"] body {
+  zoom: 1.15;
+}
+html[data-text="xlarge"] body {
+  zoom: 1.3;
+}
+
+/* ניגודיות גבוהה: טקסט משני בצבע הטקסט הראשי, גבולות כהים, מסגרת פוקוס עבה */
+html[data-contrast="high"] {
+  --pm-text-muted: var(--pm-text);
+  --pm-border: var(--pm-text);
+  --pm-fresh: #005c41;
+  --pm-aging: #6b4000;
+  --pm-missing: #8f0f24;
+  --pm-info: #0d4a7a;
+  --pm-club: #55287f;
+}
+html[data-contrast="high"][data-theme="dark"] {
+  --pm-fresh: #9cf0cf;
+  --pm-aging: #ffe0a0;
+  --pm-missing: #ffc4cf;
+  --pm-info: #b5dcff;
+  --pm-club: #e3cfff;
+}
+html[data-contrast="high"] :focus-visible {
+  outline-width: 4px;
+}
+html[data-contrast="high"] .shadow-card {
+  box-shadow: none;
+}
+
+/* קו תחתון לקישורים בתוכן */
+html[data-links="underline"] main a,
+html[data-links="underline"] footer a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* עצירת אנימציות ומעברים */
+html[data-still] *,
+html[data-still] *::before,
+html[data-still] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* ריווח קריא: אותיות, מילים ושורות (לפי WCAG 1.4.12) */
+html[data-readable] body {
+  letter-spacing: 0.04em;
+  word-spacing: 0.16em;
+  line-height: 1.7;
+}
+html[data-readable] p,
+html[data-readable] li {
+  line-height: 1.8;
+}

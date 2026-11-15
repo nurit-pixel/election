@@ -28,6 +28,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <div className="space-y-4">
       {item ? (
         <div className="rounded-pm bg-fresh-surface p-3 text-sm text-fresh">
+          <h1 className="sr-only">חלופות ל{item.name}</h1>
           בוחרים חלופה לפריט <b>{item.name}</b>
           {item.isWeighted ? " (מוצר שקיל)" : ""}.{" "}
           <Link href="/" className="underline">

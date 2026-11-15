@@ -137,13 +137,13 @@ docker compose logs -f --tail 100 ingest
 עדכון גרסה (גיבוי, משיכת הקוד החדש, בנייה והפעלה מחדש; הנתונים נשמרים):
 
 ```bash
-cd /opt/supermarket && ./scripts/update.sh
+cd /opt/election/supermarket && ./scripts/update.sh
 ```
 
 לעדכון אוטומטי כל לילה ב-04:00, שורה ב-`crontab -e` של השרת:
 
 ```
-0 4 * * * cd /opt/supermarket && ./scripts/update.sh >> backups/update.log 2>&1
+0 4 * * * cd /opt/election/supermarket && ./scripts/update.sh >> backups/update.log 2>&1
 ```
 
 גיבוי המסד (נשמר ב-`backups/`, 14 אחרונים):
@@ -155,7 +155,7 @@ cd /opt/supermarket && ./scripts/update.sh
 גיבוי יומי אוטומטי, שורה ב-`crontab -e` של השרת:
 
 ```
-30 7 * * * cd /opt/supermarket && ./scripts/backup.sh >> backups/backup.log 2>&1
+30 7 * * * cd /opt/election/supermarket && ./scripts/backup.sh >> backups/backup.log 2>&1
 ```
 
 שחזור מגיבוי (מוחק את הנתונים הקיימים):
