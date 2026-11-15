@@ -100,6 +100,9 @@ export default async function AdminPage() {
         <h1 className="mt-1">ניהול</h1>
         <p className="mt-1 text-sm text-muted">מי מתחבר, ומה נכשל. המסך גלוי רק לך.</p>
         <Quip place="admin" className="mt-3" />
+        <Link href="/admin/perf" className="mt-3 inline-block text-sm font-bold text-link underline underline-offset-4">
+          בדיקת מהירות ←
+        </Link>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
