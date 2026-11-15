@@ -6,6 +6,11 @@ import { freshness, winnerIndex, worstFreshness, type Freshness } from "@/lib/fr
 import { FreshnessLine, Price } from "@/components/ui";
 import { Stars } from "@/components/Stars";
 import { PriceChart } from "@/components/PriceChart";
+import { Meter } from "@/components/Meter";
+import { METER_COLORS, meterLevel } from "@/lib/meter";
+import { nearComplete } from "@/lib/basket";
+import { quip } from "@/lib/quips";
+import { locatedAddresses } from "@/lib/settings";
 import { basketChange, basketHistory } from "@/lib/basket-history";
 
 export const dynamic = "force-dynamic";
@@ -26,9 +31,21 @@ function withFreshness(store: RankedStore, now: Date): Row {
   };
 }
 
-export default async function ComparePage({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
-  const showAll = (await searchParams).all === "1";
-  const { list, ranked, storesInRadius, bestSplit } = await compareStores();
+export default async function ComparePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ all?: string; address?: string }>;
+}) {
+  const params = await searchParams;
+  const showAll = params.all === "1";
+  const addresses = await locatedAddresses();
+  // יותר מכתובת אחת: שואלים ליד איזו כתובת להשוות
+  const chosen = addresses.find((a) => String(a.id) === params.address) ?? null;
+  const allAddresses = params.address === "all";
+  if (addresses.length >= 2 && !chosen && !allAddresses) return <AddressChooser addresses={addresses} />;
+  const addressParam = chosen ? String(chosen.id) : allAddresses ? "all" : null;
+  const withAddress = (extra = "") => `/compare?${[addressParam && `address=${addressParam}`, extra].filter(Boolean).join("&")}`;
+  const { list, ranked, storesInRadius, bestSplit } = await compareStores(chosen?.id ?? null);
   const { points: history, itemsCounted, itemsTotal } =
     list.items.length > 0 ? await basketHistory(list.id) : { points: [], itemsCounted: 0, itemsTotal: 0 };
   const change = basketChange(history);
@@ -39,8 +56,13 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   );
   const visible = showAll ? rows : rows.slice(0, FIRST_PAGE);
   const hidden = rows.length - visible.length;
-  const cheapestComplete = rows.find((r) => r.basket.complete)?.basket.total ?? null;
-  const firstPartial = visible.findIndex((r) => !r.basket.complete);
+  // המחיר להשוואה בין סניפים: הסל המשוער (חלקי מושלם במחיר הזול באזור של הפריטים החסרים)
+  const priceOf = (r: Row) => r.estimate ?? r.basket.total;
+  const cheapest = rows.length > 0 ? priceOf(rows[0]) : 0;
+  const mostExpensive = rows.length > 0 ? Math.max(...rows.map(priceOf)) : 0;
+  // סניפים שחסרים בהם יותר מפריט אחד לעומת המובילים מוצגים אחרי כותרת משלהם
+  const maxFound = Math.max(0, ...rows.map((r) => r.basket.foundCount));
+  const firstTrailing = rows.findIndex((r) => !nearComplete(r.basket.foundCount, maxFound));
 
   if (list.items.length === 0) {
     return (
@@ -64,6 +86,25 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         </p>
         <Quip place="compare" className="mt-3" />
       </div>
+
+      {addresses.length >= 2 && (
+        <nav aria-label="ליד איזו כתובת" className="flex flex-wrap gap-2 text-sm">
+          {[...addresses.map((a) => ({ key: String(a.id), label: a.label, active: chosen?.id === a.id })), { key: "all", label: "כל הכתובות", active: allAddresses }].map(
+            (option) => (
+              <Link
+                key={option.key}
+                href={`/compare?address=${option.key}`}
+                aria-current={option.active ? "true" : undefined}
+                className={`flex min-h-11 items-center rounded-full border px-4 font-bold ${
+                  option.active ? "border-[var(--pm-button-edge)] bg-pm-turquoise text-pm-purple" : "border-line bg-card"
+                }`}
+              >
+                {option.label}
+              </Link>
+            ),
+          )}
+        </nav>
+      )}
 
       {storesInRadius === 0 && (
         <p className="rounded-pm-lg bg-card p-4 text-muted shadow-card">
@@ -99,21 +140,35 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       <ol className="space-y-3">
         {visible.map((row, i) => (
           <li key={row.storePk}>
-            {i === firstPartial && (
-              <h2 className="pb-2 pt-1 text-sm font-bold text-muted">
-                {firstPartial > 0 ? "סניפים שחסרים בהם פריטים" : "באף סניף אין את כל הפריטים"}
-              </h2>
+            {rows.indexOf(row) === firstTrailing && (
+              <h2 className="pb-2 pt-1 text-sm font-bold text-muted">סניפים שחסרים בהם כמה פריטים</h2>
             )}
             <StoreCard
               row={row}
-              rank={row.basket.complete ? i + 1 : null}
+              rank={rows.indexOf(row) + 1}
               now={now}
               winner={rows.indexOf(row) === winner}
-              diff={row.basket.complete && cheapestComplete != null ? row.basket.total - cheapestComplete : null}
+              diff={priceOf(row) - cheapest}
+              level={meterLevel(priceOf(row), cheapest, mostExpensive)}
+              remark={rows.indexOf(row) < 3 ? quip(`rank${rows.indexOf(row) + 1}` as "rank1" | "rank2" | "rank3") : null}
             />
           </li>
         ))}
       </ol>
+
+      {hidden > 0 && (
+        <Link
+          href={withAddress("all=1")}
+          className="flex min-h-[46px] items-center justify-center rounded-[13px] bg-subtle px-5 text-sm font-bold"
+        >
+          הצגת עוד {hidden} סניפים
+        </Link>
+      )}
+      {showAll && rows.length > FIRST_PAGE && (
+        <Link href={withAddress()} className="block px-5 py-2 text-center text-sm font-bold text-link">
+          הצגת 5 הזולים בלבד
+        </Link>
+      )}
 
       {history.length > 0 && (
         <section aria-labelledby="history-title" className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
@@ -146,19 +201,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         </section>
       )}
 
-      {hidden > 0 && (
-        <Link
-          href="/compare?all=1"
-          className="flex min-h-[46px] items-center justify-center rounded-[13px] bg-subtle px-5 text-sm font-bold"
-        >
-          הצגת עוד {hidden} סניפים
-        </Link>
-      )}
-      {showAll && rows.length > FIRST_PAGE && (
-        <Link href="/compare" className="block px-5 py-2 text-center text-sm font-bold text-link">
-          הצגת 5 הזולים בלבד
-        </Link>
-      )}
     </div>
   );
 }
@@ -171,12 +213,19 @@ function StoreCard({
   now,
   winner,
   diff,
+  level,
+  remark,
 }: {
   row: Row;
-  rank: number | null;
+  rank: number;
   now: Date;
   winner: boolean;
-  diff: number | null;
+  /** כמה יותר מהסל הזול ביותר (לפי הסל המשוער) */
+  diff: number;
+  /** המקום על מד המחיר, 0 (הכי זול) עד 4 */
+  level: number;
+  /** הערה צינית לשלושת המקומות הראשונים */
+  remark: string | null;
 }) {
   const b = s.basket;
   const missing = b.itemCount - b.foundCount;
@@ -187,14 +236,16 @@ function StoreCard({
         winner ? "border-2 border-fresh shadow-[5px_0_0_var(--pm-turquoise)]" : "border border-line shadow-card"
       }`}
     >
+      <Meter level={level} className="mb-3" />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="font-bold leading-normal">
-            {rank != null && (
+            {(
               <span
                 className={`me-1.5 inline-grid size-[26px] place-items-center rounded-[9px] text-xs font-extrabold ${
                   winner ? "bg-fresh text-card" : "bg-subtle"
                 }`}
+                style={winner ? undefined : { background: METER_COLORS[level], color: "#2b0735" }}
               >
                 <span className="sr-only">מקום </span>
                 {rank}
@@ -210,26 +261,40 @@ function StoreCard({
           {s.rating != null && <Stars value={s.rating} count={s.reviewCount} className="mt-0.5" />}
         </div>
         <div className="max-w-[46%] shrink-0 text-left">
+          {/* המחיר הראשי: לסל חלקי, הסל המשוער עם הפריטים החסרים, כדי שהסדר מהזול ליקר יהיה ברור */}
+          {!b.complete && s.estimate != null && <span className="text-[11px] font-bold text-muted">בערך</span>}
           <Price
-            value={b.total}
-            className={`block text-[25px] font-extrabold leading-tight tracking-tight ${b.complete ? "text-ink" : "text-muted"}`}
+            value={!b.complete && s.estimate != null ? s.estimate : b.total}
+            className="block text-[25px] font-extrabold leading-tight tracking-tight text-ink"
           />
           <div className="text-[11px] leading-normal text-muted">
             {winner ? (
               <span className="font-bold text-fresh">הכי משתלם</span>
-            ) : diff != null && diff > 0 ? (
+            ) : diff > 0.004 ? (
               <>
                 + <Price value={diff} /> מהזול ביותר
               </>
             ) : b.complete ? (
               "סל מלא"
             ) : (
-              "סכום חלקי"
+              "עם השלמת החסרים"
             )}
           </div>
         </div>
       </div>
 
+      {remark && (
+        <p className="mt-2 text-sm font-bold leading-snug">
+          <span aria-hidden className="me-1 text-pm-pink">״</span>
+          {remark}
+        </p>
+      )}
+      {!b.complete && s.estimate != null && (
+        <p className="mt-1 text-xs text-muted">
+          בסניף עצמו: <Price value={b.total} className="font-bold text-ink" /> על {b.foundCount} הפריטים שיש בו. את השאר
+          חישבנו לפי המחיר הזול שלהם באזור.
+        </p>
+      )}
       <div className="mt-2 flex flex-wrap gap-1.5">
         {b.complete ? (
           <span className={`${BADGE} bg-fresh-surface text-fresh`}>
@@ -259,5 +324,38 @@ function StoreCard({
         פירוט הסל בסניף ←
       </span>
     </Link>
+  );
+}
+
+/** כשיש יותר מכתובת אחת: ליד איזו כתובת להשוות */
+function AddressChooser({ addresses }: { addresses: { id: number; label: string }[] }) {
+  return (
+    <div className="space-y-4">
+      <h1>ליד איזו כתובת להשוות?</h1>
+      <p className="text-sm text-muted">יש לך כמה כתובות שמורות. בוחרים כתובת, ונשווה רק בין הסניפים שברדיוס שלה.</p>
+      <ul className="space-y-2">
+        {addresses.map((address) => (
+          <li key={address.id}>
+            <Link
+              href={`/compare?address=${address.id}`}
+              className="flex min-h-14 items-center justify-between rounded-pm-lg border-2 border-[var(--pm-button-edge)] bg-card px-4 text-lg font-bold shadow-[3px_3px_0_var(--pm-turquoise)]"
+            >
+              {address.label}
+              <span aria-hidden className="text-pm-pink">←</span>
+            </Link>
+          </li>
+        ))}
+        <li>
+          <Link
+            href="/compare?address=all"
+            className="flex min-h-14 items-center justify-between rounded-pm-lg border border-line bg-card px-4 font-bold"
+          >
+            כל הכתובות יחד
+            <span aria-hidden className="text-muted">←</span>
+          </Link>
+        </li>
+      </ul>
+      <Quip place="radius" />
+    </div>
   );
 }

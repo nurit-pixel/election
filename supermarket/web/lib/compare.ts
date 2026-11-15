@@ -33,7 +33,11 @@ export type StoreInfo = {
   reviewCount: number;
 };
 
-export type RankedStore = StoreInfo & { basket: StoreBasket };
+export type RankedStore = StoreInfo & {
+  basket: StoreBasket;
+  /** הסל המשוער: חלקי מושלם במחיר הזול באזור של הפריטים החסרים (בדירוג בלבד) */
+  estimate?: number;
+};
 
 const STORE_COLUMNS = `
   s.id AS store_pk, s.chain_key, c.name AS chain_name, c.is_pharm,
@@ -64,8 +68,8 @@ function toStore(r: Record<string, unknown>): StoreInfo {
   };
 }
 
-/** סניפים עם מחירים שנמצאים ברדיוס של כתובת שמורה, עם המרחק מהכתובת הקרובה. */
-export async function storesInRadius(): Promise<StoreInfo[]> {
+/** סניפים עם מחירים שנמצאים ברדיוס של כתובת שמורה (או של כתובת אחת מסוימת), עם המרחק מהכתובת הקרובה. */
+export async function storesInRadius(addressId: number | null = null): Promise<StoreInfo[]> {
   const user = await uid();
   const { rows } = await pool.query(
     `SELECT DISTINCT ON (s.id) ${STORE_COLUMNS},
@@ -74,8 +78,9 @@ export async function storesInRadius(): Promise<StoreInfo[]> {
      JOIN chains c ON c.key = s.chain_key AND ${chainVisible(user)}
      JOIN ${userAddresses(user)} ON s.lat IS NOT NULL
       AND distance_km(a.lat, a.lng, s.lat, s.lng) <= a.radius_km
-     WHERE s.prices_file_time IS NOT NULL
+     WHERE s.prices_file_time IS NOT NULL AND ($1::int IS NULL OR a.id = $1)
      ORDER BY s.id, distance_km`,
+    [addressId],
   );
   return rows.map(toStore);
 }
@@ -164,8 +169,8 @@ type Loaded = {
   clubs: Map<string, number[]>;
 };
 
-async function load(): Promise<Loaded> {
-  const [list, stores, clubs] = await Promise.all([getList(), storesInRadius(), memberClubs()]);
+async function load(addressId: number | null = null): Promise<Loaded> {
+  const [list, stores, clubs] = await Promise.all([getList(), storesInRadius(addressId), memberClubs()]);
   const items = basketItems(list);
   const prices = await pricesByStore(
     stores.map((s) => s.storePk),
@@ -217,9 +222,9 @@ export type Comparison = {
   bestSplit: SplitOffer<StoreInfo> | null;
 };
 
-/** דירוג כל הסניפים שברדיוס לפי מחיר הסל של הרשימה. */
-export async function compareStores(): Promise<Comparison> {
-  const [loaded, minSaving] = await Promise.all([load(), splitMinSaving()]);
+/** דירוג הסניפים שברדיוס (של כל הכתובות, או של כתובת אחת) לפי מחיר הסל של הרשימה. */
+export async function compareStores(addressId: number | null = null): Promise<Comparison> {
+  const [loaded, minSaving] = await Promise.all([load(addressId), splitMinSaving()]);
   const now = new Date();
   const ranked = rank(loaded, now);
   return {

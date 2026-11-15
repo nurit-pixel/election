@@ -234,16 +234,45 @@ function poolBundles(lines: BasketLine[], prices: Map<number, StorePrice>, open:
 
 export type RankableStore = { isPharm: boolean; basket: StoreBasket };
 
+/** סל משוער: סכום הסל בסניף, ועוד כל פריט שחסר בו במחיר הזול ביותר שלו בסניפים האחרים. כך סל חלקי
+ * מושווה לסל מלא בהגינות, בלי שהפריטים החסרים "יוזילו" אותו. פריט שאין בשום סניף לא נספר באף סל. */
+export function estimateTotals<T extends RankableStore>(stores: T[]): Map<T, number> {
+  const cheapest = new Map<number, number>();
+  for (const store of stores) {
+    if (store.isPharm) continue;
+    for (const line of store.basket.lines) {
+      if (line.found && line.total < (cheapest.get(line.itemId) ?? Infinity)) cheapest.set(line.itemId, line.total);
+    }
+  }
+  const estimates = new Map<T, number>();
+  for (const store of stores) {
+    const missing = store.basket.lines.reduce((sum, line) => sum + (line.found ? 0 : (cheapest.get(line.itemId) ?? 0)), 0);
+    estimates.set(store, roundMoney(store.basket.total + missing));
+  }
+  return estimates;
+}
+
+/** סניף שחסרים בו כמעט כל הפריטים לא יכול "לנצח" רק בזכות ההשלמה המשוערת: מקבוצת המובילים
+ * נכנסים רק סניפים שחסר בהם לכל היותר פריט אחד לעומת הסניף עם הכי הרבה פריטים. */
+export function nearComplete(foundCount: number, maxFound: number): boolean {
+  return maxFound <= 2 ? foundCount === maxFound : foundCount >= maxFound - 1;
+}
+
 /**
- * דירוג סניפים: קודם סלים מלאים מהזול ליקר; אחריהם סלים חלקיים, לפי מספר הפריטים
- * שנמצאו (יותר קודם) ואז לפי מחיר. סניפי פארם וסניפים בלי אף פריט אינם מדורגים.
+ * דירוג סניפים מהזול ליקר, לפי הסל המשוער (סל חלקי מושלם במחיר הזול באזור של הפריטים החסרים).
+ * קודם הסניפים שיש בהם כמעט הכול, אחריהם השאר; בכל קבוצה מהזול ליקר, ובשוויון סל מלא קודם.
+ * סניפי פארם וסניפים בלי אף פריט אינם מדורגים.
  */
-export function rankStores<T extends RankableStore>(stores: T[]): T[] {
-  return stores
-    .filter((s) => !s.isPharm && s.basket.foundCount > 0)
+export function rankStores<T extends RankableStore>(stores: T[]): (T & { estimate: number })[] {
+  const estimates = estimateTotals(stores);
+  const ranked = stores.filter((s) => !s.isPharm && s.basket.foundCount > 0);
+  const maxFound = Math.max(0, ...ranked.map((s) => s.basket.foundCount));
+  return ranked
+    .map((s) => ({ ...s, estimate: estimates.get(s)!, leading: nearComplete(s.basket.foundCount, maxFound) }))
     .sort((a, b) => {
+      if (a.leading !== b.leading) return a.leading ? -1 : 1;
+      if (a.estimate !== b.estimate) return a.estimate - b.estimate;
       if (a.basket.complete !== b.basket.complete) return a.basket.complete ? -1 : 1;
-      if (a.basket.foundCount !== b.basket.foundCount) return b.basket.foundCount - a.basket.foundCount;
-      return a.basket.total - b.basket.total;
+      return b.basket.foundCount - a.basket.foundCount;
     });
 }
