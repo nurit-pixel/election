@@ -14,7 +14,8 @@ export type MapStore = {
   complete: boolean;
   rank: number;
   /** המקום על מד המחיר, 0–4 */
-  level: number;
+  /** null: סניף שחסרים בו כמה פריטים (אפור) */
+  level: number | null;
   /** מוקם רק לפי העיר */
   approximate: boolean;
 };
@@ -66,7 +67,7 @@ export function StoresMap({ stores, addresses }: { stores: MapStore[]; addresses
 
       // הזולים מצוירים אחרונים, כדי שיהיו מעל
       for (const store of [...stores].sort((a, b) => b.rank - a.rank)) {
-        const color = METER_COLORS[store.level];
+        const color = store.level == null ? "#d9d2dc" : METER_COLORS[store.level];
         const label = `${store.rank}`;
         const marker = L.marker([store.lat, store.lng], {
           icon: L.divIcon({
@@ -81,7 +82,7 @@ export function StoresMap({ stores, addresses }: { stores: MapStore[]; addresses
         marker.bindPopup(
           `<div dir="rtl" class="pm-map-popup">
              <div class="pm-map-popup-name">${store.rank}. ${escape(store.name)}</div>
-             <div><b dir="ltr">₪${store.price.toFixed(2)}</b>${store.complete ? " · סל מלא" : " · בערך, עם השלמת החסרים"}</div>
+             <div><b dir="ltr">₪${store.price.toFixed(2)}</b>${store.complete ? " · סל מלא" : store.level == null ? " · חסרים כמה פריטים" : " · בערך, עם השלמת החסרים"}</div>
              ${store.approximate ? '<div class="pm-map-note">מיקום משוער (לפי העיר)</div>' : ""}
              <a href="/store/${store.storePk}">פירוט הסל בסניף ←</a>
            </div>`,

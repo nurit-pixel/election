@@ -61,11 +61,15 @@ export default async function ComparePage({
   const hidden = rows.length - visible.length;
   // המחיר להשוואה בין סניפים: הסל המשוער (חלקי מושלם במחיר הזול באזור של הפריטים החסרים)
   const priceOf = (r: Row) => r.estimate ?? r.basket.total;
-  const cheapest = rows.length > 0 ? priceOf(rows[0]) : 0;
-  const mostExpensive = rows.length > 0 ? Math.max(...rows.map(priceOf)) : 0;
-  // סניפים שחסרים בהם יותר מפריט אחד לעומת המובילים מוצגים אחרי כותרת משלהם
+  // סניפים שחסרים בהם יותר מפריט אחד לעומת המובילים מוצגים אחרי כותרת משלהם, במחיר שלהם בפועל ובלי מד:
+  // המחיר המשוער שלהם רובו השלמה מסניפים אחרים, ולא אומר כמה יעלה לקנות בהם
   const maxFound = Math.max(0, ...rows.map((r) => r.basket.foundCount));
-  const firstTrailing = rows.findIndex((r) => !nearComplete(r.basket.foundCount, maxFound));
+  const isTrailing = (r: Row) => !nearComplete(r.basket.foundCount, maxFound);
+  const firstTrailing = rows.findIndex(isTrailing);
+  const leaders = rows.filter((r) => !isTrailing(r));
+  const cheapest = leaders.length > 0 ? priceOf(leaders[0]) : 0;
+  const mostExpensive = leaders.length > 0 ? Math.max(...leaders.map(priceOf)) : 0;
+  const levelOf = (r: Row) => (isTrailing(r) ? null : meterLevel(priceOf(r), cheapest, mostExpensive));
 
   if (list.items.length === 0) {
     return (
@@ -135,10 +139,10 @@ export default async function ComparePage({
                 lat: r.lat!,
                 lng: r.lng!,
                 name: `${r.chainName} · ${r.name}`,
-                price: priceOf(r),
+                price: isTrailing(r) ? r.basket.total : priceOf(r),
                 complete: r.basket.complete,
                 rank: rows.indexOf(r) + 1,
-                level: meterLevel(priceOf(r), cheapest, mostExpensive),
+                level: levelOf(r),
                 approximate: r.approximate,
               }))}
             addresses={(chosen ? [chosen] : addresses).map((a) => ({ label: a.label, lat: a.lat, lng: a.lng, radiusKm: a.radiusKm }))}
@@ -194,7 +198,7 @@ export default async function ComparePage({
               now={now}
               winner={rows.indexOf(row) === winner}
               diff={priceOf(row) - cheapest}
-              level={meterLevel(priceOf(row), cheapest, mostExpensive)}
+              level={levelOf(row)}
               remark={rows.indexOf(row) < 3 ? quip(`rank${rows.indexOf(row) + 1}` as "rank1" | "rank2" | "rank3") : null}
             />
           </li>
@@ -268,8 +272,8 @@ function StoreCard({
   winner: boolean;
   /** כמה יותר מהסל הזול ביותר (לפי הסל המשוער) */
   diff: number;
-  /** המקום על מד המחיר, 0 (הכי זול) עד 4 */
-  level: number;
+  /** המקום על מד המחיר, 0 (הכי זול) עד 4; null לסניף שחסרים בו כמה פריטים (בלי מד) */
+  level: number | null;
   /** הערה צינית לשלושת המקומות הראשונים */
   remark: string | null;
 }) {
@@ -282,7 +286,7 @@ function StoreCard({
         winner ? "border-2 border-fresh shadow-[5px_0_0_var(--pm-turquoise)]" : "border border-line shadow-card"
       }`}
     >
-      <Meter level={level} className="mb-3" />
+      {level != null && <Meter level={level} className="mb-3" />}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="font-bold leading-normal">
@@ -291,7 +295,7 @@ function StoreCard({
                 className={`me-1.5 inline-grid size-[26px] place-items-center rounded-[9px] text-xs font-extrabold ${
                   winner ? "bg-fresh text-card" : "bg-subtle"
                 }`}
-                style={winner ? undefined : { background: METER_COLORS[level], color: "#2b0735" }}
+                style={winner || level == null ? undefined : { background: METER_COLORS[level], color: "#2b0735" }}
               >
                 <span className="sr-only">מקום </span>
                 {rank}
@@ -308,13 +312,17 @@ function StoreCard({
         </div>
         <div className="max-w-[46%] shrink-0 text-left">
           {/* המחיר הראשי: לסל חלקי, הסל המשוער עם הפריטים החסרים, כדי שהסדר מהזול ליקר יהיה ברור */}
-          {!b.complete && s.estimate != null && <span className="text-[11px] font-bold text-muted">בערך</span>}
+          {level != null && !b.complete && s.estimate != null && <span className="text-[11px] font-bold text-muted">בערך</span>}
           <Price
-            value={!b.complete && s.estimate != null ? s.estimate : b.total}
-            className="block text-[25px] font-extrabold leading-tight tracking-tight text-ink"
+            value={level != null && !b.complete && s.estimate != null ? s.estimate : b.total}
+            className={`block font-extrabold leading-tight tracking-tight ${level == null ? "text-[20px] text-muted" : "text-[25px] text-ink"}`}
           />
           <div className="text-[11px] leading-normal text-muted">
-            {winner ? (
+            {level == null ? (
+              <span className="font-bold">
+                רק {b.foundCount} מתוך {b.itemCount} פריטים
+              </span>
+            ) : winner ? (
               <span className="font-bold text-fresh">הכי משתלם</span>
             ) : diff > 0.004 ? (
               <>
@@ -335,7 +343,7 @@ function StoreCard({
           {remark}
         </p>
       )}
-      {!b.complete && s.estimate != null && (
+      {level != null && !b.complete && s.estimate != null && (
         <p className="mt-1 text-xs text-muted">
           בסניף עצמו: <Price value={b.total} className="font-bold text-ink" /> על {b.foundCount} הפריטים שיש בו. את השאר
           חישבנו לפי המחיר הזול שלהם באזור.
