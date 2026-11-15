@@ -55,7 +55,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 function ProductCard({ product: p, item }: { product: ProductResult; item: ListItem | null }) {
   const unit = p.isWeighted ? " לק״ג" : "";
   const cheapest = p.prices[0];
-  const priciest = p.prices[p.prices.length - 1];
   const already = item?.products.some((x) => x.id === p.id);
   const wrongKind = item != null && item.isWeighted !== p.isWeighted;
 
@@ -79,8 +78,8 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
           <div className="shrink-0 text-left">
             <div className="text-lg font-bold text-link">
               {formatPrice(cheapest.price)}
-              {priciest.price !== cheapest.price && (
-                <span className="text-sm font-normal text-muted"> – {formatPrice(priciest.price)}</span>
+              {p.maxPrice != null && p.maxPrice !== cheapest.price && (
+                <span className="text-sm font-normal text-muted"> – {formatPrice(p.maxPrice)}</span>
               )}
             </div>
             {unit && <div className="text-xs text-muted">{unit.trim()}</div>}
@@ -105,7 +104,7 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
           </form>
         )}
         <Link href={`/product/${p.id}`} className="text-xs text-link">
-          גרף ומעקב · {p.prices.length} סניפים
+          גרף ומעקב · {p.storeCount} סניפים
         </Link>
       </div>
 
@@ -131,6 +130,11 @@ function ProductCard({ product: p, item }: { product: ProductResult; item: ListI
               </li>
             ))}
           </ul>
+          {p.storeCount > p.prices.length && (
+            <Link href={`/product/${p.id}`} className="mt-2 inline-block text-xs text-link">
+              {p.prices.length} הזולים מתוך {p.storeCount} סניפים. כל הסניפים בדף המוצר ←
+            </Link>
+          )}
         </details>
       )}
     </li>

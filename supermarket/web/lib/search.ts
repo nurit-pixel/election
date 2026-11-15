@@ -27,8 +27,16 @@ export type ProductResult = {
   isWeighted: boolean;
   /** קוד פנימי: שם הרשת שהמוצר שייך לה */
   chainName: string | null;
+  /** הסניפים הזולים באזור (עד PRICES_SHOWN), מהזול ליקר */
   prices: StorePrice[];
+  /** בכמה סניפים באזור יש למוצר מחיר */
+  storeCount: number;
+  minPrice: number | null;
+  maxPrice: number | null;
 };
+
+/** כמה סניפים מוצגים לכל מוצר בתוצאות. השאר בדף המוצר; כך התשובה קטנה ומהירה גם עם הרבה סניפים */
+export const PRICES_SHOWN = 8;
 
 const STALE_HOURS = Number(process.env.STALE_PRICE_HOURS ?? 36);
 
@@ -70,23 +78,28 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
          AND EXISTS (SELECT 1 FROM prices pr WHERE pr.product_id = p.id)
        ORDER BY ${rank("p")}, store_count DESC, length(p.name), p.name
        LIMIT $${limitIdx}
+     ), nearby AS (
+       -- הסניפים שברדיוס של המשתמש, פעם אחת, במקום בדיקת מרחק לכל שורת מחיר
+       SELECT s.id, s.name, s.store_id, s.city, c.name AS chain_name
+       FROM stores s JOIN chains c ON c.key = s.chain_key
+       WHERE ${chainVisible(user)} AND ${storeInRadius(user)}
      )
      SELECT m.*, (SELECT name FROM chains WHERE key = m.internal_chain) AS internal_chain_name,
-            COALESCE(json_agg(json_build_object(
-              'storePk', s.id,
-              'chainName', c.name,
-              'storeName', COALESCE(s.name, 'סניף ' || s.store_id),
-              'city', s.city,
+            count(n.id) AS nearby_count, min(pr.price) FILTER (WHERE n.id IS NOT NULL) AS min_price,
+            max(pr.price) FILTER (WHERE n.id IS NOT NULL) AS max_price,
+            COALESCE(to_json((array_agg(json_build_object(
+              'storePk', n.id,
+              'chainName', n.chain_name,
+              'storeName', COALESCE(n.name, 'סניף ' || n.store_id),
+              'city', n.city,
               'price', pr.price,
               'priceUpdatedAt', pr.price_update_time,
               'fileTime', pr.file_time,
               'stale', pr.file_time < now() - make_interval(hours => $${staleIdx})
-            ) ORDER BY pr.price, s.name) FILTER (WHERE c.key IS NOT NULL), '[]') AS prices
+            ) ORDER BY pr.price, n.name) FILTER (WHERE n.id IS NOT NULL))[1:${PRICES_SHOWN}]), '[]') AS prices
      FROM matched m
      LEFT JOIN prices pr ON pr.product_id = m.id
-     LEFT JOIN stores s ON s.id = pr.store_pk
-       AND ${storeInRadius(user)}
-     LEFT JOIN chains c ON c.key = s.chain_key AND ${chainVisible(user)}
+     LEFT JOIN nearby n ON n.id = pr.store_pk
      GROUP BY m.id, m.barcode, m.internal_chain, m.name, m.manufacturer, m.is_weighted, m.store_count
      ORDER BY ${rank("m")}, m.store_count DESC, length(m.name), m.name`,
     params,
@@ -101,5 +114,8 @@ export async function searchProducts(query: string, limit = 30): Promise<Product
     isWeighted: r.is_weighted,
     chainName: r.internal_chain_name,
     prices: r.prices,
+    storeCount: Number(r.nearby_count),
+    minPrice: r.min_price == null ? null : Number(r.min_price),
+    maxPrice: r.max_price == null ? null : Number(r.max_price),
   }));
 }

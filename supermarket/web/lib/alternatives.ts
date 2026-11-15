@@ -21,23 +21,28 @@ export async function suggestionsFor(items: ListItem[]): Promise<Map<number, Sug
   const single = items.filter((item) => item.products.length === 1 && !item.products[0].chainName);
   if (single.length === 0) return result;
   const user = await uid();
-  const nearby = `EXISTS (SELECT 1 FROM prices pr JOIN stores s ON s.id = pr.store_pk JOIN chains c ON c.key = s.chain_key
-                          WHERE pr.product_id = p.id AND ${chainVisible(user)} AND ${storeInRadius(user)})`;
-  const minPrice = `(SELECT min(pr.price) FROM prices pr JOIN stores s ON s.id = pr.store_pk JOIN chains c ON c.key = s.chain_key
-                     WHERE pr.product_id = p.id AND ${chainVisible(user)} AND ${storeInRadius(user)})`;
+  // הסניפים שברדיוס, פעם אחת, והמחיר הזול בהם לכל מוצר
+  const nearby = `nearby AS (
+    SELECT s.id FROM stores s JOIN chains c ON c.key = s.chain_key
+    WHERE ${chainVisible(user)} AND ${storeInRadius(user)})`;
 
   const references = await pool.query(
-    `SELECT p.id, p.name, p.manufacturer, p.is_weighted, p.quantity, p.unit_qty, ${minPrice} AS min_price
-     FROM products p WHERE p.id = ANY($1) AND ${nearby}`,
+    `WITH ${nearby}
+     SELECT p.id, p.name, p.manufacturer, p.is_weighted, p.quantity, p.unit_qty, min(pr.price) AS min_price
+     FROM products p JOIN prices pr ON pr.product_id = p.id JOIN nearby n ON n.id = pr.store_pk
+     WHERE p.id = ANY($1)
+     GROUP BY p.id`,
     [single.map((item) => item.products[0].id)],
   );
   if (references.rows.length === 0) return result;
   const words = [...new Set(references.rows.map((r) => String(r.name).trim().split(/\s+/)[0]).filter((w) => w.length >= 3))];
   if (words.length === 0) return result;
   const candidates = await pool.query(
-    `SELECT p.id, p.name, p.manufacturer, p.is_weighted, p.quantity, p.unit_qty, ${minPrice} AS min_price
-     FROM products p
-     WHERE p.internal_chain = '' AND split_part(p.name, ' ', 1) = ANY($1) AND ${nearby}
+    `WITH ${nearby}
+     SELECT p.id, p.name, p.manufacturer, p.is_weighted, p.quantity, p.unit_qty, min(pr.price) AS min_price
+     FROM products p JOIN prices pr ON pr.product_id = p.id JOIN nearby n ON n.id = pr.store_pk
+     WHERE p.internal_chain = '' AND split_part(p.name, ' ', 1) = ANY($1)
+     GROUP BY p.id
      LIMIT 3000`,
     [words],
   );
