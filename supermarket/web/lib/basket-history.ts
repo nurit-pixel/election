@@ -2,8 +2,9 @@ import "server-only";
 import { pool } from "./db";
 import { chainVisible, storeInRadius } from "./scope";
 import { uid } from "./session";
+import { basketSeries, type BasketPoint } from "./basket-history-calc";
 
-export type BasketPoint = { day: string; price: number };
+export type { BasketPoint } from "./basket-history-calc";
 
 export type BasketHistory = {
   points: BasketPoint[];
@@ -13,54 +14,37 @@ export type BasketHistory = {
 };
 
 /** מדד הסל: כמה עלה הסל של הרשימה בכל יום, אם קונים כל פריט במחיר הזול ביותר באזור (מחיר מדף).
- * לכל סניף ופריט נלקח המחיר האחרון שידוע עד אותו יום (עד שבוע אחורה), והחלופה הזולה של הפריט. */
+ * המסד מחזיר רק את המחיר הזול ליום לכל פריט (מבין החלופות והסניפים שבאזור); השלמת ימים חסרים והסכום
+ * נעשים ב-basketSeries. כך השאילתה נשארת מהירה גם כשההיסטוריה גדלה. */
 export async function basketHistory(listId: number, days = 60): Promise<BasketHistory> {
   const user = await uid();
-  const { rows } = await pool.query(
-    `WITH items AS (
-       SELECT i.id, i.quantity FROM list_items i WHERE i.list_id = $1
-     ), alts AS (
-       SELECT ip.item_id, ip.product_id FROM list_item_products ip JOIN items ON items.id = ip.item_id
-     ), shops AS (
-       SELECT DISTINCT h.store_pk AS id FROM price_history h
-       JOIN stores s ON s.id = h.store_pk JOIN chains c ON c.key = s.chain_key
-       WHERE h.product_id IN (SELECT product_id FROM alts) AND h.day > current_date - $2::int
-         AND NOT c.is_pharm AND ${chainVisible(user)} AND ${storeInRadius(user)}
-     ), days AS (
-       SELECT DISTINCT h.day FROM price_history h
-       WHERE h.product_id IN (SELECT product_id FROM alts) AND h.day > current_date - $2::int
-     ), item_price AS (
-       SELECT d.day, sh.id AS store_pk, a.item_id, min(last.price) AS price
-       FROM days d CROSS JOIN shops sh JOIN alts a ON true
-       JOIN LATERAL (
-         SELECT h.price FROM price_history h
-         WHERE h.product_id = a.product_id AND h.store_pk = sh.id AND h.day <= d.day AND h.day > d.day - 7
-         ORDER BY h.day DESC LIMIT 1
-       ) last ON true
-       GROUP BY d.day, sh.id, a.item_id
-     ), cheapest AS (
-       -- לכל פריט ויום: המחיר הזול ביותר באזור, בכל סניף שהוא
-       SELECT day, item_id, min(price) AS price FROM item_price GROUP BY day, item_id
-     ), counted AS (
-       -- פריטים שיש להם מחיר ביום האחרון: רק הם נכללים, כדי שפריט חדש בלי היסטוריה לא יעלים את הגרף
-       SELECT item_id FROM cheapest WHERE day = (SELECT max(day) FROM days)
-     ), day_total AS (
-       SELECT ch.day, sum(ch.price * it.quantity) AS total
-       FROM cheapest ch JOIN items it ON it.id = ch.item_id
-       WHERE ch.item_id IN (SELECT item_id FROM counted)
-       GROUP BY ch.day
-       HAVING count(*) = (SELECT count(*) FROM counted)
-     )
-     SELECT to_char(day, 'YYYY-MM-DD') AS day, total AS price,
-            (SELECT count(*) FROM counted) AS counted, (SELECT count(*) FROM items) AS total_items
-     FROM day_total ORDER BY day`,
-    [listId, days],
+  const [items, rows] = await Promise.all([
+    pool.query(`SELECT id, quantity FROM list_items WHERE list_id = $1`, [listId]),
+    pool.query(
+      `WITH alts AS (
+         SELECT ip.item_id, ip.product_id FROM list_item_products ip
+         JOIN list_items i ON i.id = ip.item_id WHERE i.list_id = $1
+       ), nearby AS (
+         SELECT s.id FROM stores s JOIN chains c ON c.key = s.chain_key
+         WHERE NOT c.is_pharm AND ${chainVisible(user)} AND ${storeInRadius(user)}
+       ), daily AS (
+         SELECT h.day, h.product_id, min(h.price) AS price
+         FROM price_history h JOIN nearby n ON n.id = h.store_pk
+         WHERE h.product_id IN (SELECT product_id FROM alts) AND h.day > current_date - $2::int
+         GROUP BY h.day, h.product_id
+       )
+       SELECT to_char(d.day, 'YYYY-MM-DD') AS day, a.item_id, min(d.price) AS price
+       FROM daily d JOIN alts a ON a.product_id = d.product_id
+       GROUP BY d.day, a.item_id`,
+      [listId, days],
+    ),
+  ]);
+  const quantities = new Map(items.rows.map((r) => [r.id as number, Number(r.quantity)]));
+  const { points, itemsCounted } = basketSeries(
+    rows.rows.map((r) => ({ day: r.day, itemId: r.item_id, price: Number(r.price) })),
+    quantities,
   );
-  return {
-    points: rows.map((r) => ({ day: r.day, price: Math.round(Number(r.price) * 100) / 100 })),
-    itemsCounted: rows.length > 0 ? Number(rows[0].counted) : 0,
-    itemsTotal: rows.length > 0 ? Number(rows[0].total_items) : 0,
-  };
+  return { points, itemsCounted, itemsTotal: points.length > 0 ? items.rows.length : 0 };
 }
 
 /** שינוי מהנקודה הראשונה לאחרונה */
