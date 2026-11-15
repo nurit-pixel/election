@@ -94,7 +94,7 @@ const iso = (value: unknown) => (value == null ? null : new Date(value as string
 const num = (value: unknown) => (value == null ? null : Number(value));
 
 /** מחירים ומבצעים בתוקף, לפי סניף ומוצר. */
-async function pricesByStore(storePks: number[], productIds: number[]) {
+export async function pricesByStore(storePks: number[], productIds: number[]) {
   const byStore = new Map<number, Map<number, StorePrice>>();
   if (storePks.length === 0 || productIds.length === 0) return byStore;
   const [prices, promos] = await Promise.all([

@@ -274,6 +274,12 @@ export function linesFromPasses(text: string, digits: string): ReceiptLine[] | n
 
   const lines: ReceiptLine[] = [];
   const seen = new Set<string>();
+  /** השורה האחרונה שנוספה, ושורות ההמשך שלה (כמות, משקל, מבצע) */
+  let current: { line: ReceiptLine; extra: string[] } | null = null;
+  const settle = () => {
+    if (current) applyContinuation(current.line, current.extra);
+    current = null;
+  };
   for (let i = first; i <= last; i++) {
     const line = digitLines[i];
     const prices = ((line.match(PRICE_TOKEN) ?? []) as string[]).map(number);
@@ -283,18 +289,65 @@ export function linesFromPasses(text: string, digits: string): ReceiptLine[] | n
       const short = (line.match(/(?<![\d.,])\d{5,7}(?![\d.,])/g) ?? []) as string[];
       if (short.length === 1) codes = short;
     }
+    if (codes.length === 0) {
+      current?.extra.push(line);
+      continue;
+    }
     for (const code of codes) {
       if (seen.has(code)) continue;
       seen.add(code);
-      lines.push({
+      settle();
+      const entry: ReceiptLine = {
         printed: nameFor(prices),
         name: "",
         barcode: code,
         unit: "unit",
         quantity: 1,
         total: prices.length > 0 ? Math.max(...prices) : null,
-      });
+      };
+      lines.push(entry);
+      current = { line: entry, extra: [] };
     }
   }
+  settle();
   return lines.map((line) => ({ ...line, name: line.printed })).slice(0, 150);
+}
+
+/** כמות ומחיר מתוך שורות ההמשך של מוצר ("2 x 12.90  25.80"). כשאי אפשר לדעת בוודאות כמה יחידות
+ * נקנו, הסכום מסומן כלא ידוע, כדי שלא ייכנס להשוואת המחירים. */
+export function applyContinuation(line: ReceiptLine, extra: string[]): void {
+  if (extra.length === 0) return;
+  const prices = extra.flatMap((text) => ((text.match(PRICE_TOKEN) ?? []) as string[]).map(number));
+  const ratio = (total: number, unit: number) => {
+    const k = total / unit;
+    return unit > 0 && k >= 2 && k <= 50 && Math.abs(k - Math.round(k)) < 0.01 ? Math.round(k) : null;
+  };
+  // סכום השורה חלקי מחיר ליחידה שבשורת ההמשך
+  if (line.total != null) {
+    for (const unit of prices) {
+      const k = ratio(line.total, unit);
+      if (k) {
+        line.quantity = k;
+        return;
+      }
+    }
+  }
+  // שני מחירים בשורת ההמשך: סכום ומחיר ליחידה
+  for (const total of prices) {
+    for (const unit of prices) {
+      const k = ratio(total, unit);
+      if (k) {
+        line.quantity = k;
+        line.total = total;
+        return;
+      }
+    }
+  }
+  // סימן כפל, או מספר בודד קטן בלי מחיר: יש כמות שלא הצלחנו לקרוא
+  const hint = extra.some(
+    (text) =>
+      /[xX×]/.test(text.replace(/[א-תa-wyzA-WYZ]{2,}/g, "")) ||
+      (!/\d{1,4}[.,]\d{2}(?!\d)/.test(text) && /(?<![\d.,])(?:[2-9]|1\d|20)(?![\d.,])/.test(text)),
+  );
+  if (hint || (line.total == null && prices.length > 0)) line.total = null;
 }

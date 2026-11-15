@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { addReceiptItems } from "@/app/receipt/actions";
 import { preselected, type Candidate, type MatchedLine } from "@/lib/receipt-match";
+import type { Overpay } from "@/lib/overpay-calc";
 import { Price } from "./ui";
 
 type Line = MatchedLine & {
@@ -36,6 +37,36 @@ export function ReceiptImport() {
   const [error, setError] = useState<string | null>(null);
   const [lines, setLines] = useState<Line[] | null>(null);
   const [saving, startSaving] = useTransition();
+  const [meter, setMeter] = useState<Overpay | null>(null);
+
+  // פראיירמטר: מחיר ליחידה ששולם על כל מוצר שנבחר, מול סניף זול באזור
+  const paidKey = JSON.stringify(
+    (lines ?? []).flatMap((line) =>
+      line.chosen != null && line.total != null && line.total > 0
+        ? [{ productId: line.chosen, paid: Math.round((line.total / Math.max(line.quantity || 1, 1)) * 100) / 100 }]
+        : [],
+    ),
+  );
+  useEffect(() => {
+    const items = JSON.parse(paidKey) as { productId: number; paid: number }[];
+    if (items.length < 2) {
+      setMeter(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/receipt/overpay", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ items }),
+        });
+        setMeter((await response.json()).result ?? null);
+      } catch {
+        setMeter(null);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [paidKey]);
 
   const upload = async (file: File) => {
     setBusy(true);
@@ -120,6 +151,7 @@ export function ReceiptImport() {
         {found.some((line) => line.chosen == null) ? "מוצר בלי בחירה לא יתווסף." : "בודקים ומאשרים."} כל מוצר נכנס לרשימה
         בכמות 1.
       </p>
+      {meter && <OverpayCard meter={meter} />}
       <ul className="space-y-3">
         {found.map((line) => (
           <LineCard key={line.key} line={line} update={(patch) => update(line.key, patch)} />
@@ -289,5 +321,33 @@ function LineCard({ line, update }: { line: Line; update: (patch: Partial<Line>)
         {empty && <p className="mt-1 text-xs text-missing">לא נמצאו מוצרים. מנסים ניסוח אחר.</p>}
       </details>
     </li>
+  );
+}
+
+/** כמה שילמת לעומת סניף זול באזור, על אותם מוצרים */
+function OverpayCard({ meter }: { meter: Overpay }) {
+  const freier = meter.difference >= 1;
+  return (
+    <section
+      aria-label="השוואת החשבונית"
+      className={`rounded-pm-lg border-2 p-4 shadow-card ${freier ? "border-pm-pink bg-missing-surface" : "border-fresh bg-fresh-surface"}`}
+    >
+      <h2 className={`text-lg font-extrabold ${freier ? "text-missing" : "text-fresh"}`}>
+        {freier ? (
+          <>
+            יצאת פראייר ב-<Price value={meter.difference} />
+          </>
+        ) : (
+          "לא יצאת פראייר"
+        )}
+      </h2>
+      <p className="mt-1 text-sm">
+        על {meter.count} מוצרים מהחשבונית שילמת <Price value={meter.paid} />. ב{meter.store.label} הם עולים{" "}
+        <Price value={meter.elsewhere} />.
+      </p>
+      <p className="mt-1 text-xs text-muted">
+        לפי מחיר המדף בסניף, בלי מבצעים. השוואה רק על מוצרים שהמחיר שלהם הודפס בחשבונית ושנמכרים בסניף הזה.
+      </p>
+    </section>
   );
 }

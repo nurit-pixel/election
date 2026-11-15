@@ -227,3 +227,32 @@ describe("צילום אמיתי של חשבונית (פלט OCR שמור)", () =
     expect(linesFromPasses("במבה 4.90", "4.90 nana")).toBeNull();
   });
 });
+
+import { applyContinuation } from "../lib/receipt-parse";
+
+describe("כמות מתוך שורות ההמשך", () => {
+  const base = () => ({ printed: "x", name: "x", barcode: "7290000042411", unit: "unit" as const, quantity: 1, total: 15.8 as number | null });
+  it("סכום השורה חלקי מחיר ליחידה", () => {
+    const line = base();
+    applyContinuation(line, ["7.90 aTn'7 YNn 2 nnd"]);
+    expect(line).toMatchObject({ quantity: 2, total: 15.8 });
+  });
+  it("סכום ומחיר ליחידה בשורת ההמשך", () => {
+    const line = { ...base(), total: null };
+    applyContinuation(line, ["25.80 + > 1 saxs5 12.90"]);
+    expect(line).toMatchObject({ quantity: 2, total: 25.8 });
+  });
+  it("מוגבל לכמות, באותו מחיר: יחידה אחת", () => {
+    const line = { ...base(), total: 27.9 };
+    applyContinuation(line, ["3 %22In 27.90"]);
+    expect(line).toMatchObject({ quantity: 1, total: 27.9 });
+  });
+  it("כמות שלא נקראה: הסכום לא ידוע ולא נכנס להשוואה", () => {
+    const line = { ...base(), total: 7.8 };
+    applyContinuation(line, ["3 nim>"]);
+    expect(line.total).toBeNull();
+    const weighed = { ...base(), total: null };
+    applyContinuation(weighed, ["0.98 1\"Pp 0.142 x 6.90 wiley"]);
+    expect(weighed.total).toBeNull();
+  });
+});
