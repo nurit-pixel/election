@@ -26,6 +26,11 @@ export type StoreInfo = {
   pricesFileTime: string | null;
   /** לסניף נטען קובץ מבצעים */
   hasPromos: boolean;
+  lat: number | null;
+  lng: number | null;
+  /** ממוצע חוות הדעת של המשתמשים, ומספרן */
+  rating: number | null;
+  reviewCount: number;
 };
 
 export type RankedStore = StoreInfo & { basket: StoreBasket };
@@ -34,7 +39,9 @@ const STORE_COLUMNS = `
   s.id AS store_pk, s.chain_key, c.name AS chain_name, c.is_pharm,
   COALESCE(s.name, 'סניף ' || s.store_id) AS name, s.address, s.city,
   s.geocode_precision = 'city' AS approximate, s.prices_file_time,
-  s.promos_file_time IS NOT NULL AS has_promos`;
+  s.promos_file_time IS NOT NULL AS has_promos, s.lat, s.lng,
+  (SELECT avg(r.rating) FROM store_reviews r WHERE r.store_pk = s.id) AS rating,
+  (SELECT count(*) FROM store_reviews r WHERE r.store_pk = s.id) AS review_count`;
 
 function toStore(r: Record<string, unknown>): StoreInfo {
   return {
@@ -50,6 +57,10 @@ function toStore(r: Record<string, unknown>): StoreInfo {
     approximate: r.approximate === true,
     pricesFileTime: (r.prices_file_time as string) ?? null,
     hasPromos: r.has_promos === true,
+    lat: r.lat == null ? null : Number(r.lat),
+    lng: r.lng == null ? null : Number(r.lng),
+    rating: r.rating == null ? null : Math.round(Number(r.rating) * 10) / 10,
+    reviewCount: Number(r.review_count ?? 0),
   };
 }
 

@@ -2,6 +2,10 @@ import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageId } from "@/lib/ids";
+import { navigationLinks } from "@/lib/navigate";
+import { storeReviews } from "@/lib/reviews";
+import { StoreReviews } from "@/components/StoreReviews";
+import { Stars } from "@/components/Stars";
 import { storeBasket } from "@/lib/compare";
 import { formatDistance, formatPrice, formatQuantity, formatUpdated } from "@/lib/format";
 
@@ -11,6 +15,8 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
   const id = pageId((await params).id);
   const store = id == null ? null : await storeBasket(id);
   if (!store) notFound();
+  const reviews = await storeReviews(store.storePk);
+  const nav = navigationLinks(store);
   const b = store.basket;
   const missing = b.lines.filter((l) => !l.found);
 
@@ -28,6 +34,31 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
           {store.distanceKm != null && ` · ${formatDistance(store.distanceKm)}`}
           {store.approximate && " (מיקום משוער)"}
         </p>
+        {reviews.average != null && (
+          <a href="#reviews-title" className="mt-1 inline-block">
+            <Stars value={reviews.average} count={reviews.count} />
+          </a>
+        )}
+        {nav && (
+          <div className="mt-3 flex gap-2">
+            <a
+              href={nav.waze}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[13px] bg-subtle px-3 text-sm font-bold"
+            >
+              ניווט ב-Waze
+            </a>
+            <a
+              href={nav.google}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-11 flex-1 items-center justify-center rounded-[13px] bg-subtle px-3 text-sm font-bold"
+            >
+              ב-Google Maps
+            </a>
+          </div>
+        )}
         <div className="mt-3 flex items-end justify-between">
           <div>
             {b.complete ? (
@@ -116,6 +147,7 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
           </ul>
         </section>
       )}
+      <StoreReviews storePk={store.storePk} data={reviews} />
       <Quip place="store" />
     </div>
   );

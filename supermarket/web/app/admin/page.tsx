@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { adminData, isAdmin, type LogRow, type QueueRow } from "@/lib/admin";
 import { formatUpdated } from "@/lib/format";
+import { deleteReview } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -201,6 +202,41 @@ export default async function AdminPage() {
                     {failure.error.split("\n")[0].slice(0, 220)}
                   </div>
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-bold">חוות דעת אחרונות</h2>
+        {data.reviews.length === 0 ? (
+          <p className={`${CARD} p-4 text-sm text-muted`}>עוד אין חוות דעת.</p>
+        ) : (
+          <ul className={`${CARD} divide-y divide-subtle`}>
+            {data.reviews.map((review) => (
+              <li key={review.id} className="px-4 py-2.5 text-sm">
+                <div className="flex items-baseline justify-between gap-3">
+                  <Link href={`/store/${review.storePk}`} className="min-w-0 truncate font-bold text-link">
+                    {review.storeName}
+                  </Link>
+                  <span className="shrink-0 text-xs text-muted">{formatUpdated(review.updatedAt)}</span>
+                </div>
+                <div className="text-muted">
+                  <span aria-label={`דירוג ${review.rating} מתוך 5`} className="text-pm-orange">
+                    {"★".repeat(review.rating)}
+                  </span>{" "}
+                  · <span dir="ltr">{review.email}</span>
+                </div>
+                {review.comment && (
+                  <p dir="auto" className="mt-1 break-words">
+                    {review.comment}
+                  </p>
+                )}
+                <form action={deleteReview} className="mt-1">
+                  <input type="hidden" name="review" value={review.id} />
+                  <button className="min-h-9 text-xs font-bold text-missing">מחיקת חוות הדעת</button>
+                </form>
               </li>
             ))}
           </ul>

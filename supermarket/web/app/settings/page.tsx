@@ -1,4 +1,5 @@
 import { Quip } from "@/components/Quip";
+import { LocationButton } from "@/components/LocationButton";
 import Link from "next/link";
 import {
   chainStatuses,
@@ -45,7 +46,7 @@ const REQUEST_LABELS: Record<string, string> = {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ notfound?: string; address?: string; label?: string }>;
+  searchParams: Promise<{ notfound?: string; address?: string; label?: string; location?: string }>;
 }) {
   const retry = await searchParams;
   await geocodePendingAddresses();
@@ -196,7 +197,15 @@ export default async function SettingsPage({
               לא מצאנו את ״{retry.address}״, ולכן היא לא נשמרה. בודקים את האיות, וכותבים רחוב, מספר ועיר.
             </p>
           )}
+          <LocationButton defaultRadius={DEFAULT_RADIUS} />
+          {retry.location === "outside" && (
+            <p role="alert" className="rounded-pm bg-missing-surface p-2.5 text-sm text-missing">
+              המיקום שהתקבל מחוץ לישראל, ולכן לא נשמר. אפשר לכתוב כתובת במקום.
+            </p>
+          )}
+          <div className="text-center text-xs text-muted">או כותבים כתובת</div>
           <input
+            id="new-address-label"
             name="label"
             defaultValue={retry.notfound === "new" ? retry.label : undefined}
             placeholder="שם (בית, עבודה…)"

@@ -50,7 +50,18 @@ export type LogRow = {
 export type IngestFailure = { chainName: string; kind: string; status: string; startedAt: string; error: string | null };
 export type QueueRow = { id: number; kind: string; status: string; requestedAt: string; startedAt: string | null; message: string | null };
 
+export type AdminReview = {
+  id: number;
+  storePk: number;
+  storeName: string;
+  email: string;
+  rating: number;
+  comment: string | null;
+  updatedAt: string;
+};
+
 export type AdminData = {
+  reviews: AdminReview[];
   totals: { users: number; active7d: number; newToday: number; loginsToday: number; errors24h: number; ingestFailures24h: number; usersWithIssues: number };
   users: AdminUser[];
   logins: LogRow[];
@@ -82,7 +93,7 @@ const queueRow = (r: Record<string, unknown>): QueueRow => ({
 export async function adminData(): Promise<AdminData> {
   const LOG = `SELECT l.id, l.at, l.level, l.kind, u.email, l.message, l.details
                FROM app_log l LEFT JOIN users u ON u.id = l.user_id`;
-  const [totals, users, logins, errors, failures, queue, failed] = await Promise.all([
+  const [totals, users, logins, errors, failures, queue, failed, reviews] = await Promise.all([
     pool.query(
       `SELECT (SELECT count(*) FROM users) AS users,
               (SELECT count(*) FROM users WHERE last_login > now() - interval '7 days') AS active7d,
@@ -136,10 +147,26 @@ export async function adminData(): Promise<AdminData> {
       `SELECT id, kind, status, requested_at, started_at, message FROM ingest_requests
        WHERE status = 'failed' AND requested_at > now() - interval '48 hours' ORDER BY id DESC LIMIT 10`,
     ),
+    pool.query(
+      `SELECT r.id, r.store_pk, c.name || ' · ' || COALESCE(s.name, 'סניף ' || s.store_id) AS store_name,
+              u.email, r.rating, r.comment, r.updated_at
+       FROM store_reviews r JOIN users u ON u.id = r.user_id
+       JOIN stores s ON s.id = r.store_pk JOIN chains c ON c.key = s.chain_key
+       ORDER BY r.updated_at DESC LIMIT 30`,
+    ),
   ]);
   const t = totals.rows[0];
   const userRows = users.rows;
   return {
+    reviews: reviews.rows.map((r) => ({
+      id: r.id,
+      storePk: r.store_pk,
+      storeName: r.store_name,
+      email: r.email,
+      rating: r.rating,
+      comment: r.comment,
+      updatedAt: r.updated_at,
+    })),
     totals: {
       usersWithIssues: userRows.filter(
         (r) => Number(r.errors7d) > 0 || Number(r.addresses_not_found) > 0 || Number(r.addresses_stuck) > 0,

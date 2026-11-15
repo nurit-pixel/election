@@ -3,7 +3,8 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { THEME_COOKIE } from "@/lib/theme";
-import { locateAddress } from "@/lib/geocode";
+import { locateAddress, placeName } from "@/lib/geocode";
+import { inIsrael } from "@/lib/address";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE } from "@/lib/auth";
 import {
@@ -35,6 +36,24 @@ export async function addAddress(formData: FormData) {
   if (location.status === "notfound") addressNotFound("new", address, label);
   const id = await addUserAddress(label || address, address, radius, location.status === "found" ? location : null);
   // ה-worker משלים ברקע מחירים לסניפים שעוד לא נטענו (ומאתר את הכתובת, אם שירות האיתור לא ענה)
+  if (id != null) await enqueue("address", id);
+  revalidatePath("/settings");
+  redirect("/settings#addresses");
+}
+
+/** כתובת מהמיקום הנוכחי של המכשיר. הנקודה נשמרת כמו שהיא; השם נלקח משירות המפות לתצוגה בלבד. */
+export async function addCurrentLocation(lat: number, lng: number, label: string, radiusKm: number) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inIsrael(lat, lng)) {
+    redirect("/settings?location=outside#addresses");
+  }
+  const radius = Math.min(50, Math.max(0.5, Number(radiusKm) || DEFAULT_RADIUS));
+  const name = (await placeName(lat, lng)) ?? `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  const id = await addUserAddress(String(label ?? "").trim().slice(0, 40) || "המיקום שלי", name.slice(0, 200), radius, {
+    lat,
+    lng,
+    name,
+    approximate: false,
+  });
   if (id != null) await enqueue("address", id);
   revalidatePath("/settings");
   redirect("/settings#addresses");

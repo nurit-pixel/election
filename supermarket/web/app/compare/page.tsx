@@ -4,6 +4,7 @@ import { compareStores, type RankedStore } from "@/lib/compare";
 import { formatDistance } from "@/lib/format";
 import { freshness, winnerIndex, worstFreshness, type Freshness } from "@/lib/freshness";
 import { FreshnessLine, Price } from "@/components/ui";
+import { Stars } from "@/components/Stars";
 
 export const dynamic = "force-dynamic";
 
@@ -170,6 +171,7 @@ function StoreCard({
             {s.distanceKm != null && ` · ${formatDistance(s.distanceKm)}`}
             {s.approximate && " (מיקום משוער)"}
           </p>
+          {s.rating != null && <Stars value={s.rating} count={s.reviewCount} className="mt-0.5" />}
         </div>
         <div className="max-w-[46%] shrink-0 text-left">
           <Price

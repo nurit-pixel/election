@@ -97,3 +97,19 @@ export async function geocodePendingAddresses(): Promise<void> {
   );
   for (const row of rows) await saveLocation(row.id, await locateAddress(row.address));
 }
+
+/** שם המקום לנקודה (reverse geocoding), לתצוגה. null אם השירות לא ענה. */
+export async function placeName(lat: number, lng: number): Promise<string | null> {
+  try {
+    const url = new URL(GEOCODER_URL.replace(/\/search\/?$/, "/reverse"));
+    for (const [key, value] of Object.entries({ lat: lat.toFixed(6), lon: lng.toFixed(6), format: "jsonv2", zoom: "18", "accept-language": "he" })) {
+      url.searchParams.set(key, value);
+    }
+    const response = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(6000), cache: "no-store" });
+    if (!response.ok) return null;
+    const result = (await response.json()) as { display_name?: string };
+    return result.display_name ? shortPlaceName(result.display_name) : null;
+  } catch {
+    return null;
+  }
+}
