@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { THEME_COOKIE } from "@/lib/theme";
 import { locateAddress, placeName } from "@/lib/geocode";
+import { forgetSuggestions } from "@/lib/alternatives";
+import { uid } from "@/lib/session";
 import { inIsrael } from "@/lib/address";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE } from "@/lib/auth";
@@ -37,6 +39,7 @@ export async function addAddress(formData: FormData) {
   const id = await addUserAddress(label || address, address, radius, location.status === "found" ? location : null);
   // ה-worker משלים ברקע מחירים לסניפים שעוד לא נטענו (ומאתר את הכתובת, אם שירות האיתור לא ענה)
   if (id != null) await enqueue("address", id);
+  forgetSuggestions(await uid());
   revalidatePath("/settings");
   redirect("/settings#addresses");
 }
@@ -55,6 +58,7 @@ export async function addCurrentLocation(lat: number, lng: number, label: string
     approximate: false,
   });
   if (id != null) await enqueue("address", id);
+  forgetSuggestions(await uid());
   revalidatePath("/settings");
   redirect("/settings#addresses");
 }
@@ -67,12 +71,14 @@ export async function fixAddress(formData: FormData) {
   const location = await locateAddress(address);
   if (location.status !== "found") addressNotFound(String(id), address);
   if (await updateUserAddress(id, address, location)) await enqueue("address", id);
+  forgetSuggestions(await uid());
   revalidatePath("/settings");
   redirect("/settings#addresses");
 }
 
 export async function deleteAddress(formData: FormData) {
   await deleteUserAddress(Number(formData.get("id")));
+  forgetSuggestions(await uid());
   revalidatePath("/settings");
 }
 
@@ -80,6 +86,7 @@ export async function updateRadius(formData: FormData) {
   const id = Number(formData.get("id"));
   const radius = Math.min(50, Math.max(0.5, Number(formData.get("radius")) || DEFAULT_RADIUS));
   if (await setAddressRadius(id, radius)) await enqueue("address", id);
+  forgetSuggestions(await uid());
   revalidatePath("/settings");
 }
 
