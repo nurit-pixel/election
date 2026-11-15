@@ -2,10 +2,14 @@ import { Quip } from "@/components/Quip";
 import Link from "next/link";
 import { getList, listPeople, listSummaries, type ListItem } from "@/lib/lists";
 import { hasAddress } from "@/lib/settings";
+import { suggestionsFor } from "@/lib/alternatives";
+import type { Suggestion } from "@/lib/alternatives-calc";
+import { Price } from "@/components/ui";
 import { cookies } from "next/headers";
 import { SearchBar } from "@/components/SearchBar";
 import { QuantityControl } from "@/components/QuantityControl";
 import {
+  addProduct,
   createList,
   deleteList,
   leaveList,
@@ -47,6 +51,7 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
   const list = await getList();
   const all = await listSummaries();
   const people = await listPeople(list.id);
+  const suggestions = await suggestionsFor(list.items);
   const isOwner = people?.isOwner ?? true;
   const shareMessage = shared ? SHARE_MESSAGES[shared] : undefined;
   const needsAddress = !(await hasAddress());
@@ -302,7 +307,7 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
         <>
           <ul className="space-y-3">
             {list.items.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ItemCard key={item.id} item={item} suggestion={suggestions.get(item.id)} />
             ))}
           </ul>
         </>
@@ -330,7 +335,7 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
   );
 }
 
-function ItemCard({ item }: { item: ListItem }) {
+function ItemCard({ item, suggestion }: { item: ListItem; suggestion?: Suggestion }) {
   const many = item.products.length > 1;
   return (
     <li id={`item-${item.id}`} className="scroll-mt-4 rounded-pm-lg border border-line bg-card p-4 shadow-card">
@@ -349,6 +354,21 @@ function ItemCard({ item }: { item: ListItem }) {
           </button>
         </form>
       </div>
+
+      {suggestion && (
+        <form action={addProduct} className="mt-3 rounded-[14px] border border-fresh/40 bg-fresh-surface p-3 text-sm">
+          <input type="hidden" name="item" value={item.id} />
+          <input type="hidden" name="product" value={suggestion.product.id} />
+          <div className="font-bold text-fresh">חלופה זולה ב-{suggestion.savingPct}%</div>
+          <div className="mt-0.5">
+            {suggestion.product.name} – מ-<Price value={suggestion.product.minPrice} /> באזור
+          </div>
+          <button className="mt-2 min-h-11 rounded-[13px] border border-fresh/50 bg-card px-3 font-bold text-fresh">
+            הוספה כחלופה
+          </button>
+          <span className="ms-2 text-xs text-muted">בכל סניף תיבחר הזולה מביניהן</span>
+        </form>
+      )}
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <QuantityControl itemId={item.id} quantity={item.quantity} isWeighted={item.isWeighted} />
