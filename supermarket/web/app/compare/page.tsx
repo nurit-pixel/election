@@ -5,6 +5,8 @@ import { formatDistance } from "@/lib/format";
 import { freshness, winnerIndex, worstFreshness, type Freshness } from "@/lib/freshness";
 import { FreshnessLine, Price } from "@/components/ui";
 import { Stars } from "@/components/Stars";
+import { PriceChart } from "@/components/PriceChart";
+import { basketChange, basketHistory } from "@/lib/basket-history";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,9 @@ function withFreshness(store: RankedStore, now: Date): Row {
 export default async function ComparePage({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
   const showAll = (await searchParams).all === "1";
   const { list, ranked, storesInRadius, bestSplit } = await compareStores();
+  const { points: history, itemsCounted, itemsTotal } =
+    list.items.length > 0 ? await basketHistory(list.id) : { points: [], itemsCounted: 0, itemsTotal: 0 };
+  const change = basketChange(history);
   const now = new Date();
   const rows = ranked.map((s) => withFreshness(s, now));
   const winner = winnerIndex(
@@ -109,6 +114,37 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           </li>
         ))}
       </ol>
+
+      {history.length > 0 && (
+        <section aria-labelledby="history-title" className="rounded-pm-lg border border-line bg-card p-4 shadow-card">
+          <h2 id="history-title" className="text-lg font-bold">
+            הסל שלך לאורך זמן
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            כל פריט במחיר הזול ביותר באזור, לפי מחיר המדף.
+            {itemsCounted < itemsTotal && ` לפי ${itemsCounted} מתוך ${itemsTotal} פריטים; לשאר עוד אין היסטוריה.`}
+            {change && (
+              <>
+                {" "}
+                מאז {Number(change.since.slice(8, 10))}.{Number(change.since.slice(5, 7))}:{" "}
+                <b className={change.amount > 0 ? "text-missing" : change.amount < 0 ? "text-fresh" : ""}>
+                  {change.amount > 0 ? "התייקר ב-" : change.amount < 0 ? "הוזל ב-" : "בלי שינוי"}
+                  {change.amount !== 0 && (
+                    <>
+                      <Price value={Math.abs(change.amount)} /> ({Math.abs(change.pct)}%)
+                    </>
+                  )}
+                </b>
+              </>
+            )}
+          </p>
+          {history.length > 1 ? (
+            <PriceChart points={history} target={null} unit="" />
+          ) : (
+            <p className="mt-2 text-sm text-muted">עוד אין מספיק ימים לגרף. ההיסטוריה נאספת מדי יום.</p>
+          )}
+        </section>
+      )}
 
       {hidden > 0 && (
         <Link

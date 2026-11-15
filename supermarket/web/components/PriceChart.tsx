@@ -44,7 +44,10 @@ export function PriceChart({ points, target, unit }: { points: Point[]; target: 
   const last = points.length - 1;
   // תוויות תאריך: לכל היותר 6, כולל הראשונה והאחרונה
   const every = Math.max(1, Math.ceil(points.length / 6));
-  const labelled = points.map((_, i) => i).filter((i) => i % every === 0 || i === last);
+  // תווית שקרובה מדי לתווית האחרונה מושמטת, כדי שהתאריכים לא יעלו זה על זה
+  const labelled = points
+    .map((_, i) => i)
+    .filter((i) => i === last || (i % every === 0 && Math.abs(x(last) - x(i)) >= 44));
 
   const onMove = (event: React.PointerEvent<SVGSVGElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
