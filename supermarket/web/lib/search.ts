@@ -33,6 +33,9 @@ export type ProductResult = {
   storeCount: number;
   minPrice: number | null;
   maxPrice: number | null;
+  /** הכמות באריזה ויחידת המידה, למחיר לק״ג/ליטר */
+  packQuantity: number | null;
+  packUnit: string | null;
 };
 
 /** כמה סניפים מוצגים לכל מוצר בתוצאות. השאר בדף המוצר; כך התשובה קטנה ומהירה גם עם הרבה סניפים */
@@ -83,7 +86,7 @@ async function runSearch(user: number, where: string, params: unknown[], q: stri
 
   const { rows } = await pool.query(
     `WITH matched AS (
-       SELECT p.id, p.barcode, p.internal_chain, p.name, p.manufacturer, p.is_weighted,
+       SELECT p.id, p.barcode, p.internal_chain, p.name, p.manufacturer, p.is_weighted, p.quantity, p.unit_qty,
               (SELECT count(*) FROM prices pr WHERE pr.product_id = p.id) AS store_count
        FROM products p
        WHERE ${where}
@@ -112,7 +115,7 @@ async function runSearch(user: number, where: string, params: unknown[], q: stri
      FROM matched m
      LEFT JOIN prices pr ON pr.product_id = m.id
      LEFT JOIN nearby n ON n.id = pr.store_pk
-     GROUP BY m.id, m.barcode, m.internal_chain, m.name, m.manufacturer, m.is_weighted, m.store_count
+     GROUP BY m.id, m.barcode, m.internal_chain, m.name, m.manufacturer, m.is_weighted, m.quantity, m.unit_qty, m.store_count
      ORDER BY ${rank("m")}, m.store_count DESC, length(m.name), m.name`,
     params,
   );
@@ -129,5 +132,7 @@ async function runSearch(user: number, where: string, params: unknown[], q: stri
     storeCount: Number(r.nearby_count),
     minPrice: r.min_price == null ? null : Number(r.min_price),
     maxPrice: r.max_price == null ? null : Number(r.max_price),
+    packQuantity: r.quantity == null ? null : Number(r.quantity),
+    packUnit: r.unit_qty ?? null,
   }));
 }

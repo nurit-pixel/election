@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isRelated, isSimilar, relatedProducts, suggestAlternative, type ProductOffer } from "../lib/alternatives-calc";
+import { isRelated, isSimilar, relatedProducts, relation, suggestAlternative, type ProductOffer } from "../lib/alternatives-calc";
 
 const offer = (id: number, name: string, minPrice: number, quantity: number | null = 250, extra: Partial<ProductOffer> = {}): ProductOffer => ({
   id,
@@ -94,5 +94,39 @@ describe("מוצרים דומים ומותגים אחרים", () => {
     const belz = offer(7, "קוטג 5% 250 גרם בעלז", 6, 250, { manufacturer: "מחלבת אלון תבור" });
     expect(isRelated(offer(8, "קוטג 5% שומן 250ג טרה", 5, 250, { manufacturer: "---" }), belz)).toBe(true);
     expect(isRelated(offer(9, "קוטג 5% 250ג שטראוס", 5, 250, { manufacturer: "שטראוס בריאות" }), belz)).toBe(true);
+  });
+});
+
+describe("מארזים, זנים ופריט כל מותג", () => {
+  const liter = (id: number, name: string, price: number, q: number) => offer(id, name, price, q, { unit: "ליטר" });
+  it("מארז מול בקבוק בודד: מושווה לפי ליטר", () => {
+    const single = liter(1, "סבן אפ 1.5 ליטר", 7, 1.5);
+    const six = liter(2, "סבן אפ 6*1.5 ליטר", 30, 9);
+    expect(relation(six, single)).toBe("multipack");
+    const [r] = relatedProducts([single], [six], new Set([1]));
+    expect(r.comparablePrice).toBe(5);
+    expect(r.resized).toBe(true);
+  });
+  it("ביצים: מספר היחידות מהשם", () => {
+    const unit = { unit: "יחידות" };
+    const twelve = offer(1, "ביצים L 12 יח", 18, 1, unit);
+    const thirty = offer(2, "ביצים L 30 יח", 36, 1, unit);
+    expect(relation(thirty, twelve)).toBe("multipack");
+    expect(relatedProducts([twelve], [thirty], new Set([1]))[0].comparablePrice).toBe(14.4);
+  });
+  it("ירקות: זן אחר מוצג כזן, ולא בפריט כל מותג", () => {
+    const tomato = offer(1, "עגבניה", 6, null, { isWeighted: true, unit: null });
+    const cherry = offer(2, "עגבניות שרי", 12, null, { isWeighted: true, unit: null });
+    expect(relation(cherry, tomato)).toBe("variety");
+    expect(relation(cherry, tomato, "basket")).toBeNull();
+    expect(relation(offer(3, "תפוחי אדמה", 4, null, { isWeighted: true, unit: null }), offer(4, "תפוח", 9, null, { isWeighted: true, unit: null }))).toBeNull();
+  });
+  it("פריט כל מותג: רק בגודל דומה, בלי מארזים", () => {
+    const cottage = offer(1, "קוטג 5% 250 גרם בעלז", 6, 250, { unit: "גרם" });
+    expect(relation(offer(2, "קוטג 5% 250ג טרה", 5, 250, { unit: "גרם" }), cottage, "basket")).toBe("same");
+    expect(relation(offer(3, "קוטג 5% 500ג טרה", 9, 500, { unit: "גרם" }), cottage, "basket")).toBeNull();
+    expect(relation(offer(3, "קוטג 5% 500ג טרה", 9, 500, { unit: "גרם" }), cottage)).toBe("resized");
+    // קילו מול גרם: אותו גודל
+    expect(relation(offer(4, "קוטג 5% טרה", 5, 0.25, { unit: "קילוגרם" }), cottage, "basket")).toBe("same");
   });
 });

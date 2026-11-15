@@ -26,6 +26,9 @@ export type ProductDetails = {
   name: string;
   manufacturer: string | null;
   isWeighted: boolean;
+  /** הכמות באריזה ויחידת המידה, למחיר לק״ג/ליטר */
+  packQuantity: number | null;
+  packUnit: string | null;
   /** קוד פנימי: שם הרשת היחידה שבה המוצר קיים */
   chainName: string | null;
   tracked: boolean;
@@ -42,7 +45,7 @@ export async function getProduct(id: number): Promise<ProductDetails | null> {
   const user = await uid();
   const IN_RADIUS = inRadius(user);
   const product = await pool.query(
-    `SELECT p.id, p.barcode, p.name, p.manufacturer, p.is_weighted,
+    `SELECT p.id, p.barcode, p.name, p.manufacturer, p.is_weighted, p.quantity, p.unit_qty,
             (SELECT name FROM chains WHERE key = p.internal_chain) AS chain_name,
             t.product_id IS NOT NULL AS tracked, t.target_price,
             ARRAY(SELECT DISTINCT l.name FROM list_item_products ip
@@ -98,6 +101,8 @@ export async function getProduct(id: number): Promise<ProductDetails | null> {
     name: p.name,
     manufacturer: p.manufacturer,
     isWeighted: p.is_weighted,
+    packQuantity: p.quantity == null ? null : Number(p.quantity),
+    packUnit: p.unit_qty ?? null,
     chainName: p.chain_name,
     tracked: p.tracked,
     targetPrice: p.target_price == null ? null : Number(p.target_price),

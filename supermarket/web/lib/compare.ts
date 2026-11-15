@@ -5,6 +5,7 @@ import { uid } from "./session";
 import { priceBasket, rankStores, type BasketItem, type StoreBasket, type StorePrice } from "./basket";
 import type { Promo } from "./promos";
 import { getList, type ShoppingList } from "./lists";
+import { anyBrandProducts } from "./alternatives";
 import { allSplits, worthwhileSplits, type SplitOffer } from "./split";
 import { splitMinSaving } from "./settings";
 
@@ -88,13 +89,15 @@ export async function storesInRadius(addressId: number | null = null): Promise<S
   return rows.map(toStore);
 }
 
-function basketItems(list: ShoppingList): BasketItem[] {
+/** פריטי הסל לחישוב. פריט "כל מותג" כולל גם את המוצרים הדומים, ובכל סניף נבחר הזול מביניהם. */
+async function basketItems(list: ShoppingList): Promise<BasketItem[]> {
+  const extra = await anyBrandProducts(list.items);
   return list.items.map((i) => ({
     id: i.id,
     name: i.name,
     quantity: i.quantity,
     isWeighted: i.isWeighted,
-    productIds: i.products.map((p) => p.id),
+    productIds: [...new Set([...i.products.map((p) => p.id), ...(extra.get(i.id) ?? [])])],
   }));
 }
 
@@ -107,7 +110,7 @@ export async function pricesByStore(storePks: number[], productIds: number[]) {
   if (storePks.length === 0 || productIds.length === 0) return byStore;
   const [prices, promos] = await Promise.all([
     pool.query(
-      `SELECT pr.store_pk, pr.product_id, pr.price, pr.file_time, p.name
+      `SELECT pr.store_pk, pr.product_id, pr.price, pr.file_time, p.name, p.quantity, p.unit_qty
        FROM prices pr JOIN products p ON p.id = pr.product_id
        WHERE pr.store_pk = ANY($1) AND pr.product_id = ANY($2)`,
       [storePks, productIds],
@@ -129,6 +132,8 @@ export async function pricesByStore(storePks: number[], productIds: number[]) {
       productId: r.product_id,
       productName: r.name,
       price: Number(r.price),
+      packQuantity: r.quantity == null ? null : Number(r.quantity),
+      packUnit: r.unit_qty ?? null,
       fileTime: new Date(r.file_time).toISOString(),
       promos: [],
     });
@@ -174,7 +179,7 @@ type Loaded = {
 
 async function load(addressId: number | null = null): Promise<Loaded> {
   const [list, stores, clubs] = await Promise.all([getList(), storesInRadius(addressId), memberClubs()]);
-  const items = basketItems(list);
+  const items = await basketItems(list);
   const prices = await pricesByStore(
     stores.map((s) => s.storePk),
     items.flatMap((i) => i.productIds),
@@ -278,7 +283,7 @@ export async function storeBasket(storePk: number): Promise<RankedStore | null> 
   ]);
   if (storeRows.rows.length === 0) return null;
   const store = toStore(storeRows.rows[0]);
-  const items = basketItems(list);
+  const items = await basketItems(list);
   const prices = await pricesByStore([storePk], items.flatMap((i) => i.productIds));
   return {
     ...store,

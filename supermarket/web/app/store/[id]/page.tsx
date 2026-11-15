@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageId } from "@/lib/ids";
 import { navigationLinks } from "@/lib/navigate";
+import { unitPrice } from "@/lib/unit-price";
 import { isOnlineOnly } from "@/lib/online";
 import { OnlineOrder } from "@/components/OnlineOrder";
 import { storeReviews } from "@/lib/reviews";
@@ -105,6 +106,10 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
                   <div className="mt-0.5 text-xs text-muted">
                     {formatQuantity(l.quantity, l.isWeighted)} · {formatPrice(l.unitPrice)}
                     {l.isWeighted ? " לק״ג" : " ליחידה"}
+                    {(() => {
+                      const per = unitPrice(l.unitPrice, l.packQuantity, l.packUnit, l.isWeighted, l.productName);
+                      return per && ` · ${formatPrice(per.value)} ${per.label}`;
+                    })()}
                   </div>
                 </div>
                 <div className="shrink-0 text-left">

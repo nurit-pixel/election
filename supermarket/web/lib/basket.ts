@@ -30,6 +30,9 @@ export type StorePrice = {
   fileTime: string;
   /** המבצעים של המוצר בסניף */
   promos?: Promo[];
+  /** הכמות באריזה ויחידת המידה, למחיר לק״ג/ליטר */
+  packQuantity?: number | null;
+  packUnit?: string | null;
 };
 
 export type AppliedPromo = { id: number; description: string; clubName: string | null };
@@ -39,6 +42,8 @@ export type FoundLine = {
   productId: number;
   productName: string;
   unitPrice: number;
+  packQuantity: number | null;
+  packUnit: string | null;
   /** מחיר לפני מבצעים */
   regularTotal: number;
   /** מחיר לתשלום, אחרי המבצע שחל (אם חל) */
@@ -152,6 +157,8 @@ export function priceBasket(
       productId: price.productId,
       productName: price.productName,
       unitPrice: price.price,
+      packQuantity: price.packQuantity ?? null,
+      packUnit: price.packUnit ?? null,
       regularTotal: roundMoney(price.price * item.quantity),
       total,
       promo: quote.promo ? applied(quote.promo) : null,

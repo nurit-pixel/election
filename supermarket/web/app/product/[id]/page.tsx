@@ -5,6 +5,7 @@ import { pageId } from "@/lib/ids";
 import { revalidatePath } from "next/cache";
 import { getProduct, trackProduct, untrackProduct } from "@/lib/tracking";
 import { formatPrice, formatUpdated } from "@/lib/format";
+import { unitPrice } from "@/lib/unit-price";
 import { PriceChart } from "@/components/PriceChart";
 import { addProduct } from "@/app/actions";
 
@@ -35,6 +36,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   if (!product) notFound();
   const unit = product.isWeighted ? " לק״ג" : "";
   const cheapest = product.prices[0];
+  const perUnit = cheapest ? unitPrice(cheapest.price, product.packQuantity, product.packUnit, product.isWeighted, product.name) : null;
   const days = product.history.map((h) => h.day);
 
   return (
@@ -55,6 +57,11 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <div className="shrink-0 text-2xl font-bold tabular-nums text-link">
               {formatPrice(cheapest.price)}
               <span className="text-sm font-normal text-muted">{unit}</span>
+              {perUnit && (
+                <div className="text-left text-xs font-normal text-muted">
+                  {formatPrice(perUnit.value)} {perUnit.label}
+                </div>
+              )}
             </div>
           </div>
         ) : (

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as lists from "@/lib/lists";
+import * as alternatives from "@/lib/alternatives";
 import { enqueue } from "@/lib/settings";
 
 const id = (value: FormDataEntryValue | null) => Number(value);
@@ -37,6 +38,27 @@ export async function removeItem(formData: FormData) {
 export async function removeAlternative(formData: FormData) {
   await lists.removeAlternative(id(formData.get("item")), id(formData.get("product")));
   revalidatePath("/");
+}
+
+export async function setAnyBrand(formData: FormData) {
+  await lists.setAnyBrand(id(formData.get("item")), formData.get("on") === "1");
+  revalidatePath("/");
+  revalidatePath("/compare");
+}
+
+/** "לא דומה": המוצר לא יוצע שוב כחלופה למוצרי הפריט */
+export async function dismissAlternative(formData: FormData) {
+  const itemId = id(formData.get("item"));
+  const item = await lists.getItem(itemId);
+  if (!item) return;
+  await alternatives.dismissAlternative(
+    item.products.map((p) => p.id),
+    id(formData.get("product")),
+  );
+  revalidatePath("/");
+  revalidatePath("/search");
+  const back = String(formData.get("back") ?? "");
+  redirect(back.startsWith("/search") ? back : `/#item-${itemId}`);
 }
 
 export async function renameItem(formData: FormData) {

@@ -24,5 +24,10 @@ else
   files="-f docker-compose.yml"
 fi
 docker compose $files up -d --build
+# טבלאות ועמודות חדשות (db/init) נוצרות כשהטעינה עולה: מפעילים אותה מחדש אם הסכמה השתנתה
+if ! git diff --quiet "$before" "$after" -- db/init; then
+  echo "הסכמה השתנתה: מפעיל מחדש את הטעינה כדי להחיל אותה"
+  docker compose $files restart ingest
+fi
 docker image prune -f >/dev/null
 echo "עודכן מ-$before ל-$after"

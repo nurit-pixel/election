@@ -4,11 +4,13 @@ import Link from "next/link";
 import { productsByIds, searchProducts, type ProductResult } from "@/lib/search";
 import { similarProducts } from "@/lib/alternatives";
 import { Price } from "@/components/ui";
+import { unitPrice } from "@/lib/unit-price";
+import { houseBrand } from "@/lib/house-brand";
 import type { ReactNode } from "react";
 import { getItem, type ListItem } from "@/lib/lists";
 import { formatPrice, formatUpdated } from "@/lib/format";
 import { SearchBar } from "@/components/SearchBar";
-import { addProduct } from "../actions";
+import { addProduct, dismissAlternative } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -54,10 +56,24 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                   key={p.id}
                   product={p}
                   item={item}
+                  dismissBack={`/search?item=${item.id}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                   note={
-                    info?.resized ? (
+                    houseBrand(p.name, p.manufacturer) && info?.kind !== "variety" ? (
                       <>
-                        אריזה בגודל אחר · לפי הגודל שברשימה: <Price value={info.comparablePrice} className="font-bold" />
+                        מותג הבית של {houseBrand(p.name, p.manufacturer)}
+                        {info?.resized && (
+                          <>
+                            {" "}
+                            · לפי הגודל שברשימה: <Price value={info.comparablePrice} className="font-bold" />
+                          </>
+                        )}
+                      </>
+                    ) : info?.kind === "variety" ? (
+                      "זן אחר"
+                    ) : info?.resized ? (
+                      <>
+                        {info.kind === "multipack" ? "מארז או כמות אחרת" : "אריזה בגודל אחר"} · לפי הגודל שברשימה:{" "}
+                        <Price value={info.comparablePrice} className="font-bold" />
                       </>
                     ) : null
                   }
@@ -99,14 +115,19 @@ function ProductCard({
   product: p,
   item,
   note,
+  dismissBack,
 }: {
   product: ProductResult;
   item: ListItem | null;
   /** שורה נוספת מתחת לשם (למשל מחיר לפי גודל האריזה שברשימה) */
   note?: ReactNode;
+  /** ברשימת המוצרים הדומים: כפתור "לא דומה", ולאן לחזור אחריו */
+  dismissBack?: string;
 }) {
   const unit = p.isWeighted ? " לק״ג" : "";
   const cheapest = p.prices[0];
+  // מחיר לק״ג/ליטר של ההצעה הזולה, כדי להשוות בין אריזות בגדלים שונים
+  const perUnit = cheapest ? unitPrice(cheapest.price, p.packQuantity, p.packUnit, p.isWeighted, p.name) : null;
   const already = item?.products.some((x) => x.id === p.id);
   const wrongKind = item != null && item.isWeighted !== p.isWeighted;
 
@@ -136,6 +157,11 @@ function ProductCard({
               )}
             </div>
             {unit && <div className="text-xs text-muted">{unit.trim()}</div>}
+            {perUnit && (
+              <div className="text-xs text-muted">
+                {formatPrice(perUnit.value)} {perUnit.label}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -154,6 +180,18 @@ function ProductCard({
             <button className="rounded-pm bg-primary px-4 py-2 text-sm font-semibold text-on-primary">
               {item ? "הוספה כחלופה" : "הוספה לרשימה"}
             </button>
+            {dismissBack && (
+              <>
+                <input type="hidden" name="back" value={dismissBack} />
+                <button
+                  formAction={dismissAlternative}
+                  className="ms-1 min-h-11 px-2 text-sm font-bold text-muted underline"
+                  aria-label={`${p.name} לא דומה, לא להציע שוב`}
+                >
+                  לא דומה
+                </button>
+              </>
+            )}
           </form>
         )}
         <Link href={`/product/${p.id}`} className="text-xs text-link">

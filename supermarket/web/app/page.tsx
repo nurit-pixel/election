@@ -20,6 +20,8 @@ import {
   renameItem,
   renameList,
   switchList,
+  dismissAlternative,
+  setAnyBrand,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -343,7 +345,11 @@ function ItemCard({ item, suggestion }: { item: ListItem; suggestion?: Suggestio
         <div className="min-w-0">
           <h2 className="font-semibold leading-snug">{item.name}</h2>
           <p className="mt-0.5 text-xs text-muted">
-            {many ? `${item.products.length} חלופות – בכל סניף תיבחר הזולה` : "מוצר אחד"}
+            {item.anyBrand
+              ? "כל מותג באותו גודל – בכל סניף נבחר הזול"
+              : many
+                ? `${item.products.length} חלופות – בכל סניף תיבחר הזולה`
+                : "מוצר אחד"}
             {item.isWeighted && " · מוצר שקיל, כמות בק״ג"}
           </p>
         </div>
@@ -363,15 +369,37 @@ function ItemCard({ item, suggestion }: { item: ListItem; suggestion?: Suggestio
           <div className="mt-0.5">
             {suggestion.product.name} – מ-<Price value={suggestion.product.minPrice} /> באזור
           </div>
-          <button className="mt-2 min-h-11 rounded-[13px] border border-fresh/50 bg-card px-3 font-bold text-fresh">
-            הוספה כחלופה
-          </button>
-          <span className="ms-2 text-xs text-muted">בכל סניף תיבחר הזולה מביניהן</span>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button className="min-h-11 rounded-[13px] border border-fresh/50 bg-card px-3 font-bold text-fresh">
+              הוספה כחלופה
+            </button>
+            <button
+              formAction={dismissAlternative}
+              className="min-h-11 rounded-[13px] px-3 text-sm font-bold text-muted underline"
+              aria-label={`${suggestion.product.name} לא דומה, לא להציע שוב`}
+            >
+              לא דומה
+            </button>
+          </div>
+          <span className="mt-1 block text-xs text-muted">בכל סניף תיבחר הזולה מביניהן</span>
         </form>
       )}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <QuantityControl itemId={item.id} quantity={item.quantity} isWeighted={item.isWeighted} />
+        <form action={setAnyBrand}>
+          <input type="hidden" name="item" value={item.id} />
+          <input type="hidden" name="on" value={item.anyBrand ? "0" : "1"} />
+          <button
+            aria-pressed={item.anyBrand}
+            className={`flex min-h-11 items-center gap-1 rounded-[13px] px-3 text-sm font-bold ${
+              item.anyBrand ? "border-2 border-[var(--pm-button-edge)] bg-primary text-on-primary" : "border border-line bg-card"
+            }`}
+          >
+            {item.anyBrand && <span aria-hidden>✓</span>}
+            כל מותג
+          </button>
+        </form>
         <Link
           href={`/search?item=${item.id}&q=${encodeURIComponent(item.name)}`}
           className="flex min-h-11 shrink-0 items-center rounded-[13px] bg-subtle px-3 text-sm font-bold"
