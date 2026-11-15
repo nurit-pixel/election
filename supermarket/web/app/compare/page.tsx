@@ -351,6 +351,11 @@ function StoreCard({
             {missing === 1 ? "חסר מחיר לפריט אחד" : `חסרים מחירים ל-${missing} פריטים`} · {b.foundCount} מתוך {b.itemCount}
           </span>
         )}
+        {b.substituteCount > 0 && (
+          <span className={`${BADGE} bg-info-surface text-info`}>
+            {b.substituteCount === 1 ? "פריט אחד במותג אחר" : `${b.substituteCount} פריטים במותג אחר`}
+          </span>
+        )}
         {isOnlineStore(s.storeType) && (
           <span className={`${BADGE} bg-pm-orange text-pm-purple`}>{s.storeType === "3" ? "גם אונליין" : "אונליין · משלוח"}</span>
         )}

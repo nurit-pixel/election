@@ -19,6 +19,8 @@ export type BasketItem = {
   isWeighted: boolean;
   /** החלופות שהמשתמש הגדיר לפריט */
   productIds: number[];
+  /** מוצרים דומים (מותג אחר, אותו גודל), שנבחרים רק בסניף שאין בו אף אחד מ-productIds */
+  fallbackIds?: number[];
 };
 
 export type StorePrice = {
@@ -42,6 +44,8 @@ export type FoundLine = {
   productId: number;
   productName: string;
   unitPrice: number;
+  /** המוצר שנבחר אינו מהמוצרים שבפריט: חלופה דומה, כי המותג שנבחר לא נמכר בסניף */
+  substitute: boolean;
   packQuantity: number | null;
   packUnit: string | null;
   /** מחיר לפני מבצעים */
@@ -74,6 +78,8 @@ export type StoreBasket = {
   /** חיסכון אפשרי נוסף לחברי מועדון */
   clubSavings: number;
   foundCount: number;
+  /** כמה מהפריטים שנמצאו הם חלופה (מותג אחר), כי המותג שנבחר לא נמכר בסניף */
+  substituteCount: number;
   itemCount: number;
   complete: boolean;
   /** לפחות מחיר אחד בסל ישן מסף ההתיישנות */
@@ -131,14 +137,20 @@ export function priceBasket(
     const base = { itemId: item.id, itemName: item.name, quantity: item.quantity, isWeighted: item.isWeighted };
     let chosen: { price: StorePrice; quote: Quote } | undefined;
     let clubBest: Quote | undefined;
-    for (const productId of item.productIds) {
-      const price = prices.get(productId);
-      if (!price) continue;
-      const quote = bestQuote(price, item, open);
-      if (!chosen || quote.cost < chosen.quote.cost) chosen = { price, quote };
-      const withClubs = bestQuote(price, item, usable);
-      if (!clubBest || withClubs.cost < clubBest.cost) clubBest = withClubs;
-    }
+    const pick = (ids: number[]) => {
+      for (const productId of ids) {
+        const price = prices.get(productId);
+        if (!price) continue;
+        const quote = bestQuote(price, item, open);
+        if (!chosen || quote.cost < chosen.quote.cost) chosen = { price, quote };
+        const withClubs = bestQuote(price, item, usable);
+        if (!clubBest || withClubs.cost < clubBest.cost) clubBest = withClubs;
+      }
+    };
+    pick(item.productIds);
+    // אין בסניף אף אחד מהמוצרים שנבחרו: מוצר דומה ממותג אחר, מסומן כחלופה
+    const substitute = !chosen && (item.fallbackIds?.length ?? 0) > 0;
+    if (substitute) pick(item.fallbackIds!);
     if (!chosen) return { ...base, found: false };
 
     const { price, quote } = chosen;
@@ -157,6 +169,7 @@ export function priceBasket(
       productId: price.productId,
       productName: price.productName,
       unitPrice: price.price,
+      substitute: substitute && chosen != null,
       packQuantity: price.packQuantity ?? null,
       packUnit: price.packUnit ?? null,
       regularTotal: roundMoney(price.price * item.quantity),
@@ -184,6 +197,7 @@ export function priceBasket(
     savings: roundMoney(regularTotal - total),
     clubSavings: roundMoney(found.reduce((sum, l) => sum + (l.clubOffer?.saving ?? 0), 0)),
     foundCount: found.length,
+    substituteCount: found.filter((l) => l.substitute).length,
     itemCount: items.length,
     complete: items.length > 0 && found.length === items.length,
     stale: found.some((l) => l.stale),

@@ -5,7 +5,7 @@ import { uid } from "./session";
 import { priceBasket, rankStores, type BasketItem, type StoreBasket, type StorePrice } from "./basket";
 import type { Promo } from "./promos";
 import { getList, type ShoppingList } from "./lists";
-import { anyBrandProducts } from "./alternatives";
+import { basketRelated } from "./alternatives";
 import { allSplits, worthwhileSplits, type SplitOffer } from "./split";
 import { splitMinSaving } from "./settings";
 
@@ -89,17 +89,25 @@ export async function storesInRadius(addressId: number | null = null): Promise<S
   return rows.map(toStore);
 }
 
-/** פריטי הסל לחישוב. פריט "כל מותג" כולל גם את המוצרים הדומים, ובכל סניף נבחר הזול מביניהם. */
+/** פריטי הסל לחישוב. פריט "כל מותג" כולל גם את המוצרים הדומים, ובכל סניף נבחר הזול מביניהם; בפריט רגיל
+ * המוצרים הדומים הם חלופה, שנבחרת רק בסניף שאין בו אף אחד מהמוצרים שבפריט (ומסומנת). */
 async function basketItems(list: ShoppingList): Promise<BasketItem[]> {
-  const extra = await anyBrandProducts(list.items);
-  return list.items.map((i) => ({
-    id: i.id,
-    name: i.name,
-    quantity: i.quantity,
-    isWeighted: i.isWeighted,
-    productIds: [...new Set([...i.products.map((p) => p.id), ...(extra.get(i.id) ?? [])])],
-  }));
+  const related = await basketRelated(list.items);
+  return list.items.map((i) => {
+    const own = i.products.map((p) => p.id);
+    const similar = related.get(i.id) ?? [];
+    return {
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      isWeighted: i.isWeighted,
+      productIds: i.anyBrand ? [...new Set([...own, ...similar])] : own,
+      fallbackIds: i.anyBrand ? [] : similar,
+    };
+  });
 }
+
+const allProductIds = (items: BasketItem[]) => [...new Set(items.flatMap((i) => [...i.productIds, ...(i.fallbackIds ?? [])]))];
 
 const iso = (value: unknown) => (value == null ? null : new Date(value as string).toISOString());
 const num = (value: unknown) => (value == null ? null : Number(value));
@@ -182,7 +190,7 @@ async function load(addressId: number | null = null): Promise<Loaded> {
   const items = await basketItems(list);
   const prices = await pricesByStore(
     stores.map((s) => s.storePk),
-    items.flatMap((i) => i.productIds),
+    allProductIds(items),
   );
   return { list, items, stores, prices, clubs };
 }
@@ -284,7 +292,7 @@ export async function storeBasket(storePk: number): Promise<RankedStore | null> 
   if (storeRows.rows.length === 0) return null;
   const store = toStore(storeRows.rows[0]);
   const items = await basketItems(list);
-  const prices = await pricesByStore([storePk], items.flatMap((i) => i.productIds));
+  const prices = await pricesByStore([storePk], allProductIds(items));
   return {
     ...store,
     basket: priceBasket(items, prices.get(storePk) ?? new Map(), new Date(), {

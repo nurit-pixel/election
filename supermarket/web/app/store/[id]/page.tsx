@@ -100,6 +100,11 @@ export default async function StorePage({ params }: { params: Promise<{ id: stri
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-medium leading-snug">{l.itemName}</div>
+                  {l.substitute && (
+                    <div className="mt-0.5 inline-block rounded-lg bg-info-surface px-2 py-0.5 text-xs font-bold text-info">
+                      חלופה: המותג שבחרת לא נמכר בסניף
+                    </div>
+                  )}
                   <Link href={`/product/${l.productId}`} className="block text-xs text-link">
                     {l.productName !== l.itemName ? l.productName : "גרף מחירים"}
                   </Link>

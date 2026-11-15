@@ -137,3 +137,26 @@ describe("rankStores", () => {
     expect(ranked.map((s) => s.name)).toEqual(["סופר"]);
   });
 });
+
+describe("חלופה כשהמותג לא נמכר בסניף", () => {
+  const withFallback = (fallbackIds: number[]): BasketItem => ({ ...item(1, [10]), fallbackIds });
+  it("המותג שנבחר קיים: נבחר הוא, גם אם הדומה זול יותר", () => {
+    const basket = priceBasket([withFallback([20])], prices([10, 8], [20, 5]), NOW);
+    const line = basket.lines[0];
+    expect(line.found && line.productId).toBe(10);
+    expect(line.found && line.substitute).toBe(false);
+    expect(basket.substituteCount).toBe(0);
+  });
+  it("המותג לא קיים: נבחר הדומה הזול, ומסומן כחלופה", () => {
+    const basket = priceBasket([withFallback([20, 21])], prices([20, 7], [21, 6]), NOW);
+    const line = basket.lines[0];
+    expect(line.found && line.productId).toBe(21);
+    expect(line.found && line.substitute).toBe(true);
+    expect(basket.complete).toBe(true);
+    expect(basket.substituteCount).toBe(1);
+  });
+  it("אין גם דומה: חסר", () => {
+    const basket = priceBasket([withFallback([20])], prices([30, 7]), NOW);
+    expect(basket.lines[0].found).toBe(false);
+  });
+});

@@ -144,14 +144,14 @@ export async function similarProducts(item: ListItem, limit = 12): Promise<Relat
   return relatedProducts(references, candidates, excluded(ids, dismissed), limit);
 }
 
-/** כמה מוצרים לכל היותר נכנסים אוטומטית לפריט "כל מותג" */
-const ANY_BRAND_LIMIT = 20;
+/** כמה מוצרים דומים לכל היותר נכנסים לחישוב הסל לכל פריט */
+const BASKET_RELATED_LIMIT = 20;
 
-/** לפריטי "כל מותג": המוצרים הדומים שנכנסים לחישוב הסל (בגודל דומה, בלי מארזים וזנים, בלי מותגי בית).
- * מפתח: מזהה הפריט. */
-export async function anyBrandProducts(items: ListItem[]): Promise<Map<number, number[]>> {
+/** המוצרים הדומים לכל פריט, לחישוב הסל: בגודל דומה, בלי מארזים, זנים ומותגי בית בקוד פנימי. בפריט "כל מותג"
+ * הם נכללים תמיד; בפריט רגיל הם חלופה בסניף שאין בו את המותג שנבחר. מפתח: מזהה הפריט. */
+export async function basketRelated(items: ListItem[]): Promise<Map<number, number[]>> {
   const result = new Map<number, number[]>();
-  const wanted = items.filter((item) => item.anyBrand && item.products.length > 0);
+  const wanted = items.filter((item) => item.products.length > 0);
   if (wanted.length === 0) return result;
   const user = await uid();
   const now = Date.now();
@@ -167,7 +167,7 @@ export async function anyBrandProducts(items: ListItem[]): Promise<Map<number, n
   for (const item of missing) {
     const ids = item.products.map((p) => p.id);
     const own = references.filter((r) => ids.includes(r.id));
-    const related = relatedProducts(own, candidates, excluded(ids, dismissed), ANY_BRAND_LIMIT, "basket").map((r) => r.product.id);
+    const related = relatedProducts(own, candidates, excluded(ids, dismissed), BASKET_RELATED_LIMIT, "basket").map((r) => r.product.id);
     remember(keyOf(item), related, now);
     result.set(item.id, related);
   }

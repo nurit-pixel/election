@@ -18,6 +18,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
   const chosenId = pageId((await searchParams).store ?? "") ?? top[0]?.storePk ?? null;
   const store = chosenId != null ? await storeBasket(chosenId) : null;
   const priceOf = new Map(store?.basket.lines.flatMap((l) => (l.found ? [[l.itemId, l.total] as const] : [])) ?? []);
+  // מותג שלא נמכר בסניף: איזה מוצר דומה נבחר במקומו
+  const substituteOf = new Map(
+    store?.basket.lines.flatMap((l) => (l.found && l.substitute ? [[l.itemId, l.productName] as const] : [])) ?? [],
+  );
 
   const items: ShopItem[] = list.items.map((item) => ({
     id: item.id,
@@ -26,6 +30,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     isWeighted: item.isWeighted,
     checked: item.checked,
     price: priceOf.get(item.id) ?? null,
+    substitute: substituteOf.get(item.id) ?? null,
   }));
   const checkedCount = items.filter((i) => i.checked).length;
 

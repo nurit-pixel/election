@@ -14,6 +14,8 @@ export type ShopItem = {
   checked: boolean;
   /** המחיר בסניף שנבחר, אם נבחר סניף */
   price: number | null;
+  /** המותג שבפריט לא נמכר בסניף: מה לקנות במקומו */
+  substitute: string | null;
 };
 
 /** רשימת קנייה: לחיצה על פריט מסמנת אותו כ"בעגלה". פריטים שסומנו יורדים לתחתית. */
@@ -60,6 +62,9 @@ export function ShoppingList({ items, shared }: { items: ShopItem[]; shared: boo
         <span className="min-w-0 flex-1">
           <span className={`block text-lg font-bold leading-snug ${item.checked ? "line-through" : ""}`}>{item.name}</span>
           <span className="text-sm text-muted">{formatQuantity(item.quantity, item.isWeighted)}</span>
+          {item.substitute && (
+            <span className="mt-0.5 block text-sm font-bold text-info">במקום: {item.substitute}</span>
+          )}
         </span>
         {item.price != null && <Price value={item.price} className="shrink-0 text-sm font-bold" />}
       </button>
