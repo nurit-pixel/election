@@ -302,13 +302,13 @@ export async function hasAddress(): Promise<boolean> {
   return rows.length > 0;
 }
 
-export type AddressChoice = { id: number; label: string };
+export type AddressChoice = { id: number; label: string; lat: number; lng: number; radiusKm: number };
 
 /** הכתובות של המשתמש שאותרו, לבחירה בהשוואה */
 export async function locatedAddresses(): Promise<AddressChoice[]> {
   const { rows } = await pool.query(
-    `SELECT id, label FROM addresses WHERE user_id = $1 AND lat IS NOT NULL ORDER BY id`,
+    `SELECT id, label, lat, lng, radius_km FROM addresses WHERE user_id = $1 AND lat IS NOT NULL ORDER BY id`,
     [await uid()],
   );
-  return rows;
+  return rows.map((r) => ({ id: r.id, label: r.label, lat: Number(r.lat), lng: Number(r.lng), radiusKm: Number(r.radius_km) }));
 }

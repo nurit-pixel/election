@@ -7,6 +7,7 @@ import { FreshnessLine, Price } from "@/components/ui";
 import { Stars } from "@/components/Stars";
 import { PriceChart } from "@/components/PriceChart";
 import { Meter } from "@/components/Meter";
+import { StoresMap } from "@/components/StoresMap";
 import { METER_COLORS, meterLevel } from "@/lib/meter";
 import { nearComplete } from "@/lib/basket";
 import { quip } from "@/lib/quips";
@@ -34,10 +35,11 @@ function withFreshness(store: RankedStore, now: Date): Row {
 export default async function ComparePage({
   searchParams,
 }: {
-  searchParams: Promise<{ all?: string; address?: string }>;
+  searchParams: Promise<{ all?: string; address?: string; view?: string }>;
 }) {
   const params = await searchParams;
   const showAll = params.all === "1";
+  const mapView = params.view === "map";
   const addresses = await locatedAddresses();
   // יותר מכתובת אחת: שואלים ליד איזו כתובת להשוות
   const chosen = addresses.find((a) => String(a.id) === params.address) ?? null;
@@ -106,6 +108,47 @@ export default async function ComparePage({
         </nav>
       )}
 
+      <nav aria-label="תצוגה" className="grid grid-cols-2 gap-1 rounded-[14px] bg-subtle p-1 text-sm font-bold">
+        {[
+          { key: "list", label: "רשימה", href: withAddress(), active: !mapView },
+          { key: "map", label: "מפה", href: withAddress("view=map"), active: mapView },
+        ].map((tab) => (
+          <Link
+            key={tab.key}
+            href={tab.href}
+            aria-current={tab.active ? "page" : undefined}
+            className={`flex min-h-11 items-center justify-center rounded-[11px] ${tab.active ? "bg-card shadow-card" : "text-muted"}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
+
+      {mapView && (
+        <>
+          <StoresMap
+            stores={rows
+              .filter((r) => r.lat != null && r.lng != null)
+              .map((r) => ({
+                storePk: r.storePk,
+                lat: r.lat!,
+                lng: r.lng!,
+                name: `${r.chainName} · ${r.name}`,
+                price: priceOf(r),
+                complete: r.basket.complete,
+                rank: rows.indexOf(r) + 1,
+                level: meterLevel(priceOf(r), cheapest, mostExpensive),
+                approximate: r.approximate,
+              }))}
+            addresses={(chosen ? [chosen] : addresses).map((a) => ({ label: a.label, lat: a.lat, lng: a.lng, radiusKm: a.radiusKm }))}
+          />
+          <p className="text-xs text-muted">
+            המספר על כל סניף הוא המקום שלו בהשוואה, והצבע לפי המד: טורקיז הכי זול, ורוד הכי יקר. סניף עם מסגרת מקווקוות
+            מוקם רק לפי העיר. לחיצה על סניף מראה את המחיר ואת הפירוט.
+          </p>
+        </>
+      )}
+
       {storesInRadius === 0 && (
         <p className="rounded-pm-lg bg-card p-4 text-muted shadow-card">
           אין סניפים עם מחירים ברדיוס.{" "}
@@ -137,6 +180,7 @@ export default async function ComparePage({
         </div>
       )}
 
+      {!mapView && (
       <ol className="space-y-3">
         {visible.map((row, i) => (
           <li key={row.storePk}>
@@ -155,8 +199,9 @@ export default async function ComparePage({
           </li>
         ))}
       </ol>
+      )}
 
-      {hidden > 0 && (
+      {!mapView && hidden > 0 && (
         <Link
           href={withAddress("all=1")}
           className="flex min-h-[46px] items-center justify-center rounded-[13px] bg-subtle px-5 text-sm font-bold"
@@ -164,7 +209,7 @@ export default async function ComparePage({
           הצגת עוד {hidden} סניפים
         </Link>
       )}
-      {showAll && rows.length > FIRST_PAGE && (
+      {!mapView && showAll && rows.length > FIRST_PAGE && (
         <Link href={withAddress()} className="block px-5 py-2 text-center text-sm font-bold text-link">
           הצגת 5 הזולים בלבד
         </Link>

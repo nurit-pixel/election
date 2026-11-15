@@ -165,3 +165,44 @@ input[type="checkbox"] {
     scroll-behavior: auto !important;
   }
 }
+
+/* מפת הסניפים */
+.pm-map-pin {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 2px solid #2b0735;
+  box-shadow: 0 2px 0 #2b0735;
+  color: #2b0735;
+  font: 800 13px/1 Arial, sans-serif;
+}
+.pm-map-pin-approx {
+  border-style: dashed;
+  opacity: 0.75;
+}
+.pm-map-home {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #2b0735;
+  color: #14fbe1;
+  font: 800 18px/1 Arial, sans-serif;
+}
+.pm-map-popup {
+  font: 14px/1.5 Arial, sans-serif;
+  min-width: 170px;
+}
+.pm-map-popup-name {
+  font-weight: 800;
+}
+.pm-map-note {
+  color: #8a5400;
+  font-size: 12px;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  inset-inline-end: 4px;
+}
